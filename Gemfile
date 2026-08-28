@@ -1,13 +1,15 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.2.1"
+ruby "3.3.11"
 # gem 'sidekiq'
 gem 'fullcalendar-rails'
 # Gemfile
 gem 'rufus-scheduler'
 
 gem 'devise'
+gem 'omniauth-google-oauth2'
+gem 'omniauth-rails_csrf_protection'
 gem 'pundit'
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
@@ -18,9 +20,11 @@ gem "sprockets-rails"
 
 # Use sqlite3 as the database for Active Record
 gem "sqlite3", "~> 1.4"
+gem "date", "3.5.1"
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 5.0"
+gem "puma", "~> 5.0", platforms: %i[ruby]
+gem "webrick", "~> 1.8", platforms: %i[ mingw mswin x64_mingw ]
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
@@ -57,12 +61,12 @@ gem "bootsnap", require: false
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  gem "debug", platforms: %i[mri] unless RUBY_PLATFORM.match?(/mingw|mswin/)
 end
 
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
-  gem "web-console"
+  gem "web-console" unless RUBY_PLATFORM.match?(/mingw|mswin/)
 
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"

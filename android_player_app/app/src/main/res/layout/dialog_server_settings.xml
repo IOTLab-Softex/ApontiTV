@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <RadioGroup
+            android:id="@+id/accessModeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/accessModeAuto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/server_access_auto" />
+
+            <RadioButton
+                android:id="@+id/accessModeLocal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/server_access_local" />
+
+            <RadioButton
+                android:id="@+id/accessModeExternal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/server_access_external" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/server_local_url"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/localServerInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/server_local_url_hint"
+            android:inputType="textUri"
+            android:singleLine="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/server_external_url"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/externalServerInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/server_external_url_hint"
+            android:inputType="textUri"
+            android:singleLine="true" />
+    </LinearLayout>
+</ScrollView>

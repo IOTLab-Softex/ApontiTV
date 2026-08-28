@@ -1,0 +1,39 @@
+<% content_for :page_title, I18n.t("NotificationCenter") %>
+<% content_for :page_icon, "far fa-bell" %>
+
+<section class="system-config-page notifications-history-page">
+  <div class="system-config-shell notifications-history-shell">
+    <section class="system-config-section notifications-history-card">
+      <div class="system-config-section__title notifications-history-card__title">
+        <i class="far fa-bell" aria-hidden="true"></i>
+        <div>
+          <h2><%= I18n.t("NotificationCenter") %></h2>
+          <p><%= I18n.t("NotificationCenterSubtitle") %></p>
+        </div>
+      </div>
+
+      <% if @notifications.any? %>
+        <div class="notifications-history">
+          <% @notifications.each do |notification| %>
+            <article class="notifications-history__item notifications-history__item--<%= notification.severity %> <%= 'is-unread' if notification.read_at.blank? %>">
+              <span class="notifications-history__icon">
+                <i class="fas <%= notification.icon_class %>" aria-hidden="true"></i>
+              </span>
+              <span class="notifications-history__body">
+                <strong><%= notification.title %></strong>
+                <% if notification.message.present? %>
+                  <small><%= notification.message %></small>
+                <% end %>
+              </span>
+              <time datetime="<%= notification.created_at.iso8601 %>">
+                <%= l(notification.created_at, format: :short) rescue notification.created_at.strftime("%d/%m/%Y %H:%M") %>
+              </time>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="notifications-history__empty"><%= I18n.t("NotificationsEmpty") %></p>
+      <% end %>
+    </section>
+  </div>
+</section>

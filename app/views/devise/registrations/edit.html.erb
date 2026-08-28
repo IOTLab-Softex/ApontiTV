@@ -1,43 +1,555 @@
-<h2>Edit <%= resource_name.to_s.humanize %></h2>
+<% content_for :page_title, I18n.t("ChangePassword") %>
+<% content_for :page_subtitle, "Atualize seu acesso e mantenha sua conta protegida." %>
 
-<%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
-  <%= render "devise/shared/error_messages", resource: resource %>
+<div class="profile-edit-page">
+  <div class="profile-edit-layout">
+    <section class="profile-edit-card">
+      <div class="profile-edit-card__header">
+        <div>
+          <h2>Credenciais</h2>
+          <p>Preencha somente a nova senha se deseja alterar sua senha atual.</p>
+        </div>
+        <span class="profile-edit-card__badge">
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          Seguro
+        </span>
+      </div>
 
-  <div class="field">
-    <%= f.label :email %><br />
-    <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put, class: "profile-edit-form" }) do |f| %>
+        <%= render "devise/shared/error_messages", resource: resource %>
+
+        <label class="profile-edit-field">
+          <span>E-mail</span>
+          <div class="profile-edit-input-wrap">
+            <i class="far fa-envelope" aria-hidden="true"></i>
+            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "profile-edit-input" %>
+          </div>
+        </label>
+
+        <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+          <div class="profile-edit-notice">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            <span>Confirma&ccedil;&atilde;o pendente para <strong><%= resource.unconfirmed_email %></strong>.</span>
+          </div>
+        <% end %>
+
+        <div class="profile-edit-grid">
+          <label class="profile-edit-field">
+            <span>Nova senha</span>
+            <div class="profile-edit-input-wrap">
+              <i class="fas fa-key" aria-hidden="true"></i>
+              <%= f.password_field :password, autocomplete: "new-password", class: "profile-edit-input" %>
+            </div>
+            <% if @minimum_password_length %>
+              <small><%= @minimum_password_length %> caracteres no m&iacute;nimo.</small>
+            <% end %>
+          </label>
+
+          <label class="profile-edit-field">
+            <span>Confirmar nova senha</span>
+            <div class="profile-edit-input-wrap">
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+              <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "profile-edit-input" %>
+            </div>
+            <small>Repita a nova senha para confirmar.</small>
+          </label>
+        </div>
+
+        <label class="profile-edit-field">
+          <span>Senha atual</span>
+          <div class="profile-edit-input-wrap">
+            <i class="fas fa-fingerprint" aria-hidden="true"></i>
+            <%= f.password_field :current_password, autocomplete: "current-password", class: "profile-edit-input" %>
+          </div>
+          <small>Obrigat&oacute;ria para confirmar qualquer altera&ccedil;&atilde;o.</small>
+        </label>
+
+        <div class="profile-edit-actions">
+          <%= link_to (request.referer.presence || root_path), class: "profile-edit-button profile-edit-button--secondary" do %>
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            <span>Voltar</span>
+          <% end %>
+          <%= button_tag type: "submit", class: "profile-edit-button profile-edit-button--primary" do %>
+            <i class="fas fa-save" aria-hidden="true"></i>
+            <span>Salvar altera&ccedil;&otilde;es</span>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+
+    <aside class="profile-edit-side">
+      <section class="profile-edit-info">
+        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+        <h2>Dica de seguran&ccedil;a</h2>
+        <p>Use uma senha exclusiva para o Aponti TV e evite compartilhar esse acesso com outras pessoas.</p>
+      </section>
+
+      <section class="profile-edit-danger-zone">
+        <div>
+          <p class="profile-edit-danger-zone__kicker">Zona cr&iacute;tica</p>
+          <h2>Cancelar conta</h2>
+          <p>Remova a conta apenas se tiver certeza de que n&atilde;o deseja mais acesso ao sistema.</p>
+        </div>
+
+        <%= button_to registration_path(resource_name),
+                      data: { confirm: "Tem certeza?", turbo_confirm: "Tem certeza?" },
+                      method: :delete,
+                      class: "profile-edit-button profile-edit-button--danger" do %>
+          <i class="fas fa-trash-alt" aria-hidden="true"></i>
+          <span>Cancelar conta</span>
+        <% end %>
+      </section>
+    </aside>
   </div>
+</div>
 
-  <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
-    <div>Currently waiting confirmation for: <%= resource.unconfirmed_email %></div>
-  <% end %>
+<style>
+  .profile-edit-page {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: 28px 18px 54px;
+    color: #f8fbff;
+  }
 
-  <div class="field">
-    <%= f.label :password %> <i>(leave blank if you don't want to change it)</i><br />
-    <%= f.password_field :password, autocomplete: "new-password" %>
-    <% if @minimum_password_length %>
-      <br />
-      <em><%= @minimum_password_length %> characters minimum</em>
-    <% end %>
-  </div>
+  .profile-edit-page i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    text-align: center;
+    vertical-align: middle;
+  }
 
-  <div class="field">
-    <%= f.label :password_confirmation %><br />
-    <%= f.password_field :password_confirmation, autocomplete: "new-password" %>
-  </div>
+  .profile-edit-kicker,
+  .profile-edit-danger-zone__kicker {
+    margin: 0 0 6px;
+    color: #b88cff;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
 
-  <div class="field">
-    <%= f.label :current_password %> <i>(we need your current password to confirm your changes)</i><br />
-    <%= f.password_field :current_password, autocomplete: "current-password" %>
-  </div>
+  .profile-edit-subtitle,
+  .profile-edit-card__header p,
+  .profile-edit-info p,
+  .profile-edit-danger-zone p,
+  .profile-edit-field small {
+    color: #a8b4ce;
+  }
 
-  <div class="actions">
-    <%= f.submit "Update" %>
-  </div>
-<% end %>
+  .profile-edit-subtitle {
+    margin: 8px 0 0;
+    line-height: 1.55;
+  }
 
-<h3>Cancel my account</h3>
+  .profile-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 18px;
+    align-items: start;
+  }
 
-<div>Unhappy? <%= button_to "Cancel my account", registration_path(resource_name), data: { confirm: "Are you sure?", turbo_confirm: "Are you sure?" }, method: :delete %></div>
+  .profile-edit-card,
+  .profile-edit-info,
+  .profile-edit-danger-zone {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 12px;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(139, 47, 242, .14), transparent 260px),
+      rgba(15, 23, 42, .72);
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .28);
+  }
 
-<%= link_to "Back", :back %>
+  .profile-edit-card {
+    padding: 24px;
+  }
+
+  .profile-edit-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, .14);
+  }
+
+  .profile-edit-card__header h2,
+  .profile-edit-info h2,
+  .profile-edit-danger-zone h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 18px;
+  }
+
+  .profile-edit-card__header p,
+  .profile-edit-info p,
+  .profile-edit-danger-zone p {
+    margin: 6px 0 0;
+    line-height: 1.55;
+  }
+
+  .profile-edit-card__badge {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+    border: 1px solid rgba(168, 85, 247, .22);
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .profile-edit-card__badge i {
+    width: 14px;
+    height: 14px;
+    font-size: 13px;
+  }
+
+  .profile-edit-form,
+  .profile-edit-field {
+    display: grid;
+    gap: 14px;
+  }
+
+  .profile-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .profile-edit-field span {
+    color: #e5ecff;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .profile-edit-field small {
+    min-height: 18px;
+    line-height: 1.45;
+  }
+
+  .profile-edit-input-wrap {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(172, 188, 230, .18);
+    background: rgba(8, 12, 26, .46);
+    color: #aeb9d0;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .profile-edit-input-wrap > i {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    color: inherit;
+    font-size: 15px;
+  }
+
+  .profile-edit-input-wrap:focus-within {
+    border-color: rgba(168, 85, 247, .66);
+    background: rgba(8, 12, 26, .58);
+    box-shadow: 0 0 0 4px rgba(139, 47, 242, .14);
+  }
+
+  .profile-edit-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .profile-edit-input:-webkit-autofill {
+    -webkit-text-fill-color: #ffffff;
+    box-shadow: 0 0 0 1000px rgba(8, 12, 26, .96) inset;
+  }
+
+  .profile-edit-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(251, 191, 36, .24);
+    background: rgba(251, 191, 36, .1);
+    color: #fde68a;
+  }
+
+  .profile-edit-notice i {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+  }
+
+  .profile-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 6px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(148, 163, 184, .14);
+  }
+
+  .profile-edit-button {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 9px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    line-height: 1;
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  }
+
+  .profile-edit-button i {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    text-align: center;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .profile-edit-button span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .profile-edit-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .profile-edit-button--primary {
+    color: #ffffff;
+    border-color: rgba(168, 85, 247, .55);
+    background: linear-gradient(135deg, #a855f7, #7c2de2);
+    box-shadow: 0 14px 28px rgba(139, 47, 242, .22);
+  }
+
+  .profile-edit-button--secondary {
+    color: #e5ecff;
+    background: rgba(15, 23, 42, .46);
+  }
+
+  .profile-edit-button--danger {
+    width: 100%;
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, .34);
+    background: rgba(185, 28, 28, .82);
+  }
+
+  .profile-edit-side {
+    display: grid;
+    gap: 18px;
+  }
+
+  .profile-edit-info,
+  .profile-edit-danger-zone {
+    padding: 20px;
+  }
+
+  .profile-edit-info > i {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+    font-size: 18px;
+  }
+
+  .profile-edit-info > i::before,
+  .profile-edit-input-wrap > i::before,
+  .profile-edit-button i::before,
+  .profile-edit-card__badge i::before,
+  .profile-edit-notice i::before {
+    display: block;
+    line-height: 1;
+  }
+
+  .profile-edit-danger-zone {
+    border-color: rgba(239, 68, 68, .2);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(239, 68, 68, .12), transparent 220px),
+      rgba(15, 23, 42, .72);
+  }
+
+  .profile-edit-danger-zone__kicker {
+    color: #f87171;
+  }
+
+  .profile-edit-danger-zone form {
+    margin: 18px 0 0;
+  }
+
+  #error_explanation {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, .32);
+    background: rgba(127, 29, 29, .22);
+    color: #fecaca;
+  }
+
+  #error_explanation h2 {
+    margin: 0 0 8px;
+    color: #fecaca;
+    font-size: 15px;
+  }
+
+  #error_explanation ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  html[data-theme="light"] .profile-edit-page {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .profile-edit-card__header h2,
+  html[data-theme="light"] .profile-edit-info h2,
+  html[data-theme="light"] .profile-edit-danger-zone h2 {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .profile-edit-subtitle,
+  html[data-theme="light"] .profile-edit-card__header p,
+  html[data-theme="light"] .profile-edit-info p,
+  html[data-theme="light"] .profile-edit-danger-zone p,
+  html[data-theme="light"] .profile-edit-field small {
+    color: #64748b;
+  }
+
+  html[data-theme="light"] .profile-edit-card,
+  html[data-theme="light"] .profile-edit-info,
+  html[data-theme="light"] .profile-edit-danger-zone {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(139, 47, 242, .08), transparent 260px),
+      rgba(255, 255, 255, .92);
+    border-color: rgba(15, 23, 42, .1);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+  }
+
+  html[data-theme="light"] .profile-edit-field span {
+    color: #334155;
+  }
+
+  html[data-theme="light"] .profile-edit-input-wrap {
+    background: rgba(248, 250, 252, .86);
+    color: #64748b;
+    border-color: rgba(15, 23, 42, .12);
+  }
+
+  html[data-theme="light"] .profile-edit-input {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .profile-edit-button--secondary {
+    color: #334155;
+    background: #ffffff;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .profile-edit-page {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-card__header h2,
+    :root:not([data-theme="dark"]) .profile-edit-info h2,
+    :root:not([data-theme="dark"]) .profile-edit-danger-zone h2 {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-subtitle,
+    :root:not([data-theme="dark"]) .profile-edit-card__header p,
+    :root:not([data-theme="dark"]) .profile-edit-info p,
+    :root:not([data-theme="dark"]) .profile-edit-danger-zone p,
+    :root:not([data-theme="dark"]) .profile-edit-field small {
+      color: #64748b;
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-card,
+    :root:not([data-theme="dark"]) .profile-edit-info,
+    :root:not([data-theme="dark"]) .profile-edit-danger-zone {
+      background:
+        radial-gradient(circle at 20% 0%, rgba(139, 47, 242, .08), transparent 260px),
+        rgba(255, 255, 255, .92);
+      border-color: rgba(15, 23, 42, .1);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-field span {
+      color: #334155;
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-input-wrap {
+      background: rgba(248, 250, 252, .86);
+      color: #64748b;
+      border-color: rgba(15, 23, 42, .12);
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-input {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .profile-edit-button--secondary {
+      color: #334155;
+      background: #ffffff;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .profile-edit-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .profile-edit-page {
+      padding: 18px 12px 34px;
+    }
+
+    .profile-edit-card__header,
+    .profile-edit-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .profile-edit-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .profile-edit-card {
+      padding: 18px;
+    }
+
+    .profile-edit-button {
+      width: 100%;
+    }
+  }
+</style>

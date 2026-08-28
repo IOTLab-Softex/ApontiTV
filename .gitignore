@@ -30,6 +30,43 @@
 !/tmp/storage/.keep
 
 /public/assets
+/vendor/bundle/
+/app/javascript/node_modules/
+/app/assets/images/skin/
+/app/assets/images/*.avi
+/node_modules/
+/public/packs/
+/public/wallpapers/*
+!/public/wallpapers/.keep
+/config/windows_startup.env
+/.license_token
+/.claude/
+/.gemtest/
+/.gemtest2/
+/.home/
+/*.png
+/*.jpg
+/*.jpeg
+/*.mp3
+/*.mp4
+/*.avi
+/splash_frame_*.png
+/tv*_*.png
+/tv*_screen.png
+/tv_suporte*.png
+/bin/*.exe
+/android_player_app/.gradle/
+/android_player_app/.idea/
+/android_player_app/build/
+/android_player_app/app/build/
+/android_player_app/local.properties
+/android_player_app/captures*/
+/android_player_app/print*.png
+/android_player_app/aponti_widget_bar_*.png
+/Sidebar-Collapse--Streamline-Iconoir.svg
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+# Ignore local SSL certificates used for HTTPS development.
+/config/ssl/*.pem

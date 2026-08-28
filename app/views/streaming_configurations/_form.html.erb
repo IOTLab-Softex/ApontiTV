@@ -1,188 +1,1154 @@
-<title>Configuration</title>
-
-<div class="container">
-  <div class="card custom-card">
-    <div class="card-header text-center">
-      <h4>Streaming Configuration</h4>
-    </div>
-    <div class="card-body">
-      <%= form_with(model: streaming_configuration, local: true) do |form| %>
-        <div class="form-group">
-          <%= form.label :server_ip, "Server IP", class: "form-label" %>
-          <%= form.text_field :server_ip, value: streaming_configuration.server_ip || '192.168.1.253', class: "form-control", placeholder: "Enter server IP", required: true %>
-        </div>
-
-        <div class="form-group">
-          <%= form.label :port, "Port", class: "form-label" %>
-          <%= form.number_field :port, value: streaming_configuration.port || 8080, class: "form-control", placeholder: "Enter port", required: true %>
-        </div>
-
-        <div class="form-group">
-          <%= form.label :server_name, "Name", class: "form-label" %>
-          <%= form.text_field :server_name, value: streaming_configuration.server_name || 'SoftexTv', class: "form-control", placeholder: "Enter server name", required: true %>
-        </div>
-        <div class="form-group">
-          <%= form.label :widgets, "Enable Widgets", class: "form-label" %>
-          <%= form.check_box :widgets, id: 'streaming-checkbox', data: { id: @streaming_configuration.id } %>
-        </div>
-
-        <div class="form-footer">
-          <%= form.submit "Save", class: "btn btn-primary btn-block" %>
+<div class="system-config-page">
+  <div class="system-config-shell">
+    <%= form_with(model: streaming_configuration, local: true, class: "system-config-form") do |form| %>
+      <% if streaming_configuration.errors.any? %>
+        <div class="system-config-errors">
+          <strong><%= pluralize(streaming_configuration.errors.count, "erro") %> impediram salvar esta configuracao:</strong>
+          <ul>
+            <% streaming_configuration.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
         </div>
       <% end %>
-    </div>
 
-    <div class="card-footer text-center">
-      <%= link_to "Back", broadcasts_path, class: "btn btn-secondary btn-sm" %>
-    </div>
+      <section class="system-config-section">
+        <div class="system-config-section__title">
+          <i class="fas fa-server" aria-hidden="true"></i>
+          <div>
+            <h2>Servidor de streaming</h2>
+            <p>Configuracao usada pelo app e pelos servicos locais.</p>
+          </div>
+        </div>
+
+        <div class="system-config-grid">
+          <label class="system-config-field">
+            <span>IP do servidor</span>
+            <span class="system-config-input">
+              <i class="fas fa-network-wired" aria-hidden="true"></i>
+              <%= form.text_field :server_ip, value: streaming_configuration.server_ip || "192.168.1.253", placeholder: "192.168.1.253", required: true %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Porta</span>
+            <span class="system-config-input">
+              <i class="fas fa-ethernet" aria-hidden="true"></i>
+              <%= form.number_field :port, value: streaming_configuration.port || 8080, placeholder: "8080", required: true %>
+            </span>
+          </label>
+
+          <label class="system-config-field system-config-field--wide">
+            <span>Nome do servidor</span>
+            <span class="system-config-input">
+              <i class="fas fa-tag" aria-hidden="true"></i>
+              <%= form.text_field :server_name, value: streaming_configuration.server_name || "SoftexTv", placeholder: "Aponti TV", required: true %>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="system-config-section">
+        <div class="system-config-section__title">
+          <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
+          <div>
+            <h2>Recursos</h2>
+            <p>Ative widgets e defina onde eles aparecem.</p>
+          </div>
+        </div>
+
+        <label class="system-config-toggle">
+          <%= form.check_box :widgets, id: "streaming-checkbox", data: { id: streaming_configuration.id } %>
+          <span class="system-config-toggle__track" aria-hidden="true"></span>
+          <span>
+            <strong>Ativar widgets</strong>
+            <small>Inicia ou para o overlay de widgets do servidor.</small>
+          </span>
+        </label>
+
+        <div class="system-config-widget-targets">
+          <label class="system-config-toggle">
+            <%= form.check_box :widgets_ffmpeg_enabled %>
+            <span class="system-config-toggle__track" aria-hidden="true"></span>
+            <span>
+              <strong>Usar widgets no FFmpeg</strong>
+              <small>Aplica o overlay nos fluxos HLS gerados pelo servidor.</small>
+            </span>
+          </label>
+
+          <label class="system-config-toggle">
+            <%= form.check_box :widgets_official_app_enabled %>
+            <span class="system-config-toggle__track" aria-hidden="true"></span>
+            <span>
+              <strong>Usar widgets no app oficial</strong>
+              <small>Mostra a barra no rodape por cima da reproducao no app Android.</small>
+            </span>
+          </label>
+        </div>
+
+      </section>
+
+      <section class="system-config-section system-config-widget-bar">
+        <div class="system-config-section__title">
+          <i class="fas fa-window-maximize" aria-hidden="true"></i>
+          <div>
+            <h2>Barra de widgets do app oficial</h2>
+            <p>Personalize a barra com clima no lado esquerdo e hora no lado direito.</p>
+          </div>
+        </div>
+
+        <div class="system-config-widget-preview-grid">
+          <label class="system-config-widget-preview"
+                 data-widget-bar-preset
+                 data-widget-style="solid"
+                 data-widget-color="#0b1020"
+                 data-widget-opacity="100"
+                 data-widget-blur="false">
+            <%= form.radio_button :widget_bar_style, "solid" %>
+            <span class="system-config-widget-preview__thumb system-config-widget-preview__thumb--solid">
+              <em>24°C</em>
+              <strong>14:32</strong>
+            </span>
+            <span>Cor solida</span>
+          </label>
+
+          <label class="system-config-widget-preview"
+                 data-widget-bar-preset
+                 data-widget-style="transparent"
+                 data-widget-color="#0b1020"
+                 data-widget-opacity="58"
+                 data-widget-blur="false">
+            <%= form.radio_button :widget_bar_style, "transparent" %>
+            <span class="system-config-widget-preview__thumb system-config-widget-preview__thumb--transparent">
+              <em>24°C</em>
+              <strong>14:32</strong>
+            </span>
+            <span>Transparente</span>
+          </label>
+
+          <label class="system-config-widget-preview"
+                 data-widget-bar-preset
+                 data-widget-style="transparent_blur"
+                 data-widget-color="#0b1020"
+                 data-widget-opacity="72"
+                 data-widget-blur="true">
+            <%= form.radio_button :widget_bar_style, "transparent_blur" %>
+            <span class="system-config-widget-preview__thumb system-config-widget-preview__thumb--blur">
+              <em>24°C</em>
+              <strong>14:32</strong>
+            </span>
+            <span>Transparente com blur</span>
+          </label>
+        </div>
+
+        <div class="system-config-grid">
+          <label class="system-config-field">
+            <span>Cor da barra</span>
+            <span class="system-config-input system-config-input--color">
+              <i class="fas fa-palette" aria-hidden="true"></i>
+              <%= form.color_field :widget_bar_color, value: streaming_configuration.widget_bar_color.presence || "#0b1020" %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Opacidade (%)</span>
+            <span class="system-config-input">
+              <i class="fas fa-adjust" aria-hidden="true"></i>
+              <%= form.number_field :widget_bar_opacity, min: 0, max: 100, step: 1 %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Comportamento</span>
+            <span class="system-config-input">
+              <i class="fas fa-layer-group" aria-hidden="true"></i>
+              <%= form.select :widget_bar_behavior, [["Fixa", "fixed"], ["Subir ao aparecer", "slide"], ["Temporaria", "auto_hide"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Efeito de entrada</span>
+            <span class="system-config-input">
+              <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+              <%= form.select :widget_bar_animation, [["Slide", "slide"], ["Fade", "fade"], ["Zoom suave", "zoom"], ["Aponti Smooth", "smooth"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Posicao na reproducao</span>
+            <span class="system-config-input">
+              <i class="fas fa-object-group" aria-hidden="true"></i>
+              <%= form.select :widget_bar_layout_mode, [["Sobrepor conteudo", "overlay"], ["Empurrar conteudo", "push_content"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Espacamento da borda</span>
+            <span class="system-config-input">
+              <i class="fas fa-arrows-alt-v" aria-hidden="true"></i>
+              <%= form.number_field :widget_bar_edge_spacing, min: 0, max: 120, step: 1, value: streaming_configuration.widget_bar_edge_spacing.to_i %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Tempo para aparecer</span>
+            <span class="system-config-input system-config-input--split">
+              <i class="fas fa-stopwatch" aria-hidden="true"></i>
+              <%= form.number_field :widget_bar_appear_seconds, min: 0, max: 120, step: 1 %>
+              <%= form.select :widget_bar_appear_unit, [["Segundos", "seconds"], ["Minutos", "minutes"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Tempo para sumir</span>
+            <span class="system-config-input system-config-input--split">
+              <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+              <%= form.number_field :widget_bar_hide_seconds, min: 0, max: 120, step: 1 %>
+              <%= form.select :widget_bar_hide_unit, [["Segundos", "seconds"], ["Minutos", "minutes"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Conteudo</span>
+            <span class="system-config-input">
+              <i class="fas fa-cloud-sun" aria-hidden="true"></i>
+              <%= form.select :widget_bar_content_mode, [["Clima e hora", "time_weather"], ["Somente clima", "weather"], ["Somente hora", "time"]] %>
+            </span>
+          </label>
+
+          <label class="system-config-toggle system-config-toggle--inline">
+            <%= form.check_box :widget_bar_blur_enabled %>
+            <span class="system-config-toggle__track" aria-hidden="true"></span>
+            <span>
+              <strong>Aplicar blur</strong>
+              <small>Disponivel em TVs Android com suporte visual.</small>
+            </span>
+          </label>
+
+          <label class="system-config-field system-config-field--wide">
+            <span>URL da API de clima</span>
+            <span class="system-config-input">
+              <i class="fas fa-cloud-sun-rain" aria-hidden="true"></i>
+              <%= form.url_field :widget_bar_weather_api_url, placeholder: "https://roan.app.br/api/status" %>
+            </span>
+            <small>Aceita https://labs.aponti.org.br/api/current_data?station=estacao_01 ou https://roan.app.br/api/status.</small>
+          </label>
+
+          <label class="system-config-field system-config-field--wide">
+            <span>Clima da barra para teste</span>
+            <span class="system-config-input">
+              <i class="fas fa-vial" aria-hidden="true"></i>
+              <%= form.select :widget_bar_weather_test_condition, [
+                ["Clima verdadeiro (API)", "real"],
+                ["Padrao", "default"],
+                ["Sol", "sun"],
+                ["Chuva", "rain"],
+                ["Nublado", "cloud"],
+                ["Tempestade", "storm"]
+              ] %>
+            </span>
+            <small>Use uma opcao de teste para validar a barra na TV. Volte para Clima verdadeiro (API) para usar os dados reais.</small>
+          </label>
+        </div>
+
+        <div class="system-config-weather-assets">
+          <div class="system-config-weather-assets__header">
+            <i class="fas fa-images" aria-hidden="true"></i>
+            <div>
+              <h3>Imagens do clima no app oficial</h3>
+              <p>Suba GIF, video, PNG ou JPG para o app trocar automaticamente conforme o clima.</p>
+            </div>
+          </div>
+
+          <div class="system-config-weather-assets__grid">
+            <% [
+              ["Padrao", :widget_weather_default_image, :widget_weather_default_assets, "Usado quando o clima nao combinar."],
+              ["Sol", :widget_weather_sun_image, :widget_weather_sun_assets, "Clear, sun ou ensolarado."],
+              ["Chuva", :widget_weather_rain_image, :widget_weather_rain_assets, "Rain, drizzle ou chuva."],
+              ["Nublado", :widget_weather_cloud_image, :widget_weather_cloud_assets, "Cloud, clouds ou nublado."],
+              ["Tempestade", :widget_weather_storm_image, :widget_weather_storm_assets, "Storm, thunder ou tempestade."]
+            ].each do |label, legacy_attachment_name, attachment_name, hint| %>
+              <% legacy_attachment = streaming_configuration.public_send(legacy_attachment_name) %>
+              <% attachments = streaming_configuration.public_send(attachment_name).attachments.to_a %>
+              <% all_attachments = ([legacy_attachment.attachment].compact + attachments).select { |attachment| attachment.blob.present? } %>
+              <% preview_attachments = all_attachments.first(4) %>
+              <div class="system-config-weather-asset">
+                <span class="system-config-weather-asset__preview <%= "system-config-weather-asset__preview--stack" if preview_attachments.size > 1 %>">
+                  <% if preview_attachments.any? %>
+                    <% preview_attachments.each do |attachment| %>
+                      <%= image_tag url_for(attachment), alt: label %>
+                    <% end %>
+                  <% else %>
+                    <i class="fas fa-cloud-sun" aria-hidden="true"></i>
+                  <% end %>
+                </span>
+                <span class="system-config-weather-asset__body">
+                  <strong><%= label %></strong>
+                  <small><%= hint %></small>
+                  <small><%= pluralize(all_attachments.size, "opcao cadastrada", "opcoes cadastradas") %></small>
+                  <% if all_attachments.any? %>
+                    <span class="system-config-weather-asset__chips">
+                      <% all_attachments.each do |attachment| %>
+                        <label class="system-config-weather-asset__chip">
+                          <%= check_box_tag "streaming_configuration[remove_widget_weather_asset_ids][]", attachment.id, false %>
+                          <span class="system-config-weather-asset__chip-preview">
+                            <% if attachment.blob.content_type.to_s.start_with?("image/") %>
+                              <%= image_tag url_for(attachment), alt: attachment.filename.to_s %>
+                            <% else %>
+                              <i class="fas fa-film" aria-hidden="true"></i>
+                            <% end %>
+                          </span>
+                          <span class="system-config-weather-asset__chip-name"><%= attachment.filename.to_s %></span>
+                          <i class="fas fa-trash" aria-hidden="true"></i>
+                        </label>
+                      <% end %>
+                    </span>
+                  <% end %>
+                  <%= form.file_field attachment_name, multiple: true, accept: "image/gif,image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime,video/x-msvideo" %>
+                </span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </section>
+
+      <section class="system-config-section">
+        <div class="system-config-section__title">
+          <i class="fab fa-google" aria-hidden="true"></i>
+          <div>
+            <h2>Login com Google</h2>
+            <p>Quando habilitado, aparece na tela de login e permite acesso apenas para e-mails ja cadastrados.</p>
+          </div>
+        </div>
+
+        <label class="system-config-toggle">
+          <%= form.check_box :google_oauth_enabled %>
+          <span class="system-config-toggle__track" aria-hidden="true"></span>
+          <span>
+            <strong>Habilitar Entrar com Google</strong>
+            <small>O botao so aparece quando Client ID e Client Secret estiverem preenchidos.</small>
+          </span>
+        </label>
+
+        <div class="system-config-grid system-config-google-grid">
+          <label class="system-config-field">
+            <span>Google Client ID</span>
+            <span class="system-config-input">
+              <i class="fas fa-id-card" aria-hidden="true"></i>
+              <%= form.text_field :google_client_id, autocomplete: "off", placeholder: "000000000000-xxxx.apps.googleusercontent.com" %>
+            </span>
+          </label>
+
+          <label class="system-config-field">
+            <span>Google Client Secret</span>
+            <span class="system-config-input">
+              <i class="fas fa-key" aria-hidden="true"></i>
+              <%= form.password_field :google_client_secret, value: streaming_configuration.google_client_secret, autocomplete: "new-password", placeholder: "GOCSPX-..." %>
+            </span>
+          </label>
+        </div>
+
+        <div class="system-config-note">
+          <i class="fas fa-link" aria-hidden="true"></i>
+          <span>URI de callback: <code><%= "#{request.protocol}#{request.host_with_port}/users/auth/google_oauth2/callback" %></code></span>
+        </div>
+      </section>
+
+      <footer class="system-config-footer">
+        <%= link_to broadcasts_path, class: "system-config-btn system-config-btn--ghost" do %>
+          <i class="fas fa-times" aria-hidden="true"></i>
+          <span>Cancelar</span>
+        <% end %>
+
+        <%= button_tag type: "submit", class: "system-config-btn system-config-btn--primary" do %>
+          <i class="fas fa-save" aria-hidden="true"></i>
+          <span>Salvar configuracoes</span>
+        <% end %>
+      </footer>
+    <% end %>
+  </div>
+</div>
+
+<div class="system-config-converting-modal" data-weather-video-converting-modal aria-hidden="true">
+  <div class="system-config-converting-modal__dialog">
+    <span class="system-config-converting-modal__spinner" aria-hidden="true"></span>
+    <strong>Convertendo arquivo</strong>
+    <p>Estamos preparando a animacao para o app da TV. Mantenha esta janela aberta.</p>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const checkbox = document.querySelector('#streaming-checkbox');
-    if (checkbox) {
-      checkbox.addEventListener('change', async (e) => {
-        const isChecked = e.target.checked;
-        const url = isChecked ? '/video/start' : '/video/stop';  // URL of the controller that will control the process
-        const method = 'POST';
-        const csrfToken = document.querySelector("meta[name='csrf-token']").content;
+  document.addEventListener("DOMContentLoaded", initializeStreamingConfigurationForm);
+  document.addEventListener("turbo:load", initializeStreamingConfigurationForm);
 
-        const command = isChecked ? 'start' : 'stop';  // Defining the command
+  function initializeStreamingConfigurationForm() {
+    const checkbox = document.querySelector("#streaming-checkbox");
+    bindWidgetBarPresets();
+    bindWeatherVideoConversionModal();
+    if (!checkbox || checkbox.dataset.bound === "true") return;
 
-        try {
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({ video: { command: command } })  // Sending the command in the body
-          });
-          const result = await response.json();
-          if (response.ok) {
-            alert(result.message);  // Displaying the success response
-          } else {
-            alert(`Error: ${result.error}`);
-          }
-        } catch (error) {
-          console.error('Error in request:', error);
+    checkbox.dataset.bound = "true";
+    checkbox.addEventListener("change", async (event) => {
+      const isChecked = event.target.checked;
+      const url = isChecked ? "/video/start" : "/video/stop";
+      const csrfToken = document.querySelector("meta[name='csrf-token']")?.content;
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken
+          },
+          body: JSON.stringify({ video: { command: isChecked ? "start" : "stop" } })
+        });
+        const result = await response.json();
+        if (!response.ok) alert(`Erro: ${result.error}`);
+      } catch (error) {
+        console.error("Erro na requisicao:", error);
+      }
+    });
+  }
+
+  function bindWidgetBarPresets() {
+    const root = document.querySelector(".system-config-form");
+    if (!root || root.dataset.widgetPresetsBound === "true") return;
+
+    root.dataset.widgetPresetsBound = "true";
+    const colorInput = root.querySelector("[name='streaming_configuration[widget_bar_color]']");
+    const opacityInput = root.querySelector("[name='streaming_configuration[widget_bar_opacity]']");
+    const blurInput = root.querySelector("[name='streaming_configuration[widget_bar_blur_enabled]']");
+
+    root.querySelectorAll("[data-widget-bar-preset]").forEach((preset) => {
+      preset.addEventListener("click", () => {
+        const styleInput = preset.querySelector("[name='streaming_configuration[widget_bar_style]']");
+        if (styleInput) {
+          styleInput.checked = true;
+          styleInput.dispatchEvent(new Event("change", { bubbles: true }));
         }
+
+        if (colorInput && preset.dataset.widgetColor) colorInput.value = preset.dataset.widgetColor;
+        if (opacityInput && preset.dataset.widgetOpacity) opacityInput.value = preset.dataset.widgetOpacity;
+        if (blurInput && preset.dataset.widgetBlur) blurInput.checked = preset.dataset.widgetBlur === "true";
       });
-    }
-  });
+    });
+  }
+
+  function bindWeatherVideoConversionModal() {
+    const form = document.querySelector(".system-config-form");
+    const modal = document.querySelector("[data-weather-video-converting-modal]");
+    if (!form || !modal || form.dataset.weatherConversionBound === "true") return;
+
+    form.dataset.weatherConversionBound = "true";
+    form.addEventListener("submit", () => {
+      const hasVideo = Array.from(form.querySelectorAll(".system-config-weather-asset input[type='file']")).some((input) => {
+        return Array.from(input.files || []).some((file) => file.type && file.type.startsWith("video/"));
+      });
+
+      if (!hasVideo) return;
+      modal.classList.add("is-visible");
+      modal.setAttribute("aria-hidden", "false");
+    });
+  }
 </script>
 
 <style>
-  h1 {
-      text-align: center;
-      color: #ffffff;
-      top: 0;
-      position: absolute;
-      width: -webkit-fill-available;
-      background-color: #ae5f22;
-      padding: 27px;
-      margin: 0;
-  }
-  /* Global Style */
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f7fc;
-    color: #333;
-    margin: 0;
-    padding: 0;
-  }
-
-  .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-  }
-
-  .card {
-    width: 100%;
-    max-width: 500px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
-    padding: 20px;
-  }
-
-  .card-header {
-    background-color: #007bff;
-    color: white;
-    padding: 20px;
-    border-radius: 10px 10px 0 0;
-  }
-
-  .card-footer {
-      display: flex;
-      justify-content: center;
-      padding: 10px 20px;
-      border-top: 1px solid #ddd;
-      border-radius: 0 0 10px 10px;
-  }
-
-  .card-footer .btn {
-    width: 48%;
-    text-align: center;
-  }
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  .form-label {
-    font-weight: bold;
-    color: #333;
-  }
-
-  .form-control {
-    border-radius: 8px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    width: 100%;
+  .system-config-page {
+    --system-config-card: rgba(18, 24, 44, .84);
+    --system-config-card-strong: rgba(8, 12, 26, .58);
+    --system-config-border: rgba(148, 163, 184, .18);
+    --system-config-text: #ffffff;
+    --system-config-muted: #aeb7cf;
+    --system-config-input: rgba(8, 12, 26, .58);
+    --system-config-input-border: rgba(148, 163, 184, .24);
+    --system-config-icon: #9ca8c3;
+    --system-config-accent: #8b2ff2;
+    --system-config-shadow: 0 24px 70px rgba(0, 0, 0, .26);
+    min-height: calc(100vh - 96px);
+    padding: 28px 28px 112px;
+    color: var(--system-config-text);
     box-sizing: border-box;
   }
 
-  .form-control:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  .system-config-shell {
+    width: min(100%, 980px);
+    margin: 0 auto;
   }
 
-  .form-footer {
-    margin-top: 20px;
+  .system-config-section,
+  .system-config-footer {
+    border: 1px solid var(--system-config-border);
+    background: var(--system-config-card);
+    box-shadow: var(--system-config-shadow), inset 0 1px 0 rgba(255, 255, 255, .05);
+    backdrop-filter: blur(18px);
   }
 
-  .btn {
-    border-radius: 30px;
-    padding: 10px;
+  .system-config-kicker {
+    color: #a855f7;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .system-config-section h2 {
+    margin: 0;
+    color: var(--system-config-text);
+    letter-spacing: 0;
+  }
+
+  .system-config-section p,
+  .system-config-toggle small,
+  .system-config-note {
+    color: var(--system-config-muted);
+  }
+
+  .system-config-form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .system-config-section {
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .system-config-section__title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .system-config-section__title > i {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c084fc;
+    background: rgba(139, 47, 242, .16);
+  }
+
+  .system-config-section h2 {
+    font-size: 19px;
+  }
+
+  .system-config-section p {
+    margin: 4px 0 0;
+    font-size: 14px;
+  }
+
+  .system-config-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .system-config-field {
+    display: grid;
+    gap: 9px;
+    color: var(--system-config-text);
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .system-config-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .system-config-input {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid var(--system-config-input-border);
+    border-radius: 10px;
+    background: var(--system-config-input);
+  }
+
+  .system-config-input i {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--system-config-icon);
+  }
+
+  .system-config-input input {
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    border: 0;
+    outline: 0;
+    color: var(--system-config-text);
+    background: transparent;
+    font: inherit;
+  }
+
+  .system-config-input input::placeholder {
+    color: var(--system-config-muted);
+  }
+
+  .system-config-toggle {
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    background: var(--system-config-card-strong);
+    cursor: pointer;
+  }
+
+  .system-config-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .system-config-toggle__track {
+    width: 50px;
+    height: 28px;
+    border-radius: 999px;
+    position: relative;
+    background: rgba(148, 163, 184, .22);
+    transition: background .2s ease, box-shadow .2s ease;
+  }
+
+  .system-config-toggle__track::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .22s ease;
+  }
+
+  .system-config-toggle input:checked + .system-config-toggle__track {
+    background: var(--system-config-accent);
+    box-shadow: 0 0 24px rgba(168, 85, 247, .42);
+  }
+
+  .system-config-toggle input:checked + .system-config-toggle__track::after {
+    transform: translateX(22px);
+  }
+
+  .system-config-toggle strong {
+    display: block;
+    color: var(--system-config-text);
+    font-size: 15px;
+  }
+
+  .system-config-toggle small {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+  }
+
+  .system-config-google-grid {
+    margin-top: 16px;
+  }
+
+  .system-config-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(139, 47, 242, .10);
+    font-size: 13px;
+  }
+
+  .system-config-note code {
+    color: var(--system-config-text);
+    overflow-wrap: anywhere;
+  }
+
+  .system-config-widget-targets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .system-config-widget-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .system-config-widget-preview {
+    display: grid;
+    gap: 9px;
+    cursor: pointer;
+  }
+
+  .system-config-widget-preview input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .system-config-widget-preview__thumb {
+    position: relative;
+    min-height: 92px;
+    overflow: hidden;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    padding: 12px;
+    color: #ffffff;
+    background:
+      linear-gradient(135deg, rgba(139, 47, 242, .34), rgba(8, 12, 26, .18)),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 1px, transparent 1px 12px),
+      #111827;
+  }
+
+  .system-config-widget-preview__thumb::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 32px;
+    background: rgba(8, 12, 26, .74);
+  }
+
+  .system-config-widget-preview__thumb--solid::before {
+    background: #0b1020;
+  }
+
+  .system-config-widget-preview__thumb--transparent::before {
+    background: rgba(8, 12, 26, .42);
+  }
+
+  .system-config-widget-preview__thumb--blur::before {
+    background: rgba(8, 12, 26, .52);
+    backdrop-filter: blur(8px);
+  }
+
+  .system-config-widget-preview__thumb em,
+  .system-config-widget-preview__thumb strong {
+    position: relative;
+    z-index: 1;
+    font-style: normal;
+    font-weight: 950;
+  }
+
+  .system-config-widget-preview > span:last-child {
+    color: var(--system-config-text);
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .system-config-widget-preview input:checked + .system-config-widget-preview__thumb {
+    border-color: rgba(168, 85, 247, .8);
+    outline: 2px solid rgba(139, 47, 242, .28);
+  }
+
+  .system-config-input select,
+  .system-config-input input[type="color"] {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    color: var(--system-config-text);
+    background: transparent;
+    font: inherit;
+    font-weight: 850;
+  }
+
+  .system-config-input--split {
+    grid-template-columns: 22px minmax(64px, .8fr) minmax(108px, 1fr);
+  }
+
+  .system-config-input--split input,
+  .system-config-input--split select {
+    min-width: 0;
+  }
+
+  .system-config-input input[type="color"] {
+    height: 38px;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .system-config-weather-assets {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    background: var(--system-config-card-strong);
+  }
+
+  .system-config-weather-assets__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .system-config-weather-assets__header > i {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c084fc;
+    background: rgba(139, 47, 242, .14);
+  }
+
+  .system-config-weather-assets__header h3 {
+    margin: 0;
+    color: var(--system-config-text);
     font-size: 16px;
   }
 
-  .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+  .system-config-weather-assets__header p {
+    margin: 3px 0 0;
+    font-size: 13px;
   }
 
-  .btn-primary:hover {
-    background-color: #0056b3;
+  .system-config-weather-assets__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
-  .btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
+  .system-config-weather-asset {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    background: var(--system-config-input);
   }
 
-  .btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
+  .system-config-weather-asset__preview {
+    width: 96px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c084fc;
+    background: rgba(139, 47, 242, .12);
   }
 
-  .btn-block {
+  .system-config-weather-asset__preview img {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .system-config-weather-asset__preview--stack {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .system-config-weather-asset__preview--stack img {
+    min-width: 0;
+    min-height: 0;
+    border-radius: 7px;
+  }
+
+  .system-config-weather-asset__body {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+  }
+
+  .system-config-weather-asset__body strong {
+    color: var(--system-config-text);
+    font-size: 14px;
+  }
+
+  .system-config-weather-asset__body small {
+    color: var(--system-config-muted);
+    font-size: 12px;
+  }
+
+  .system-config-weather-asset__body input[type="file"] {
+    width: 100%;
+    color: var(--system-config-muted);
+    font-size: 12px;
+  }
+
+  .system-config-weather-asset__chips {
+    max-height: 124px;
+    overflow: auto;
+    display: grid;
+    gap: 6px;
+    padding-right: 2px;
+  }
+
+  .system-config-weather-asset__chip {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 4px 5px;
+    border: 1px solid var(--system-config-input-border);
+    border-radius: 9px;
+    color: var(--system-config-text);
+    background: color-mix(in srgb, var(--system-config-card-strong) 70%, transparent);
+    cursor: pointer;
+  }
+
+  .system-config-weather-asset__chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .system-config-weather-asset__chip-preview {
+    width: 34px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 7px;
+    background: rgba(139, 47, 242, .12);
+  }
+
+  .system-config-weather-asset__chip-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .system-config-weather-asset__chip-preview i {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c084fc;
+    font-size: 13px;
+  }
+
+  .system-config-weather-asset__chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .system-config-weather-asset__chip i {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f87171;
+    background: rgba(248, 113, 113, .12);
+  }
+
+  .system-config-weather-asset__chip:has(input:checked) {
+    border-color: rgba(248, 113, 113, .55);
+    opacity: .58;
+    text-decoration: line-through;
+  }
+
+  .system-config-converting-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(3, 7, 18, .68);
+    backdrop-filter: blur(12px);
+  }
+
+  .system-config-converting-modal.is-visible {
+    display: flex;
+  }
+
+  .system-config-converting-modal__dialog {
+    width: min(100%, 380px);
+    padding: 28px;
+    border: 1px solid rgba(168, 85, 247, .35);
+    border-radius: 16px;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    text-align: center;
+    color: #ffffff;
+    background: rgba(15, 23, 42, .94);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, .34);
+  }
+
+  .system-config-converting-modal__dialog strong {
+    font-size: 18px;
+  }
+
+  .system-config-converting-modal__dialog p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .system-config-converting-modal__spinner {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 4px solid rgba(168, 85, 247, .22);
+    border-top-color: #a855f7;
+    animation: system-config-spin .8s linear infinite;
+  }
+
+  @keyframes system-config-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .system-config-toggle--inline {
+    align-self: end;
+    min-height: 52px;
+  }
+
+  .system-config-footer {
+    position: sticky;
+    bottom: 18px;
+    z-index: 20;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 18px 22px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--system-config-card) 92%, transparent);
+  }
+
+  .system-config-btn {
+    min-height: 44px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+    color: var(--system-config-text);
+    background: var(--system-config-card-strong);
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .system-config-btn--primary {
+    border-color: rgba(168, 85, 247, .55);
+    background: #8b2ff2;
+    box-shadow: 0 16px 34px rgba(139, 47, 242, .32);
+  }
+
+  .system-config-btn--ghost:hover {
+    border-color: rgba(168, 85, 247, .46);
+  }
+
+  .system-config-errors {
+    padding: 14px 16px;
+    border: 1px solid rgba(248, 113, 113, .42);
+    border-radius: 12px;
+    color: #fecaca;
+    background: rgba(127, 29, 29, .32);
+  }
+
+  html[data-theme="light"] .system-config-page {
+    --system-config-card: rgba(255, 255, 255, .88);
+    --system-config-card-strong: rgba(255, 255, 255, .76);
+    --system-config-border: rgba(15, 23, 42, .12);
+    --system-config-text: #111827;
+    --system-config-muted: #64748b;
+    --system-config-input: rgba(255, 255, 255, .82);
+    --system-config-input-border: rgba(15, 23, 42, .13);
+    --system-config-icon: #64748b;
+    --system-config-shadow: 0 24px 70px rgba(15, 23, 42, .10);
+  }
+
+  html[data-theme="light"] .system-config-note code {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .system-config-errors {
+    color: #991b1b;
+    background: rgba(254, 242, 242, .9);
+    border-color: rgba(248, 113, 113, .42);
+  }
+
+  html[data-theme="light"] .system-config-input input::placeholder {
+    color: #94a3b8;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .system-config-page {
+      --system-config-card: rgba(255, 255, 255, .88);
+      --system-config-card-strong: rgba(255, 255, 255, .76);
+      --system-config-border: rgba(15, 23, 42, .12);
+      --system-config-text: #111827;
+      --system-config-muted: #64748b;
+      --system-config-input: rgba(255, 255, 255, .82);
+      --system-config-input-border: rgba(15, 23, 42, .13);
+      --system-config-icon: #64748b;
+      --system-config-shadow: 0 24px 70px rgba(15, 23, 42, .10);
+    }
+
+    :root:not([data-theme="dark"]) .system-config-note code {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .system-config-errors {
+      color: #991b1b;
+      background: rgba(254, 242, 242, .9);
+      border-color: rgba(248, 113, 113, .42);
+    }
+
+    :root:not([data-theme="dark"]) .system-config-input input::placeholder {
+      color: #94a3b8;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .system-config-page {
+      padding: 14px 14px 112px;
+    }
+
+    .system-config-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .system-config-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .system-config-weather-assets__grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

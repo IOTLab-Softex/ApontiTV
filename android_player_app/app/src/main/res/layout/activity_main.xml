@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/home_stage_bg"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/home_stage_bg"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/homeSidebar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/home_sidebar_bg"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="60dp"
+                android:paddingBottom="34dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <FrameLayout
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:background="@drawable/home_nav_active">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_aponti_layout"
+                        app:tint="@color/white" />
+                </FrameLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginTop="26dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_aponti_play"
+                    app:tint="@color/aponti_text_soft" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginTop="34dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_aponti_link"
+                    app:tint="@color/aponti_text_soft" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginTop="34dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_weather_cloud"
+                    app:tint="@color/aponti_text_soft" />
+
+                <Space
+                    android:layout_width="1dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_aponti_settings"
+                    app:tint="@color/aponti_text_soft" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/titleText"
+                android:layout_width="170dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="34dp"
+                android:layout_marginTop="30dp"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitStart"
+                android:src="@drawable/logo_aponti_marca"
+                android:elevation="2dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/serverConfigButton"
+                android:layout_width="122dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="28dp"
+                android:layout_marginEnd="40dp"
+                android:background="@drawable/home_config_button"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:minWidth="0dp"
+                android:nextFocusDown="@id/channelList"
+                android:paddingStart="12dp"
+                android:paddingEnd="14dp"
+                android:text="@string/server_config_button"
+                android:textAllCaps="false"
+                android:textColor="@color/aponti_text"
+                android:textSize="15sp"
+                android:elevation="2dp"
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_aponti_settings"
+                app:iconGravity="textStart"
+                app:iconPadding="9dp"
+                app:iconTint="@color/aponti_text"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/subtitleText"
+                style="@style/TextAppearance.Aponti.SectionTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="34dp"
+                android:layout_marginTop="30dp"
+                android:text="@string/home_title"
+                android:textColor="@color/aponti_gold"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:elevation="2dp"
+                app:layout_constraintEnd_toStartOf="@id/serverConfigButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/titleText" />
+
+            <TextView
+                android:id="@+id/homeSubtitle"
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="34dp"
+                android:layout_marginTop="6dp"
+                android:text="@string/channel_list_subtitle"
+                android:textColor="@color/aponti_text_soft"
+                android:textSize="14sp"
+                android:elevation="2dp"
+                app:layout_constraintEnd_toStartOf="@id/serverConfigButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/subtitleText" />
+
+            <TextView
+                android:id="@+id/listFreshnessStatus"
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:background="@drawable/home_status_pill"
+                android:gravity="center"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:text="@string/list_status_updating"
+                android:textColor="@color/aponti_text_soft"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:elevation="2dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/subtitleText" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/channelList"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="-12dp"
+                android:layout_marginBottom="-22dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:elevation="36dp"
+                android:overScrollMode="never"
+                android:nextFocusUp="@id/serverConfigButton"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toTopOf="@id/homeRemoteHelp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/homeSubtitle" />
+
+            <LinearLayout
+                android:id="@+id/homeStatsPill"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginStart="34dp"
+                android:layout_marginBottom="28dp"
+                android:background="@drawable/home_status_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <View
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:background="#22E06B" />
+
+                <TextView
+                    android:id="@+id/homeLiveCount"
+                    style="@style/TextAppearance.Aponti.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="0 NO AR"
+                    android:textColor="@color/aponti_text"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="#5CFFFFFF" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_aponti_link"
+                    app:tint="@color/aponti_text_soft" />
+
+                <TextView
+                    android:id="@+id/homeOnlineCount"
+                    style="@style/TextAppearance.Aponti.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0 ONLINE"
+                    android:textColor="@color/aponti_text"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/homeRemoteHelp"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="42dp"
+                android:layout_marginBottom="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/home_status_pill"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/remote_nav_hint"
+                        android:src="@drawable/ic_remote_dpad" />
+                </FrameLayout>
+
+                <TextView
+                    style="@style/TextAppearance.Aponti.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/remote_nav_hint"
+                    android:textColor="@color/aponti_text_soft"
+                    android:textSize="13sp" />
+
+                <TextView
+                    style="@style/TextAppearance.Aponti.Label"
+                    android:layout_width="42dp"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="26dp"
+                    android:background="@drawable/home_status_pill"
+                    android:gravity="center"
+                    android:text="OK"
+                    android:textColor="#9CFF68"
+                    android:textSize="14sp" />
+
+                <TextView
+                    style="@style/TextAppearance.Aponti.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/remote_select_hint"
+                    android:textColor="@color/aponti_text_soft"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/statusGroup"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/homeSidebar"
+                app:layout_constraintTop_toBottomOf="@id/homeSubtitle">
+
+                <TextView
+                    android:id="@+id/statusTitle"
+                    style="@style/TextAppearance.Aponti.SectionTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/aponti_text"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/statusMessage"
+                    style="@style/TextAppearance.Aponti.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:textColor="@color/aponti_text_soft"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/retryButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/retry"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <FrameLayout
+        android:id="@+id/splashOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextureView
+            android:id="@+id/splashVideo"
+            android:layout_width="260dp"
+            android:layout_height="67dp"
+            android:layout_gravity="center" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="bottom|center_horizontal"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/splashMessage"
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="@string/splash_loading"
+                android:textColor="@color/aponti_text_soft"
+                android:textSize="15sp" />
+
+            <ProgressBar
+                android:id="@+id/splashProgress"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/aponti_primary" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/serverSettingsOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#D9000615"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="620dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@color/aponti_surface"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView
+                style="@style/TextAppearance.Aponti.SectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/server_config_title"
+                android:textColor="@color/aponti_text"
+                android:textSize="24sp" />
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/server_config_message"
+                android:textColor="@color/aponti_text_soft"
+                android:textSize="14sp" />
+
+            <RadioGroup
+                android:id="@+id/accessModeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/accessModeAuto"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:text="@string/server_access_auto"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/accessModeLocal"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:text="@string/server_access_local"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/accessModeExternal"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:text="@string/server_access_external"
+                    android:textColor="@color/aponti_text" />
+            </RadioGroup>
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/server_local_url"
+                android:textColor="@color/aponti_text_soft" />
+
+            <EditText
+                android:id="@+id/localServerInput"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="@string/server_local_url_hint"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/aponti_text"
+                android:textColorHint="@color/aponti_text_soft" />
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/server_external_url"
+                android:textColor="@color/aponti_text_soft" />
+
+            <EditText
+                android:id="@+id/externalServerInput"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="@string/server_external_url_hint"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/aponti_text"
+                android:textColorHint="@color/aponti_text_soft" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/serverSettingsCancelButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="12dp"
+                    android:text="@string/server_config_cancel"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/serverSettingsSaveButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="@string/server_config_save"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

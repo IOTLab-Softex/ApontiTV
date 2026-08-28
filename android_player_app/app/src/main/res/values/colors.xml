@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="aponti_background">#21084B</color>
+    <color name="aponti_surface">#111A2B</color>
+    <color name="aponti_primary">#6F3EFF</color>
+    <color name="aponti_primary_dark">#6418E8</color>
+    <color name="aponti_primary_soft">#6418E8</color>
+    <color name="aponti_gold">#D7A620</color>
+    <color name="aponti_text">#F3F6FF</color>
+    <color name="aponti_text_soft">#A6B0CC</color>
+</resources>

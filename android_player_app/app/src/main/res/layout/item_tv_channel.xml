@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="292dp"
+    android:layout_height="376dp"
+    android:layout_marginHorizontal="10dp"
+    android:layout_marginVertical="4dp"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <FrameLayout
+        android:id="@+id/channelReflection"
+        android:layout_width="282dp"
+        android:layout_height="132dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="262dp"
+        android:alpha="0.82"
+        android:scaleY="0.78">
+
+        <View
+            android:id="@+id/channelReflectionGlow"
+            android:layout_width="match_parent"
+            android:layout_height="128dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:alpha="1"
+            android:background="@drawable/card_reflection_glow" />
+
+        <br.com.softextv.player.FadingReflectionLayout
+            android:id="@+id/channelReflectionCard"
+            android:layout_width="252dp"
+            android:layout_height="126dp"
+            android:layout_gravity="top|center_horizontal">
+
+            <br.com.softextv.player.RoundedClipFrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="252dp"
+                android:background="#26142345">
+
+                <ImageView
+                    android:id="@+id/channelReflectionThumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:alpha="0.5"
+                    android:scaleType="centerCrop" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_thumb_scrim" />
+
+                <View
+                    android:layout_width="150dp"
+                    android:layout_height="135dp"
+                    android:layout_gravity="end|top"
+                    android:alpha="0.35"
+                    android:background="#6A7438FF" />
+
+                <TextView
+                    android:id="@+id/channelReflectionStatus"
+                    style="@style/TextAppearance.Aponti.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="17dp"
+                    android:background="#BA6F3EFF"
+                    android:paddingHorizontal="11dp"
+                    android:paddingVertical="5dp"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/channelReflectionName"
+                    style="@style/TextAppearance.Aponti.CardTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginEnd="18dp"
+                    android:layout_marginBottom="86dp"
+                    android:maxLines="1"
+                    android:textColor="@color/aponti_text"
+                    android:textSize="23sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:id="@+id/channelReflectionFocusRing"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_reflection_focus_ring"
+                    android:visibility="invisible" />
+            </br.com.softextv.player.RoundedClipFrameLayout>
+        </br.com.softextv.player.FadingReflectionLayout>
+    </FrameLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/channelCard"
+        android:layout_width="252dp"
+        android:layout_height="252dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="26dp"
+        app:cardBackgroundColor="#26142345"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="14dp"
+        app:strokeColor="#5E785CFF"
+        app:strokeWidth="1dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <ImageView
+                android:id="@+id/channelThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:alpha="0.58"
+                android:scaleType="centerCrop" />
+
+            <View
+                android:id="@+id/channelGlassOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:alpha="0"
+                android:background="@drawable/card_side_glass_overlay" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/card_thumb_scrim" />
+
+            <View
+                android:layout_width="150dp"
+                android:layout_height="135dp"
+                android:layout_gravity="end|top"
+                android:alpha="0.45"
+                android:background="#6A7438FF" />
+
+            <View
+                android:layout_width="155dp"
+                android:layout_height="150dp"
+                android:layout_gravity="start|bottom"
+                android:alpha="0.22"
+                android:background="#7A2A0D73" />
+
+            <View
+                android:id="@+id/focusRing"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/card_focus_ring_purple"
+                android:alpha="0.72"
+                android:visibility="invisible" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:paddingStart="18dp"
+                android:paddingTop="17dp"
+                android:paddingEnd="18dp"
+                android:paddingBottom="17dp">
+
+                <TextView
+                    android:id="@+id/channelStatus"
+                    style="@style/TextAppearance.Aponti.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="#BA6F3EFF"
+                    android:drawableStart="@drawable/ic_aponti_live"
+                    android:drawablePadding="7dp"
+                    android:paddingHorizontal="13dp"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+
+                <Space
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/channelName"
+                    style="@style/TextAppearance.Aponti.CardTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textColor="@color/aponti_text"
+                    android:textSize="23sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <br.com.softextv.player.NeonCardGlowView
+        android:id="@+id/channelNeonGlow"
+        android:layout_width="302dp"
+        android:layout_height="302dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="1dp"
+        android:alpha="0.95"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="invisible" />
+</FrameLayout>

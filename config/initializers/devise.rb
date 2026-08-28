@@ -272,6 +272,20 @@ Devise.setup do |config|
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
+  config.omniauth :google_oauth2,
+                  ENV.fetch("GOOGLE_CLIENT_ID", "google-client-id-not-configured"),
+                  ENV.fetch("GOOGLE_CLIENT_SECRET", "google-client-secret-not-configured"),
+                  scope: "email,profile",
+                  prompt: "select_account",
+                  setup: lambda { |env|
+                    configuration = StreamingConfiguration.find_by(id: 1)
+                    strategy = env["omniauth.strategy"]
+
+                    next unless configuration&.google_oauth_ready?
+
+                    strategy.options.client_id = configuration.google_client_id
+                    strategy.options.client_secret = configuration.google_client_secret
+                  }
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or

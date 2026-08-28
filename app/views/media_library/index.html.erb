@@ -1,0 +1,455 @@
+<% content_for :page_title, I18n.t("Library") %>
+<% content_for :page_subtitle, I18n.t("LibrarySubtitle") %>
+
+<div class="mlib-wrap">
+
+  <%# ── Toolbar ──────────────────────────────────────────── %>
+  <div class="mlib-toolbar">
+    <span class="mlib-toolbar__count">
+      <%= I18n.t("MediaCount", count: @blobs.size) %>
+    </span>
+    <div class="mlib-toolbar__actions">
+      <%= form_with url: media_library_path, method: :post, multipart: true, local: true, class: "mlib-upload" do %>
+        <label class="mlib-tbtn mlib-tbtn--primary">
+          <i class="fas fa-upload" aria-hidden="true"></i>
+          <span><%= I18n.t("UploadMedia") %></span>
+          <%= file_field_tag "media_files[]", multiple: true, accept: "video/*,image/*", data: { media_library_upload: true } %>
+        </label>
+        <button type="submit" class="mlib-tbtn mlib-tbtn--save" data-media-library-submit hidden>
+          <i class="fas fa-check" aria-hidden="true"></i>
+          <span data-media-library-submit-label><%= I18n.t("Save") %></span>
+        </button>
+      <% end %>
+      <%= link_to video_editor_path, class: "mlib-tbtn mlib-tbtn--ghost" do %>
+        <i class="fas fa-film" aria-hidden="true"></i>
+        <span><%= I18n.t("Projects") %></span>
+      <% end %>
+    </div>
+    <% if flash[:notice].present? %>
+      <div class="mlib-flash mlib-flash--notice"><%= flash[:notice] %></div>
+    <% end %>
+    <% if flash[:alert].present? %>
+      <div class="mlib-flash mlib-flash--alert"><%= flash[:alert] %></div>
+    <% end %>
+  </div>
+
+  <%# ── Grid ────────────────────────────────────────────── %>
+  <% if @blobs.any? %>
+    <div class="mlib-grid">
+      <% @blobs.each do |blob| %>
+        <% image_blob = blob.content_type.to_s.start_with?("image/") %>
+        <% thumbnail_url = media_library_thumbnail_path(blob, v: blob.checksum.presence || blob.created_at.to_i) %>
+        <div class="mlib-card">
+
+          <button type="button" class="mlib-card__thumb"
+                  data-play-url="<%= rails_blob_path(blob, only_path: true) %>"
+                  data-play-name="<%= blob.filename %>"
+                  data-play-type="<%= image_blob ? "image" : "video" %>">
+            <% if image_blob %>
+              <%= image_tag "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+                            class: "mlib-card__preview",
+                            alt: blob.filename.to_s,
+                            loading: "lazy",
+                            decoding: "async",
+                            data: { mlib_lazy_image: true, src: thumbnail_url } %>
+            <% else %>
+              <%= image_tag "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+                            class: "mlib-card__preview",
+                            alt: blob.filename.to_s,
+                            loading: "lazy",
+                            decoding: "async",
+                            data: { mlib_lazy_image: true, src: thumbnail_url } %>
+            <% end %>
+            <div class="mlib-card__play-icon">
+              <i class="fas <%= image_blob ? "fa-eye" : "fa-play" %>" aria-hidden="true"></i>
+            </div>
+            <span class="mlib-card__size"><%= number_to_human_size(blob.byte_size) %></span>
+            <span class="mlib-card__kind"><%= image_blob ? I18n.t("Image") : I18n.t("Video") %></span>
+          </button>
+
+          <div class="mlib-card__body">
+            <p class="mlib-card__name" title="<%= blob.filename %>"><%= blob.filename %></p>
+            <p class="mlib-card__date">
+              <i class="fas fa-clock" aria-hidden="true"></i>
+              <%= blob.created_at.strftime("%d/%m/%Y %H:%M") %>
+            </p>
+          </div>
+
+          <div class="mlib-card__foot">
+            <button type="button" class="mlib-act mlib-act--play"
+                    data-play-url="<%= rails_blob_path(blob, only_path: true) %>"
+                    data-play-name="<%= blob.filename %>"
+                    data-play-type="<%= image_blob ? "image" : "video" %>">
+              <i class="fas <%= image_blob ? "fa-eye" : "fa-play" %>" aria-hidden="true"></i> <%= image_blob ? I18n.t("View") : I18n.t("PlayMedia") %>
+            </button>
+            <%= link_to rails_blob_path(blob, only_path: true), class: "mlib-act mlib-act--dl", download: blob.filename do %>
+              <i class="fas fa-download" aria-hidden="true"></i>
+            <% end %>
+            <%= button_to media_library_item_path(blob), method: :delete,
+                form: { data: { turbo_confirm: I18n.t("ConfirmDeleteFile", filename: blob.filename) } },
+                class: "mlib-act mlib-act--del" do %>
+              <i class="fas fa-trash" aria-hidden="true"></i>
+            <% end %>
+          </div>
+
+        </div>
+      <% end %>
+    </div>
+
+  <% else %>
+    <div class="mlib-empty">
+      <div class="mlib-empty__icon"><i class="fas fa-photo-video"></i></div>
+      <p class="mlib-empty__title"><%= I18n.t("NoMediaStored") %></p>
+      <p class="mlib-empty__sub"><%= I18n.t("NoMediaStoredSubtitle") %></p>
+    </div>
+  <% end %>
+
+</div>
+
+<!-- Modal Player -->
+<div class="mlib-modal" id="mlib-modal" hidden>
+  <div class="mlib-modal__bg" id="mlib-modal-bg"></div>
+  <div class="mlib-modal__box">
+    <div class="mlib-modal__head">
+      <span class="mlib-modal__name" id="mlib-modal-name"></span>
+      <button type="button" class="mlib-modal__close" id="mlib-modal-close" aria-label="<%= I18n.t("Close") %>">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    <video class="mlib-modal__video" id="mlib-modal-video" controls preload="metadata"></video>
+    <img class="mlib-modal__image" id="mlib-modal-image" alt="" hidden>
+  </div>
+</div>
+
+<style>
+.mlib-wrap { padding: 20px 0 60px; }
+
+/* Toolbar */
+.mlib-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 22px; flex-wrap: wrap;
+}
+.mlib-toolbar__actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.mlib-toolbar__count {
+  font-size: 13px; font-weight: 700; color: #64748b;
+  background: #f1f5f9; padding: 5px 14px; border-radius: 20px;
+}
+.mlib-upload {
+  display: inline-flex; align-items: center; gap: 10px; margin: 0;
+}
+.mlib-upload input[type="file"] { display: none; }
+.mlib-tbtn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 18px; height: 40px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+  transition: background 0.15s;
+}
+.mlib-tbtn--ghost {
+  background: #f1f5f9; color: #334155;
+  border: 1px solid rgba(148,163,184,0.25);
+}
+.mlib-tbtn--ghost:hover { background: #e2e8f0; }
+.mlib-tbtn--primary {
+  background: #6f3eff; color: #fff;
+  border: 1px solid rgba(111,62,255,0.4);
+}
+.mlib-tbtn--primary:hover { background: #5f2fe8; }
+.mlib-tbtn--save {
+  background: #16a34a; color: #fff;
+  border: 1px solid rgba(22,163,74,0.4);
+}
+.mlib-tbtn--save:hover { background: #15803d; }
+.mlib-flash {
+  flex-basis: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.mlib-flash--notice {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+.mlib-flash--alert {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+/* Grid */
+.mlib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+/* Card */
+.mlib-card {
+  border-radius: 14px; background: #fff;
+  border: 1px solid rgba(148,163,184,0.15);
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06);
+  overflow: hidden; display: flex; flex-direction: column;
+  transition: box-shadow 0.2s, transform 0.2s;
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
+}
+.mlib-card:hover { box-shadow: 0 10px 30px rgba(15,23,42,0.13); transform: translateY(-2px); }
+
+/* Thumb */
+.mlib-card__thumb {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border: none; cursor: pointer; padding: 0; overflow: hidden; display: block;
+}
+.mlib-card__thumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .7;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(111,62,255,.28), transparent 32%),
+    linear-gradient(135deg, #0f172a, #1e293b);
+}
+.mlib-card__preview {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.mlib-card__preview.is-loaded {
+  opacity: 1;
+}
+.mlib-card__play-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.32); opacity: 0; transition: opacity 0.18s;
+  color: #fff; font-size: 26px; z-index: 2;
+}
+.mlib-card:hover .mlib-card__play-icon { opacity: 1; }
+.mlib-card__size {
+  position: absolute; bottom: 7px; right: 8px;
+  padding: 2px 7px; border-radius: 5px;
+  background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.9);
+  font-size: 10px; font-weight: 800; backdrop-filter: blur(4px); z-index: 3;
+}
+.mlib-card__kind {
+  position: absolute; top: 7px; left: 8px;
+  padding: 2px 7px; border-radius: 5px;
+  background: rgba(111,62,255,0.78); color: #fff;
+  font-size: 10px; font-weight: 800; backdrop-filter: blur(4px); z-index: 3;
+}
+
+/* Body */
+.mlib-card__body { padding: 11px 13px 7px; flex: 1; min-width: 0; }
+.mlib-card__name {
+  margin: 0 0 4px; font-size: 13px; font-weight: 700; color: #0f172a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mlib-card__date {
+  margin: 0; font-size: 11px; color: #94a3b8;
+  display: flex; align-items: center; gap: 5px;
+}
+.mlib-card__date i { font-size: 10px; }
+
+/* Footer */
+.mlib-card__foot {
+  display: flex; align-items: stretch;
+  border-top: 1px solid rgba(148,163,184,0.12); background: #fafbfc;
+}
+.mlib-card__foot form { margin: 0; display: flex; }
+
+.mlib-act {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  gap: 5px; padding: 9px 6px; font-size: 12px; font-weight: 700;
+  text-decoration: none; border: none; background: transparent; cursor: pointer;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.mlib-act + .mlib-act,
+.mlib-act + form .mlib-act,
+form + .mlib-act { border-left: 1px solid rgba(148,163,184,0.12); }
+
+.mlib-act--play { color: #6f3eff; }
+.mlib-act--play:hover { background: rgba(111,62,255,0.07); }
+.mlib-act--dl { flex: 0; padding: 9px 13px; color: #0ea5e9; }
+.mlib-act--dl:hover { background: rgba(14,165,233,0.07); }
+.mlib-act--del { flex: 0; padding: 9px 13px; color: #ef4444; }
+.mlib-act--del:hover { background: rgba(239,68,68,0.07); }
+
+/* Empty */
+.mlib-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 80px 24px; text-align: center;
+}
+.mlib-empty__icon {
+  width: 88px; height: 88px; border-radius: 24px;
+  background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+  color: #94a3b8; font-size: 36px;
+}
+.mlib-empty__title { margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; }
+.mlib-empty__sub   { margin: 0; font-size: 14px; color: #64748b; }
+
+/* Modal */
+.mlib-modal {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.mlib-modal[hidden] { display: none; }
+.mlib-modal__bg { position: absolute; inset: 0; background: rgba(0,0,0,0.82); cursor: pointer; }
+.mlib-modal__box {
+  position: relative; z-index: 1; width: 100%; max-width: 860px;
+  background: #0f172a; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+.mlib-modal__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #1e293b;
+}
+.mlib-modal__name {
+  font-size: 13px; font-weight: 700; color: #e2e8f0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 44px);
+}
+.mlib-modal__close {
+  flex-shrink: 0; width: 32px; height: 32px; border: 0;
+  background: rgba(255,255,255,0.08); border-radius: 8px;
+  color: #94a3b8; cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.mlib-modal__close:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.mlib-modal__video { width: 100%; max-height: 72vh; display: block; background: #000; }
+.mlib-modal__image {
+  width: 100%;
+  max-height: 72vh;
+  display: block;
+  object-fit: contain;
+  background: #020617;
+}
+.mlib-modal__image[hidden] { display: none; }
+</style>
+
+<script>
+  function initializeMediaLibraryIndex() {
+    var modal = document.getElementById("mlib-modal");
+    var video = document.getElementById("mlib-modal-video");
+    var image = document.getElementById("mlib-modal-image");
+    var name  = document.getElementById("mlib-modal-name");
+    var upload = document.querySelector("[data-media-library-upload]");
+    var submit = document.querySelector("[data-media-library-submit]");
+    var submitLabel = document.querySelector("[data-media-library-submit-label]");
+    if (!modal || modal.dataset.mediaLibraryBound === "true") return;
+    modal.dataset.mediaLibraryBound = "true";
+
+    if (upload && submit && submitLabel) {
+      upload.addEventListener("change", function() {
+        var count = upload.files ? upload.files.length : 0;
+        submit.hidden = count === 0;
+        submitLabel.textContent = count === 1 ? "<%= j I18n.t("SaveOneFile") %>" : "<%= j I18n.t("SaveFilesPrefix") %> " + count + " <%= j I18n.t("Files") %>";
+      });
+    }
+
+    function open(url, label, type) {
+      name.textContent = label;
+      modal.hidden = false;
+      if (type === "image") {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        video.hidden = true;
+        image.hidden = false;
+        image.src = url;
+        image.alt = label;
+      } else {
+        image.hidden = true;
+        image.removeAttribute("src");
+        video.hidden = false;
+        video.src = url;
+        video.play().catch(function(){});
+      }
+    }
+    function close() {
+      modal.hidden = true;
+      video.pause();
+      video.src = "";
+      image.src = "";
+      image.alt = "";
+    }
+
+    var lazyQueue = [];
+    var lazyProcessing = false;
+
+    function scheduleLazyLoad(target) {
+      if (!target || target.dataset.mlibQueued === "true" || target.dataset.mlibLoaded === "true") return;
+      target.dataset.mlibQueued = "true";
+      lazyQueue.push(target);
+      processLazyQueue();
+    }
+
+    function processLazyQueue() {
+      if (lazyProcessing) return;
+      lazyProcessing = true;
+
+      var runner = window.requestIdleCallback || function(callback) {
+        return window.setTimeout(callback, 80);
+      };
+
+      runner(function() {
+        var batch = lazyQueue.splice(0, 6);
+        batch.forEach(loadPreview);
+        lazyProcessing = false;
+        if (lazyQueue.length) processLazyQueue();
+      });
+    }
+
+    function loadPreview(target) {
+      target.dataset.mlibLoaded = "true";
+
+      if (target.matches("img[data-mlib-lazy-image]")) {
+        var src = target.dataset.src;
+        if (!src) return;
+        target.addEventListener("load", function() {
+          target.classList.add("is-loaded");
+        }, { once: true });
+        target.src = src;
+        return;
+      }
+
+    }
+
+    function initializeLazyPreviews() {
+      var targets = Array.from(document.querySelectorAll("img[data-mlib-lazy-image]"));
+      if (!targets.length) return;
+
+      if (!("IntersectionObserver" in window)) {
+        targets.slice(0, 18).forEach(scheduleLazyLoad);
+        return;
+      }
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          scheduleLazyLoad(entry.target);
+        });
+      }, { rootMargin: "520px 0px", threshold: 0.01 });
+
+      targets.forEach(function(target) {
+        observer.observe(target);
+      });
+    }
+
+    document.getElementById("mlib-modal-close").addEventListener("click", close);
+    document.getElementById("mlib-modal-bg").addEventListener("click", close);
+    document.addEventListener("keydown", function(e) { if (e.key === "Escape" && !modal.hidden) close(); });
+
+    document.querySelectorAll("[data-play-url]").forEach(function(btn) {
+      btn.addEventListener("click", function() { open(btn.dataset.playUrl, btn.dataset.playName, btn.dataset.playType); });
+    });
+
+    initializeLazyPreviews();
+  }
+
+  document.addEventListener("DOMContentLoaded", initializeMediaLibraryIndex);
+  document.addEventListener("turbo:load", initializeMediaLibraryIndex);
+</script>

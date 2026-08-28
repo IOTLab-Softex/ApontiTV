@@ -1,156 +1,814 @@
+<% content_for :page_title, "Login" %>
+<% google_oauth_ready = StreamingConfiguration.google_oauth_ready? %>
 
-<%# Página de login do Devise %>
-
-<div class="devise-login">
-<img src="<%= asset_path 'logo.png' %>" alt="Logo" style="height: 88px;
-    margin: 20px auto;
-    display: block;">
-  <h2>Login</h2>
-<% if flash.alert %>
-  <div class="alert-message">
-    <%= flash.alert %>
+<div class="login-container">
+  <div class="logo-mobile">
+    <%= image_tag "APONTI_MARCA.png", alt: "Aponti TV", class: "logo-mobile__image" %>
   </div>
-<% end %>
 
-  <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-
-    <div>
-      <%= f.label :email %>
-      <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control" %>
+  <div class="login-box">
+    <div class="login-header">
+      <%= image_tag "APONTI_MARCA.png", alt: "Aponti TV", class: "login-logo" %>
+      <h2 class="login-h2">Login</h2>
+      <p class="login-subtitle">Acesse sua conta do Aponti TV.</p>
     </div>
 
-    <div>
-      <%= f.label :password %>
-      <%= f.password_field :password, autocomplete: "current-password", class: "form-control" %>
-    </div>
-
-    <% if devise_mapping.rememberable? %>
-      <div class="remember_me">
-        <%= f.check_box :remember_me %>
-        <%= f.label :remember_me %>
+    <% if flash.alert %>
+      <div class="login-alert">
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        <span><%= flash.alert %></span>
       </div>
     <% end %>
 
-    <div>
-      <%= f.submit "Login", class: "btn btn-primary" %>
-    </div>
-  <% end %>
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "login-form", data: { turbo: false, remote_login: true } }) do |f| %>
+      <div class="login-field">
+        <%= f.label :email do %>
+          <i class="far fa-envelope" aria-hidden="true"></i>
+          <span>E-mail</span>
+        <% end %>
+        <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "login-input", placeholder: "seu@email.com" %>
+      </div>
 
-  
+      <div class="login-field">
+        <%= f.label :password do %>
+          <i class="fas fa-key" aria-hidden="true"></i>
+          <span>Senha</span>
+        <% end %>
+        <div class="login-password-wrap">
+          <%= f.password_field :password, autocomplete: "current-password", class: "login-input", id: "login-password-input", placeholder: "********" %>
+          <button type="button" id="toggle-login-password" class="login-password-toggle" aria-label="Mostrar senha" aria-pressed="false">
+            <i class="far fa-eye" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <% if devise_mapping.rememberable? %>
+        <div class="login-remember">
+          <%= f.check_box :remember_me %>
+          <%= f.label :remember_me do %>
+            <i class="fas fa-star" aria-hidden="true"></i>
+            <span>Lembrar-me</span>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="login-actions">
+        <%= button_tag type: "submit", class: "login-button" do %>
+          <i class="fas fa-right-to-bracket" aria-hidden="true"></i>
+          <span>Entrar</span>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if google_oauth_ready %>
+      <div class="login-divider"><span>OU</span></div>
+      <%= button_to user_google_oauth2_omniauth_authorize_path,
+                    method: :post,
+                    form: { data: { turbo: false }, class: "login-google-form" },
+                    class: "login-google" do %>
+        <span class="login-google__mark" aria-hidden="true">G</span>
+        <span>Entrar com Google</span>
+      <% end %>
+    <% end %>
+
+    <p class="login-admin-note">Nao tem uma conta? <span>Fale com o administrador</span></p>
+  </div>
+  <footer class="login-footer" data-auth-error="<%= flash.alert.present? ? 'true' : 'false' %>">
+    <span>&copy; <%= Time.current.year %> Aponti TV. Todos os direitos reservados.</span>
+  </footer>
 </div>
 
-<div class="footer-bar">
-  <p class="Versão"> Versão 1.0.8.0 </p>
-</div>
+<script>
+  function initializeLoginScreen() {
+    var input = document.getElementById("login-password-input");
+    var toggle = document.getElementById("toggle-login-password");
+    var box = document.querySelector(".login-box");
 
+    if (box && box.dataset.enterBound !== "true") {
+      box.dataset.enterBound = "true";
+      box.addEventListener("animationend", function(event) {
+        if (event.animationName === "loginBoxEnter3d") {
+          box.classList.add("login-box--entered");
+        }
+      });
+      setTimeout(function() {
+        box.classList.add("login-box--entered");
+      }, 2200);
+    }
 
+    if (input && toggle && toggle.dataset.bound !== "true") {
+      toggle.dataset.bound = "true";
+      toggle.addEventListener("click", function() {
+        var showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        toggle.setAttribute("aria-pressed", String(!showing));
+        toggle.setAttribute("aria-label", showing ? "Mostrar senha" : "Ocultar senha");
+        toggle.innerHTML = showing
+          ? '<i class="far fa-eye" aria-hidden="true"></i>'
+          : '<i class="far fa-eye-slash" aria-hidden="true"></i>';
+      });
+    }
+
+    var footer = document.querySelector(".login-footer[data-auth-error='true']");
+    if (footer && footer.dataset.errorAnimationBound !== "true") {
+      footer.dataset.errorAnimationBound = "true";
+      setTimeout(function() {
+        footer.classList.add("login-footer--auth-error");
+        footer.addEventListener("animationend", function() {
+          footer.classList.remove("login-footer--auth-error");
+      }, { once: true });
+      }, 420);
+    }
+
+    var form = document.querySelector(".login-form[data-remote-login='true']");
+    if (!form || form.dataset.remoteBound === "true") return;
+
+    form.dataset.remoteBound = "true";
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      var button = form.querySelector(".login-button");
+      var originalButtonHtml = button ? button.innerHTML : "";
+      var token = document.querySelector("meta[name='csrf-token']");
+
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i><span>Entrando...</span>';
+      }
+
+      var loginUrl = new URL(form.action, window.location.origin);
+      if (!loginUrl.pathname.match(/\.json$/)) {
+        loginUrl.pathname = loginUrl.pathname.replace(/\/?$/, ".json");
+      }
+
+      fetch(loginUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "X-CSRF-Token": token ? token.content : "",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: new FormData(form),
+        credentials: "same-origin"
+      })
+        .then(function(response) {
+          return response.json().then(function(data) {
+            return { ok: response.ok, data: data };
+          });
+        })
+        .then(function(result) {
+          if (result.ok && result.data.redirect_url) {
+            window.location.href = result.data.redirect_url;
+            return;
+          }
+
+          showLoginError(result.data.error || "E-mail ou senha invalidos.");
+        })
+        .catch(function() {
+          showLoginError("Nao foi possivel entrar agora. Tente novamente.");
+        })
+        .finally(function() {
+          if (button) {
+            button.disabled = false;
+            button.innerHTML = originalButtonHtml;
+          }
+        });
+    });
+  }
+
+  function showLoginError(message) {
+    var box = document.querySelector(".login-box");
+    var footer = document.querySelector(".login-footer");
+    if (!box) return;
+
+    var alert = box.querySelector(".login-alert");
+    if (!alert) {
+      alert = document.createElement("div");
+      alert.className = "login-alert";
+      alert.innerHTML = '<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span></span>';
+      var header = box.querySelector(".login-header");
+      header.insertAdjacentElement("afterend", alert);
+    }
+
+    alert.querySelector("span").textContent = message;
+    alert.classList.remove("login-alert--shake");
+    void alert.offsetWidth;
+    alert.classList.add("login-alert--shake");
+
+    box.classList.remove("login-box--auth-error");
+    void box.offsetWidth;
+    box.classList.add("login-box--auth-error");
+    box.addEventListener("animationend", function(event) {
+      if (event.animationName === "loginBoxAuthError") {
+        box.classList.remove("login-box--auth-error");
+      }
+    }, { once: true });
+
+    if (footer) {
+      footer.classList.remove("login-footer--auth-error");
+      void footer.offsetWidth;
+      footer.classList.add("login-footer--auth-error");
+      footer.addEventListener("animationend", function() {
+        footer.classList.remove("login-footer--auth-error");
+      }, { once: true });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initializeLoginScreen);
+  document.addEventListener("turbo:load", initializeLoginScreen);
+</script>
 
 <style>
-
-.remember_me{
-margin: 19px;
+  body,
+  html {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    color-scheme: dark;
+    overflow-x: hidden;
+    background:
+      linear-gradient(135deg, rgba(5, 7, 17, .86), rgba(16, 19, 41, .74) 48%, rgba(5, 7, 17, .9)),
+      radial-gradient(circle at 18% 12%, rgba(139, 47, 242, .34), transparent 28%),
+      url("<%= asset_path('wallpaper.png') %>") center / cover no-repeat fixed,
+      linear-gradient(135deg, #070817, #101329 48%, #050711);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
   }
-/* Estilo global */
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f3f4f6;
-  margin: auto;
-}
 
-/* Formulário de login */
-.devise-login {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  max-width: 400px;
-  margin: auto;
-  margin-top: 100px;
-}
+  html[data-theme="light"] body,
+  html[data-theme="dark"] body {
+    color-scheme: dark;
+    background:
+      linear-gradient(135deg, rgba(5, 7, 17, .86), rgba(16, 19, 41, .74) 48%, rgba(5, 7, 17, .9)),
+      radial-gradient(circle at 18% 12%, rgba(139, 47, 242, .34), transparent 28%),
+      url("<%= asset_path('wallpaper.png') %>") center / cover no-repeat fixed,
+      linear-gradient(135deg, #070817, #101329 48%, #050711);
+  }
 
-.devise-login h2 {
-  text-align: center;
-  color: #ae5f22;
-}
+  .login-container {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 28px;
+    z-index: 1;
+    overflow: hidden;
+    perspective: 1200px;
+    perspective-origin: 50% 58%;
+  }
 
-.devise-login input[type="email"],
-.devise-login input[type="password"] {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
+  .logo-mobile {
+    display: none;
+  }
 
-.devise-login input[type="submit"] {
-  width: 100%;
-  padding: 12px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
+  .login-box {
+    position: relative;
+    box-sizing: border-box;
+    width: min(100%, 430px);
+    margin: 22px;
+    padding: 30px 32px 26px;
+    border: 1px solid rgba(168, 85, 247, .32);
+    border-radius: 16px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(139, 47, 242, .20), transparent 36%),
+      rgba(24, 25, 47, .88);
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, .44),
+      inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: none;
+    transform-origin: 50% 68%;
+    isolation: isolate;
+    contain: layout paint;
+  }
 
-.devise-login input[type="submit"]:hover {
-  background-color: #218838;
-}
+  .login-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      radial-gradient(90% 42% at 50% 0%, rgba(255, 255, 255, .92), rgba(196, 126, 255, .54) 38%, rgba(168, 85, 247, 0) 72%),
+      linear-gradient(135deg, rgba(216, 180, 254, .72), rgba(139, 92, 246, 0) 28%, rgba(255, 255, 255, .4) 52%, rgba(139, 92, 246, 0) 76%, rgba(216, 180, 254, .68));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
 
-/* Link para a tela de cadastro */
-.devise-login .back-link {
-  display: block;
-  margin-top: 20px;
-  text-align: center;
-  color: #000000;
-  text-decoration: none;
-  background-color: white;
-  padding: 10px 20px;
-  border-radius: 30px;
-  width: 99px;
-  box-shadow: 0px 1px 12px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  transform: scale(0.90);
-  position: relative;
-  left: 43%;
-}
+  @media (min-width: 701px) {
+    .login-box {
+      opacity: 0;
+      overflow: hidden;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      will-change: transform, opacity;
+      transform: translate3d(0, 38px, 0) scale(.86) rotateX(-18deg);
+      animation: loginBoxEnter3d 1.9s cubic-bezier(.18, .9, .22, 1) .08s forwards;
+    }
 
-.devise-login .back-link:hover {
-  text-decoration: none; /* Remove o sublinhado */
-  color: #28a745;
-  transform: scale(1.05);
-}
+    .login-box::after {
+      display: none;
+    }
+  }
 
-/* Estilo do rodapé */
-.footer-bar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #ae5f22;
-  padding: 15px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  box-shadow: -2px -8px 10px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-}
+  @keyframes loginBoxEnter3d {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 38px, 0) scale(.86) rotateX(-18deg);
+    }
 
-.footer-bar .play-button {
-  padding: 10px 20px;
-  background-color: #ffffff;
-  border: none;
-  color: #000000;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
+    34% {
+      opacity: .2;
+      transform: translate3d(0, 22px, 0) scale(.91) rotateX(-9deg);
+    }
 
-.footer-bar .play-button:hover {
-  background-color: #45a049;
-  color: white;
-}
+    68% {
+      opacity: .72;
+      transform: translate3d(0, 4px, 0) scale(.982) rotateX(-1.8deg);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) rotateX(0deg);
+    }
+  }
+
+  .login-header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .login-logo {
+    width: min(100%, 260px);
+    height: 72px;
+    object-fit: contain;
+    object-position: center;
+    filter: brightness(0) invert(1) drop-shadow(0 6px 18px rgba(0, 0, 0, .42));
+  }
+
+  .login-h2 {
+    margin: 8px 0 4px;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 950;
+    letter-spacing: 0;
+  }
+
+  .login-subtitle {
+    margin: 0;
+    color: #b9c0d4 !important;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .login-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 12px 13px;
+    border: 1px solid rgba(248, 113, 113, .34);
+    border-radius: 10px;
+    color: #fecaca;
+    background: rgba(127, 29, 29, .28);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .login-alert--shake {
+    animation: loginAlertShake 360ms cubic-bezier(.36, .07, .19, .97);
+  }
+
+  @keyframes loginAlertShake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    22% {
+      transform: translateX(-6px);
+    }
+
+    48% {
+      transform: translateX(5px);
+    }
+
+    72% {
+      transform: translateX(-3px);
+    }
+  }
+
+  .login-box--auth-error {
+    opacity: 1;
+    animation: loginBoxAuthError 980ms cubic-bezier(.22, .9, .28, 1);
+  }
+
+  .login-box--auth-error::before {
+    animation: loginBoxEdgeReflection 980ms cubic-bezier(.22, .9, .28, 1);
+  }
+
+  @media (min-width: 701px) {
+    .login-box--entered {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) rotateX(0deg);
+      animation: none;
+    }
+
+    .login-box--entered.login-box--auth-error {
+      animation: loginBoxAuthError 980ms cubic-bezier(.22, .9, .28, 1);
+    }
+  }
+
+  @keyframes loginBoxAuthError {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) perspective(760px) rotateX(0deg);
+    }
+
+    32% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) perspective(880px) rotateX(4.5deg);
+    }
+
+    62% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) perspective(880px) rotateX(-3deg);
+    }
+
+    82% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) perspective(880px) rotateX(1.2deg);
+    }
+  }
+
+  @keyframes loginBoxEdgeReflection {
+    0%,
+    100% {
+      opacity: 0;
+      background:
+        radial-gradient(90% 42% at 50% 0%, rgba(255, 255, 255, .92), rgba(196, 126, 255, .54) 38%, rgba(168, 85, 247, 0) 72%),
+        linear-gradient(135deg, rgba(216, 180, 254, .72), rgba(139, 92, 246, 0) 28%, rgba(255, 255, 255, .4) 52%, rgba(139, 92, 246, 0) 76%, rgba(216, 180, 254, .68));
+    }
+
+    30% {
+      opacity: .95;
+      background:
+        radial-gradient(92% 40% at 50% 0%, rgba(255, 255, 255, .96), rgba(216, 180, 254, .72) 34%, rgba(168, 85, 247, 0) 72%),
+        linear-gradient(135deg, rgba(216, 180, 254, .78), rgba(139, 92, 246, 0) 30%, rgba(255, 255, 255, .46) 52%, rgba(139, 92, 246, 0) 78%, rgba(216, 180, 254, .64));
+    }
+
+    62% {
+      opacity: .7;
+      background:
+        radial-gradient(88% 38% at 50% 100%, rgba(255, 255, 255, .84), rgba(196, 126, 255, .58) 36%, rgba(168, 85, 247, 0) 74%),
+        linear-gradient(135deg, rgba(216, 180, 254, .58), rgba(139, 92, 246, 0) 28%, rgba(255, 255, 255, .34) 52%, rgba(139, 92, 246, 0) 76%, rgba(216, 180, 254, .76));
+    }
+
+    82% {
+      opacity: .38;
+      background:
+        radial-gradient(72% 30% at 50% 18%, rgba(255, 255, 255, .72), rgba(196, 126, 255, .38) 42%, rgba(168, 85, 247, 0) 78%),
+        linear-gradient(135deg, rgba(216, 180, 254, .5), rgba(139, 92, 246, 0) 34%, rgba(255, 255, 255, .25) 52%, rgba(139, 92, 246, 0) 72%, rgba(216, 180, 254, .48));
+    }
+  }
+
+  .login-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .login-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .login-field label,
+  .login-remember label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .login-field label i,
+  .login-remember label i {
+    width: 18px;
+    height: 18px;
+    display: inline-grid;
+    place-items: center;
+    color: #a855f7;
+    line-height: 1;
+    margin: 0;
+    transform: translateY(0);
+  }
+
+  .login-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 1px solid rgba(148, 163, 184, .30);
+    border-radius: 8px;
+    outline: none;
+    color: #f8fafc;
+    background: rgba(8, 11, 25, .62);
+    font-size: 15px;
+    font-weight: 700;
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  .login-input::placeholder {
+    color: #7f879d;
+  }
+
+  .login-input:focus {
+    border-color: rgba(168, 85, 247, .78);
+    background: rgba(8, 11, 25, .82);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, .13);
+  }
+
+  .login-password-wrap {
+    position: relative;
+  }
+
+  .login-password-wrap .login-input {
+    padding-right: 48px;
+  }
+
+  .login-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 34px;
+    height: 34px;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #b9c0d4;
+    background: transparent;
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease;
+  }
+
+  .login-password-toggle:hover {
+    color: #fff;
+    background: rgba(148, 163, 184, .16);
+  }
+
+  .login-remember {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0 4px;
+  }
+
+  .login-remember input {
+    width: 17px;
+    height: 17px;
+    accent-color: #8b2ff2;
+  }
+
+  .login-actions {
+    text-align: center;
+  }
+
+  .login-button,
+  .login-google {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 950;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .login-button i,
+  .login-google i,
+  .login-google__mark {
+    flex: 0 0 auto;
+    width: 1.1em;
+    height: 1.1em;
+    display: inline-grid;
+    place-items: center;
+    margin: 0;
+    line-height: 1;
+    transform: translateY(0);
+  }
+
+  .login-button span,
+  .login-google span,
+  .login-field label span,
+  .login-remember label span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .login-button {
+    border: 0;
+    color: #fff;
+    background: linear-gradient(135deg, #a855f7, #6d28d9);
+    box-shadow: 0 18px 36px rgba(124, 58, 237, .38);
+  }
+
+  .login-button:hover,
+  .login-google:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  .login-divider {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 14px;
+    color: #8e96ad;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .login-divider::before,
+  .login-divider::after {
+    content: "";
+    height: 1px;
+    background: rgba(148, 163, 184, .20);
+  }
+
+  .login-google-form {
+    margin: 0;
+  }
+
+  .login-google {
+    border: 1px solid rgba(148, 163, 184, .28);
+    color: #fff;
+    background: rgba(8, 11, 25, .46);
+  }
+
+  .login-google__mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    color: #fff;
+    background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0);
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .login-admin-note {
+    margin: 18px 0 0;
+    color: #9da6bb !important;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .login-admin-note span {
+    color: #c084fc;
+  }
+
+  .login-footer {
+    position: fixed;
+    left: 50%;
+    bottom: 7px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: min(92vw, 680px);
+    width: max-content;
+    color: rgba(255, 255, 255, .78);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .55);
+    transform: translateX(-50%);
+    transform-origin: 50% 50%;
+  }
+
+  .login-footer--auth-error {
+    animation: loginFooterAuthError 680ms cubic-bezier(.2, .9, .28, 1);
+  }
+
+  @keyframes loginFooterAuthError {
+    0%,
+    100% {
+      transform: translateX(-50%) perspective(460px) rotateX(0deg);
+    }
+
+    34% {
+      transform: translateX(-50%) perspective(460px) rotateX(-18deg);
+    }
+
+    62% {
+      transform: translateX(-50%) perspective(460px) rotateX(10deg);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .login-container {
+      align-items: flex-end;
+      padding: 18px 0 0;
+    }
+
+    .logo-mobile {
+      position: absolute;
+      top: 34px;
+      left: 50%;
+      z-index: 3;
+      display: flex;
+      width: min(76vw, 260px);
+      transform: translateX(-50%);
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .62));
+    }
+
+    .logo-mobile__image {
+      width: 100%;
+      height: 70px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 18px 28px 34px;
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+      border-radius: 80px 12px 0 0;
+      background: rgba(24, 25, 47, .95);
+      opacity: 1;
+      animation: none;
+      transform: none;
+    }
+
+    .login-box::after {
+      display: none;
+    }
+
+    .login-logo {
+      display: none;
+    }
+
+    .login-header {
+      margin-bottom: 12px;
+    }
+
+    .login-h2 {
+      margin: 0 0 2px;
+      font-size: 22px;
+    }
+
+    .login-subtitle {
+      font-size: 12px;
+    }
+
+    .login-field {
+      gap: 5px;
+    }
+
+    .login-input {
+      min-height: 42px;
+      font-size: 13px;
+    }
+
+    .login-button,
+    .login-google {
+      min-height: 44px;
+      font-size: 14px;
+    }
+
+    .login-footer {
+      display: none;
+    }
+  }
 </style>

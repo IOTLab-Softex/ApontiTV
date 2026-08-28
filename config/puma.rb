@@ -13,9 +13,19 @@ threads min_threads_count, max_threads_count
 #
 worker_timeout 3600 if ENV.fetch("RAILS_ENV", "development") == "development"
 
-# Specifies the `port` that Puma will listen on to receive requests; default is 3000.
+# Specifies the port/bind that Puma will listen on.
 #
-port ENV.fetch("PORT") { 3000 }
+https_enabled = ENV["HTTPS"].to_s.downcase == "true" || ENV["SSL"].to_s.downcase == "true"
+ssl_port = ENV.fetch("SSL_PORT") { ENV.fetch("PORT") { 3000 } }
+ssl_host = ENV.fetch("SSL_HOST") { "127.0.0.1" }
+ssl_key = ENV.fetch("SSL_KEY_PATH") { File.expand_path("ssl/localhost-key.pem", __dir__) }
+ssl_cert = ENV.fetch("SSL_CERT_PATH") { File.expand_path("ssl/localhost-cert.pem", __dir__) }
+
+if https_enabled && File.exist?(ssl_key) && File.exist?(ssl_cert)
+  ssl_bind ssl_host, ssl_port, cert: ssl_cert, key: ssl_key, verify_mode: "none"
+else
+  port ENV.fetch("PORT") { 3000 }
+end
 
 # Specifies the `environment` that Puma will run in.
 #

@@ -13,6 +13,8 @@ module SoftexTv
     config.assets.enabled = true
     config.i18n.available_locales = [:en, :pt]
     config.i18n.default_locale = :en
+    config.time_zone = "America/Sao_Paulo"
+    config.active_record.default_timezone = :local
     # config/application.rb
 config.i18n.load_path += Dir[Rails.root.join('config', 'locales', '**', '*.yml')]
 

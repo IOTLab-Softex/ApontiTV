@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aponti TV - Releases</title>
+  <link rel="icon" type="image/png" href="/assets/icone-b1c55077c683d39c3c349dd01c31d44dbb9b7b48ad34764bc324390caf33acbf.png">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050716;
+      --bg-2: #090d20;
+      --surface: rgba(14, 21, 42, .78);
+      --surface-2: rgba(20, 29, 56, .86);
+      --surface-3: rgba(255, 255, 255, .055);
+      --line: rgba(173, 128, 255, .22);
+      --line-2: rgba(148, 163, 184, .16);
+      --text: #f8fbff;
+      --muted: #a9b4ca;
+      --soft: #dcc7ff;
+      --purple: #8b2ff2;
+      --purple-2: #b65cff;
+      --pink: #ff4fd8;
+      --blue: #38bdf8;
+      --green: #21d07a;
+      --yellow: #facc15;
+      --red: #fb4e6d;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .34), transparent 34%),
+        radial-gradient(circle at 88% 8%, rgba(56, 189, 248, .13), transparent 28%),
+        radial-gradient(circle at 72% 80%, rgba(255, 79, 216, .10), transparent 32%),
+        linear-gradient(135deg, var(--bg), var(--bg-2) 52%, #070514);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 50% 20%, #000, transparent 72%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(120deg, transparent 10%, rgba(139, 47, 242, .08) 40%, transparent 70%),
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, .08), transparent 42%);
+      pointer-events: none;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page-shell {
+      width: min(1220px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 24px 0 72px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 14px;
+      z-index: 10;
+      margin-bottom: 22px;
+      border: 1px solid rgba(173, 128, 255, .16);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 14px 12px 18px;
+      background: rgba(7, 11, 24, .72);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .28);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar img {
+      width: 150px;
+      height: auto;
+      display: block;
+      filter: brightness(0) invert(1);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .nav a {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: color .18s ease, background .18s ease, transform .18s ease;
+    }
+
+    .nav a:hover {
+      color: #fff;
+      background: rgba(139, 47, 242, .22);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 520px;
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .78fr);
+      gap: 28px;
+      padding: clamp(28px, 4vw, 52px);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(139, 47, 242, .22), transparent 28%),
+        linear-gradient(145deg, rgba(11, 17, 34, .96), rgba(17, 13, 42, .92));
+      box-shadow: 0 38px 110px rgba(0, 0, 0, .44);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -18%;
+      bottom: -44%;
+      width: 620px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 47, 242, .48), transparent 66%);
+      filter: blur(4px);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      align-self: center;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid rgba(216, 180, 254, .22);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: #eadcff;
+      background: rgba(139, 47, 242, .14);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .eyebrow i {
+      color: var(--purple-2);
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 24px 0 18px;
+      font-size: clamp(42px, 6.8vw, 84px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+
+    .gradient-text {
+      background: linear-gradient(100deg, #fff, #d8b4fe 36%, #a855f7 72%, #38bdf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: none;
+    }
+
+    .lead {
+      max-width: 690px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .button {
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid rgba(216, 180, 254, .18);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      background: rgba(255, 255, 255, .06);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .button--primary {
+      border-color: rgba(168, 85, 247, .55);
+      background: linear-gradient(135deg, var(--purple), var(--purple-2));
+      box-shadow: 0 18px 42px rgba(139, 47, 242, .36);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, .11);
+    }
+
+    .button--primary:hover {
+      background: linear-gradient(135deg, #9b38ff, #c46bff);
+      box-shadow: 0 22px 54px rgba(139, 47, 242, .48);
+    }
+
+    .hero-visual {
+      position: relative;
+      z-index: 1;
+      align-self: center;
+      min-height: 430px;
+    }
+
+    .device-card {
+      position: absolute;
+      inset: 42px 0 auto auto;
+      width: min(100%, 440px);
+      border: 1px solid rgba(216, 180, 254, .22);
+      border-radius: 26px;
+      padding: 18px;
+      background:
+        linear-gradient(145deg, rgba(15, 23, 42, .92), rgba(22, 19, 52, .94));
+      box-shadow: 0 32px 80px rgba(0, 0, 0, .42);
+    }
+
+    .screen {
+      position: relative;
+      overflow: hidden;
+      height: 238px;
+      border: 1px solid rgba(148, 163, 184, .16);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(139, 47, 242, .26), transparent 42%),
+        radial-gradient(circle at 78% 24%, rgba(56, 189, 248, .18), transparent 24%),
+        #080d20;
+    }
+
+    .screen::before,
+    .screen::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: rgba(139, 47, 242, .64);
+      filter: blur(22px);
+    }
+
+    .screen::before {
+      width: 150px;
+      height: 150px;
+      left: -42px;
+      bottom: -40px;
+    }
+
+    .screen::after {
+      width: 120px;
+      height: 120px;
+      right: 16px;
+      top: 28px;
+      background: rgba(56, 189, 248, .30);
+    }
+
+    .screen-grid {
+      position: absolute;
+      inset: 20px;
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 12px;
+    }
+
+    .screen-panel {
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .075);
+      backdrop-filter: blur(10px);
+    }
+
+    .screen-panel:nth-child(1) {
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 36px;
+    }
+
+    .screen-panel:nth-child(2) {
+      display: grid;
+      gap: 9px;
+      padding: 14px;
+      align-content: center;
+    }
+
+    .mini-line {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .18);
+    }
+
+    .mini-line:nth-child(1) { width: 72%; }
+    .mini-line:nth-child(2) { width: 96%; }
+    .mini-line:nth-child(3) { width: 58%; background: rgba(139, 47, 242, .78); }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .status-pill {
+      min-height: 76px;
+      border: 1px solid rgba(148, 163, 184, .14);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, .055);
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .status-pill i {
+      color: var(--green);
+      font-size: 20px;
+    }
+
+    .floating-card {
+      position: absolute;
+      z-index: 2;
+      left: 0;
+      bottom: 34px;
+      width: 250px;
+      border: 1px solid rgba(216, 180, 254, .24);
+      border-radius: 20px;
+      padding: 16px;
+      background: rgba(12, 18, 37, .82);
+      box-shadow: 0 26px 66px rgba(0, 0, 0, .40);
+      backdrop-filter: blur(16px);
+    }
+
+    .floating-card strong {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .10);
+    }
+
+    .progress span {
+      width: 78%;
+      height: 100%;
+      border-radius: inherit;
+      display: block;
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      box-shadow: 0 0 24px rgba(139, 47, 242, .72);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 20px 0 42px;
+    }
+
+    .metric {
+      min-height: 136px;
+      border: 1px solid var(--line-2);
+      border-radius: 22px;
+      padding: 20px;
+      background: rgba(14, 21, 42, .62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+    }
+
+    .metric i {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: #fff;
+      background: rgba(139, 47, 242, .28);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 25px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin: 48px 0 18px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1;
+    }
+
+    .section-head p {
+      max-width: 520px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      text-align: right;
+    }
+
+    .release-list {
+      position: relative;
+      display: grid;
+      gap: 16px;
+      perspective: 1200px;
+    }
+
+    #timeline {
+      position: relative;
+      isolation: isolate;
+      scroll-margin-top: 120px;
+      padding: 8px 0 4px;
+    }
+
+    #timeline .section-head {
+      position: relative;
+      z-index: 2;
+    }
+
+    #timeline::before,
+    #timeline::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    #timeline::before {
+      top: 44px;
+      bottom: -28px;
+      left: 78px;
+      width: 2px;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, transparent, rgba(168, 85, 247, .86) 12%, rgba(56, 189, 248, .42) 52%, rgba(255, 79, 216, .52) 86%, transparent),
+        radial-gradient(circle, rgba(216, 180, 254, .8), transparent 70%);
+      box-shadow: 0 0 24px rgba(139, 47, 242, .48);
+      transform: translate3d(0, var(--timeline-line-shift, 0px), 0);
+      will-change: transform;
+    }
+
+    #timeline::after {
+      top: 12%;
+      right: -18%;
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(139, 47, 242, .28), transparent 60%),
+        radial-gradient(circle at 28% 32%, rgba(56, 189, 248, .14), transparent 42%);
+      filter: blur(2px);
+      opacity: .85;
+      transform: translate3d(0, var(--timeline-glow-shift, 0px), 0);
+      will-change: transform;
+    }
+
+    .timeline-parallax-layer {
+      position: absolute;
+      z-index: -1;
+      pointer-events: none;
+      border-radius: 999px;
+      will-change: transform;
+    }
+
+    .timeline-parallax-layer--ring {
+      top: 132px;
+      right: -92px;
+      width: 360px;
+      height: 360px;
+      border: 1px solid rgba(216, 180, 254, .34);
+      background:
+        radial-gradient(circle at 50% 50%, transparent 42%, rgba(139, 47, 242, .18) 43%, transparent 67%),
+        radial-gradient(circle at 32% 24%, rgba(56, 189, 248, .24), transparent 22%);
+      box-shadow: 0 0 70px rgba(139, 47, 242, .28);
+      transform: translate3d(0, var(--timeline-ring-shift, 0px), 0) rotate(var(--timeline-ring-rotate, 0deg));
+    }
+
+    .timeline-parallax-layer--orb {
+      top: 48%;
+      left: -86px;
+      width: 210px;
+      height: 210px;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .18), transparent 18%),
+        radial-gradient(circle, rgba(182, 92, 255, .36), rgba(139, 47, 242, .12) 52%, transparent 70%);
+      filter: blur(.2px);
+      opacity: .86;
+      transform: translate3d(0, var(--timeline-orb-shift, 0px), 0);
+    }
+
+    .release {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line-2);
+      border-radius: 24px;
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      background: rgba(14, 21, 42, .72);
+      backdrop-filter: blur(18px);
+      box-shadow:
+        0 22px 55px rgba(0, 0, 0, .30),
+        0 0 0 1px rgba(255, 255, 255, .025) inset;
+      transform:
+        translate3d(var(--release-parallax-x, 0px), var(--release-parallax, 0px), 0)
+        rotateX(var(--release-tilt, 0deg));
+      transition: border-color .22s ease, box-shadow .22s ease, transform .08s linear;
+      will-change: transform;
+    }
+
+    .release::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(139, 47, 242, .16), transparent 44%);
+      opacity: 0;
+      transition: opacity .22s ease;
+      pointer-events: none;
+    }
+
+    .release:hover::before {
+      opacity: 1;
+    }
+
+    .release:hover {
+      border-color: rgba(216, 180, 254, .28);
+      box-shadow: 0 28px 68px rgba(0, 0, 0, .32), 0 0 40px rgba(139, 47, 242, .10);
+    }
+
+    .version {
+      position: relative;
+      z-index: 1;
+      padding: 24px;
+      border-right: 1px solid rgba(148, 163, 184, .12);
+      background: rgba(255, 255, 255, .035);
+    }
+
+    .version-badge {
+      width: fit-content;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), var(--purple-2));
+      box-shadow: 0 18px 38px rgba(139, 47, 242, .34);
+      font-weight: 900;
+    }
+
+    .version small {
+      display: block;
+      margin-top: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .release-main {
+      position: relative;
+      z-index: 1;
+      padding: 24px 26px;
+    }
+
+    .release-title {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .release-title h3 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .release-title p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .release-icon {
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(216, 180, 254, .18);
+      border-radius: 16px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(139, 47, 242, .22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+      font-size: 20px;
+      transform: translate3d(0, calc(var(--release-parallax, 0px) * -.32), 0);
+      transition: transform .08s linear;
+      will-change: transform;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .tag {
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid rgba(148, 163, 184, .13);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #dce7ff;
+      background: rgba(255, 255, 255, .055);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tag i {
+      color: var(--purple-2);
+    }
+
+    .modules {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .module {
+      border: 1px solid var(--line-2);
+      border-radius: 20px;
+      padding: 20px;
+      background: rgba(14, 21, 42, .62);
+    }
+
+    .module i {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: #fff;
+      background: rgba(139, 47, 242, .24);
+    }
+
+    .module h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .module p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .spotlight {
+      margin-top: 42px;
+      border: 1px solid rgba(33, 208, 122, .24);
+      border-radius: 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 22px;
+      padding: 30px;
+      background:
+        radial-gradient(circle at 20% 8%, rgba(33, 208, 122, .16), transparent 32%),
+        linear-gradient(145deg, rgba(14, 21, 42, .82), rgba(12, 18, 35, .72));
+    }
+
+    .spotlight h2 {
+      margin: 0 0 12px;
+      font-size: 32px;
+    }
+
+    .spotlight p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .spotlight-card {
+      border: 1px solid rgba(148, 163, 184, .14);
+      border-radius: 20px;
+      padding: 18px;
+      background: rgba(255, 255, 255, .055);
+    }
+
+    .spotlight-card strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .check-list li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .check-list i {
+      color: var(--green);
+    }
+
+    footer {
+      margin-top: 38px;
+      color: rgba(169, 180, 202, .72);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .spotlight {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        min-height: 330px;
+      }
+
+      .device-card {
+        position: relative;
+        inset: auto;
+        width: 100%;
+      }
+
+      .floating-card {
+        right: 20px;
+        left: auto;
+        bottom: -4px;
+      }
+
+      .metrics,
+      .modules {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page-shell {
+        width: min(100% - 22px, 620px);
+        padding-top: 12px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .topbar img {
+        width: 136px;
+      }
+
+      .nav {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .hero {
+        min-height: 0;
+        padding: 24px;
+        border-radius: 24px;
+      }
+
+      .hero-visual {
+        display: none;
+      }
+
+      .metrics,
+      .modules {
+        grid-template-columns: 1fr;
+      }
+
+      .release {
+        grid-template-columns: 1fr;
+      }
+
+      #timeline::before {
+        left: 18px;
+        opacity: .42;
+      }
+
+      #timeline::after {
+        display: none;
+      }
+
+      .version {
+        border-right: 0;
+        border-bottom: 1px solid rgba(148, 163, 184, .12);
+      }
+
+      .release-title {
+        flex-direction: column-reverse;
+      }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .section-head p {
+        text-align: left;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      #timeline::before,
+      #timeline::after,
+      .release,
+      .release-icon {
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a href="/releases" aria-label="Aponti TV Releases">
+        <img src="/assets/APONTI_MARCA-4f792659f2d992d9fa198c7ab286613766185184fd49eca76f4de0ee77139beb.png" alt="Aponti TV">
+      </a>
+      <nav class="nav" aria-label="Navegacao dos releases">
+        <a href="#timeline"><i class="fa-solid fa-timeline"></i> Versoes</a>
+        <a href="#modulos"><i class="fa-solid fa-border-all"></i> Modulos</a>
+        <a href="#atual"><i class="fa-solid fa-star"></i> Atual</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-content">
+        <span class="eyebrow"><i class="fa-solid fa-wand-magic-sparkles"></i> Release notes Aponti TV</span>
+        <h1>Uma plataforma de TV corporativa em <span class="gradient-text">evolucao continua.</span></h1>
+        <p class="lead">
+          Veja, em linguagem simples, como o Aponti TV evoluiu: painel moderno, app Android,
+          playlists com imagens e videos, previews em tempo real, sincronizacao entre TVs e
+          agentes para wallpaper em computadores.
+        </p>
+        <div class="hero-actions">
+          <a class="button button--primary" href="#timeline"><i class="fa-solid fa-arrow-down"></i> Ver releases</a>
+          <a class="button" href="/broadcasts"><i class="fa-solid fa-table-columns"></i> Abrir dashboard</a>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="device-card">
+          <div class="screen">
+            <div class="screen-grid">
+              <div class="screen-panel"><i class="fa-solid fa-play"></i></div>
+              <div class="screen-panel">
+                <span class="mini-line"></span>
+                <span class="mini-line"></span>
+                <span class="mini-line"></span>
+              </div>
+            </div>
+          </div>
+          <div class="status-row">
+            <div class="status-pill"><i class="fa-solid fa-tv"></i><span>TV online</span></div>
+            <div class="status-pill"><i class="fa-solid fa-broadcast-tower"></i><span>Em producao</span></div>
+            <div class="status-pill"><i class="fa-solid fa-mobile-screen"></i><span>App aberto</span></div>
+          </div>
+        </div>
+        <div class="floating-card">
+          <strong><i class="fa-solid fa-rotate"></i> Playlist sincronizada</strong>
+          <div class="progress"><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Resumo do produto">
+      <div class="metric">
+        <i class="fa-solid fa-tv"></i>
+        <strong>TVs</strong>
+        <span>Controle de telas, status, volume, preview e producao.</span>
+      </div>
+      <div class="metric">
+        <i class="fa-solid fa-layer-group"></i>
+        <strong>Playlists</strong>
+        <span>Videos, imagens, ordem, tempo, efeitos e sincronizacao.</span>
+      </div>
+      <div class="metric">
+        <i class="fa-solid fa-robot"></i>
+        <strong>App</strong>
+        <span>Player Android com selecao de telas e retorno ao painel.</span>
+      </div>
+      <div class="metric">
+        <i class="fa-solid fa-desktop"></i>
+        <strong>Desktop</strong>
+        <span>Agentes Windows aprovados recebem wallpapers remotamente.</span>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <span class="timeline-parallax-layer timeline-parallax-layer--ring" aria-hidden="true"></span>
+      <span class="timeline-parallax-layer timeline-parallax-layer--orb" aria-hidden="true"></span>
+      <div class="section-head">
+        <h2>Linha do tempo</h2>
+        <p>Um historico organizado por entregas de valor. Cada release mostra o que mudou para quem opera o sistema.</p>
+      </div>
+
+      <div class="release-list">
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-flag-checkered"></i> v1.0</span>
+            <small>Base operacional.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Painel de Controle das TVs</h3>
+                <p>Primeira versao para cadastrar TVs, iniciar e parar producao e organizar os fluxos principais.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-table-columns"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-plus"></i> Cadastro de TVs</span>
+              <span class="tag"><i class="fa-solid fa-play"></i> Play e Stop</span>
+              <span class="tag"><i class="fa-solid fa-file-export"></i> Exportar M3U</span>
+              <span class="tag"><i class="fa-solid fa-video"></i> Streaming HLS</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-mobile-screen"></i> v1.1</span>
+            <small>Player oficial.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>App Android Aponti TV</h3>
+                <p>O app da TV passou a identificar telas, abrir conteudo direto e informar status para o servidor.</p>
+              </div>
+              <span class="release-icon"><i class="fa-brands fa-android"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-list"></i> Tela de selecao</span>
+              <span class="tag"><i class="fa-solid fa-location-crosshairs"></i> Identificacao da TV</span>
+              <span class="tag"><i class="fa-solid fa-signal"></i> Presenca do app</span>
+              <span class="tag"><i class="fa-solid fa-house-signal"></i> Launcher principal</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-images"></i> v1.2</span>
+            <small>Conteudo em sequencia.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Playlists com Videos e Imagens</h3>
+                <p>O dashboard ganhou montagem de playlists, upload de midias e selecao pela biblioteca.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-photo-film"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-upload"></i> Upload de midias</span>
+              <span class="tag"><i class="fa-solid fa-grip-lines"></i> Ordenar itens</span>
+              <span class="tag"><i class="fa-solid fa-clock"></i> Tempo de imagem</span>
+              <span class="tag"><i class="fa-solid fa-folder-open"></i> Biblioteca</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> v1.3</span>
+            <small>Mais fluidez.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Transicoes e Aponti Smooth</h3>
+                <p>As trocas de imagens, videos e paginas ficaram mais suaves, com identidade visual da marca.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-clone"></i> Fade, blur e zoom</span>
+              <span class="tag"><i class="fa-solid fa-bolt"></i> Aponti Smooth</span>
+              <span class="tag"><i class="fa-solid fa-globe"></i> Pagina web</span>
+              <span class="tag"><i class="fa-solid fa-sliders"></i> Duracao do efeito</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-eye"></i> v1.4</span>
+            <small>Painel vivo.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Preview em Tempo Real</h3>
+                <p>O dashboard passou a mostrar o que cada TV esta exibindo, com carregamento leve e modal ampliado.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-eye"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-gauge-high"></i> Preview leve</span>
+              <span class="tag"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> Modal grande</span>
+              <span class="tag"><i class="fa-solid fa-arrows-rotate"></i> Atualizacao automatica</span>
+              <span class="tag"><i class="fa-solid fa-icons"></i> Status em icones</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-link"></i> v1.5</span>
+            <small>TVs juntas.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Sincronizacao de Playlists</h3>
+                <p>TVs com a mesma playlist podem exibir o mesmo item ao mesmo tempo usando o horario do servidor.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-link"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-clock-rotate-left"></i> Relogio do servidor</span>
+              <span class="tag"><i class="fa-solid fa-forward-step"></i> Pula para o item correto</span>
+              <span class="tag"><i class="fa-solid fa-display"></i> Multiplas TVs</span>
+              <span class="tag"><i class="fa-solid fa-bullhorn"></i> Publicacao em massa</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-desktop"></i> v1.6</span>
+            <small>Computadores conectados.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Wallpaper para Desktop</h3>
+                <p>O sistema passou a enviar wallpapers para computadores aprovados por meio de um agente Windows.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-desktop"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-user-check"></i> Aprovacao de agente</span>
+              <span class="tag"><i class="fa-solid fa-image"></i> Preview do wallpaper</span>
+              <span class="tag"><i class="fa-solid fa-bars-progress"></i> Progresso</span>
+              <span class="tag"><i class="fa-solid fa-wifi"></i> Status online</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-shield-halved"></i> v1.7</span>
+            <small>Gestao e auditoria.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Usuarios, Logs e Notificacoes</h3>
+                <p>Mais controle para operacao: perfis, historico de acoes e alertas sobre eventos importantes.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-bell"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-users"></i> Perfis de usuario</span>
+              <span class="tag"><i class="fa-solid fa-clipboard-list"></i> Logs</span>
+              <span class="tag"><i class="fa-solid fa-bell"></i> Notificacoes</span>
+              <span class="tag"><i class="fa-solid fa-lock"></i> Restricoes</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="release">
+          <aside class="version">
+            <span class="version-badge"><i class="fa-solid fa-palette"></i> v1.8</span>
+            <small>Experiencia visual.</small>
+          </aside>
+          <div class="release-main">
+            <div class="release-title">
+              <div>
+                <h3>Interface Moderna</h3>
+                <p>Login, sidebar, temas, idioma e cards foram redesenhados para uma experiencia mais fluida.</p>
+              </div>
+              <span class="release-icon"><i class="fa-solid fa-palette"></i></span>
+            </div>
+            <div class="tags">
+              <span class="tag"><i class="fa-solid fa-moon"></i> Tema claro e escuro</span>
+              <span class="tag"><i class="fa-solid fa-language"></i> Portugues e ingles</span>
+              <span class="tag"><i class="fa-solid fa-bars"></i> Sidebar compacta</span>
+              <span class="tag"><i class="fa-solid fa-right-to-bracket"></i> Login novo</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="modulos">
+      <div class="section-head">
+        <h2>Modulos ativos</h2>
+        <p>O release atual ja cobre a operacao de ponta a ponta: TVs, app, midias, desktops, usuarios e comunicacao.</p>
+      </div>
+      <div class="modules">
+        <div class="module">
+          <i class="fa-solid fa-tv"></i>
+          <h3>Controle de TVs</h3>
+          <p>Comandos, status, energia, volume, orientacao e acompanhamento da reproducao.</p>
+        </div>
+        <div class="module">
+          <i class="fa-solid fa-photo-film"></i>
+          <h3>Midias e Playlists</h3>
+          <p>Biblioteca, upload, thumbnails leves, organizacao de conteudo e publicacao nas TVs.</p>
+        </div>
+        <div class="module">
+          <i class="fa-brands fa-android"></i>
+          <h3>App Android</h3>
+          <p>Player oficial com selecao de telas, video, imagem, web, transicoes e status.</p>
+        </div>
+        <div class="module">
+          <i class="fa-solid fa-desktop"></i>
+          <h3>Desktop Agents</h3>
+          <p>Agentes Windows aprovados para receber wallpapers e reportar progresso.</p>
+        </div>
+        <div class="module">
+          <i class="fa-solid fa-bell"></i>
+          <h3>Notificacoes</h3>
+          <p>Alertas para eventos importantes, erros, mudancas de status e acoes no painel.</p>
+        </div>
+        <div class="module">
+          <i class="fa-solid fa-user-shield"></i>
+          <h3>Gestao</h3>
+          <p>Usuarios, perfis, logs de acesso, idioma, tema e operacao em producao.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="atual" class="spotlight">
+      <div>
+        <h2>Release atual: Aponti TV v1.8+</h2>
+        <p>
+          A versao atual consolida o Aponti TV como uma plataforma completa de comunicacao visual:
+          painel web, player Android, playlists sincronizadas, preview em tempo real, wallpapers
+          para computadores, notificacoes e gestao de usuarios em uma unica operacao.
+        </p>
+      </div>
+      <div class="spotlight-card">
+        <strong><i class="fa-solid fa-circle-check"></i> Pronto para operacao</strong>
+        <ul class="check-list">
+          <li><i class="fa-solid fa-check"></i> Dashboard em tempo real</li>
+          <li><i class="fa-solid fa-check"></i> Publicacao de playlists</li>
+          <li><i class="fa-solid fa-check"></i> App Android atualizado</li>
+          <li><i class="fa-solid fa-check"></i> Agentes Windows integrados</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      Aponti TV - Releases e evolucao da plataforma.
+    </footer>
+  </main>
+  <script>
+    (() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const timeline = document.getElementById("timeline");
+      if (reduceMotion || !timeline) return;
+
+      const releases = Array.from(timeline.querySelectorAll(".release"));
+      let ticking = false;
+
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+      const updateParallax = () => {
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const timelineRect = timeline.getBoundingClientRect();
+        const timelineProgress = clamp(
+          (viewportHeight - timelineRect.top) / (viewportHeight + timelineRect.height),
+          0,
+          1
+        );
+
+        timeline.style.setProperty("--timeline-line-shift", `${(timelineProgress - .5) * -140}px`);
+        timeline.style.setProperty("--timeline-glow-shift", `${(timelineProgress - .5) * -260}px`);
+        timeline.style.setProperty("--timeline-ring-shift", `${(timelineProgress - .5) * -340}px`);
+        timeline.style.setProperty("--timeline-ring-rotate", `${(timelineProgress - .5) * 34}deg`);
+        timeline.style.setProperty("--timeline-orb-shift", `${(timelineProgress - .5) * 240}px`);
+
+        releases.forEach((release, index) => {
+          const rect = release.getBoundingClientRect();
+          const center = rect.top + rect.height / 2;
+          const distance = (center - viewportHeight / 2) / (viewportHeight / 2);
+          const depth = index % 2 === 0 ? 1 : .78;
+          const direction = index % 2 === 0 ? 1 : -1;
+          const y = clamp(distance * -58 * depth, -72, 72);
+          const x = clamp(distance * 18 * direction, -24, 24);
+          const tilt = clamp(distance * 2.4, -3.4, 3.4);
+
+          release.style.setProperty("--release-parallax", `${y.toFixed(2)}px`);
+          release.style.setProperty("--release-parallax-x", `${x.toFixed(2)}px`);
+          release.style.setProperty("--release-tilt", `${tilt.toFixed(2)}deg`);
+        });
+
+        ticking = false;
+      };
+
+      const requestParallax = () => {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(updateParallax);
+      };
+
+      window.addEventListener("scroll", requestParallax, { passive: true });
+      window.addEventListener("resize", requestParallax);
+      updateParallax();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:background="#000000">
+
+    <FrameLayout
+        android:id="@+id/playbackSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/playerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:resize_mode="fill"
+            app:surface_type="surface_view"
+            app:show_buffering="always"
+            app:use_controller="true" />
+
+        <ImageView
+            android:id="@+id/previousPlaylistImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="false"
+            android:background="#000000"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/playlistImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="false"
+            android:background="#000000"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <WebView
+            android:id="@+id/browserView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="invisible" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/widgetBar"
+        android:layout_width="match_parent"
+        android:layout_height="68dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone">
+
+        <View
+            android:id="@+id/widgetBarBackdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <br.com.softextv.player.WidgetRainGifView
+            android:id="@+id/widgetRainGif"
+            android:layout_width="210dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|center_vertical"
+            android:alpha="0.58"
+            android:visibility="visible" />
+
+        <View
+            android:id="@+id/widgetRainFade"
+            android:layout_width="270dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|center_vertical"
+            android:background="@drawable/widget_rain_fade"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/widgetBarContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="26dp"
+            android:paddingEnd="26dp">
+
+            <LinearLayout
+                android:id="@+id/widgetWeatherGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:minWidth="104dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/widgetWeatherIcon"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_marginEnd="10dp"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/ic_weather_cloud"
+                    android:tint="#FFFFFF" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widgetWeatherText"
+                        style="@style/TextAppearance.Aponti.Body"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:shadowColor="#CC000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="4"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widgetWeatherStatusText"
+                        style="@style/TextAppearance.Aponti.Body"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#C7CDE0"
+                        android:shadowColor="#CC000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="3"
+                        android:textSize="10sp" />
+
+                    <LinearLayout
+                        android:id="@+id/widgetWeatherUvGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widgetWeatherUvIcon"
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:layout_marginEnd="4dp"
+                            android:contentDescription="@string/app_name"
+                            android:src="@drawable/ic_weather_uv"
+                            android:tint="#C7CDE0" />
+
+                        <TextView
+                            android:id="@+id/widgetWeatherUvText"
+                            style="@style/TextAppearance.Aponti.Body"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#C7CDE0"
+                            android:shadowColor="#CC000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="3"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:id="@+id/widgetBarDivider"
+                android:layout_width="1dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="18dp"
+                android:background="#33FFFFFF" />
+
+            <Space
+                android:id="@+id/widgetBarSpacer"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:id="@+id/widgetClockGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widgetClockText"
+                    style="@style/TextAppearance.Aponti.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end|center_vertical"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:shadowColor="#CC000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="4"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widgetDateText"
+                    style="@style/TextAppearance.Aponti.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end|center_vertical"
+                    android:textColor="#C7CDE0"
+                    android:shadowColor="#CC000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="3"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/playerHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/close_player"
+            android:padding="8dp"
+            android:src="@drawable/ic_aponti_back"
+            android:tint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/playerTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            style="@style/TextAppearance.Aponti.CardTitle"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/errorText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#CC8B1E1E"
+        android:padding="16dp"
+        style="@style/TextAppearance.Aponti.Body"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/apontiSmoothOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:background="#7C1CE0"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/apontiSmoothLogo"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/aponti_marca_horizontal_rgb_05" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/downloadOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F2000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp">
+
+            <ProgressBar
+                android:id="@+id/downloadProgress"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/aponti_primary" />
+
+            <TextView
+                android:id="@+id/downloadTitle"
+                style="@style/TextAppearance.Aponti.CardTitle"
+                android:layout_width="460dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:text="@string/player_downloading_video_title"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/downloadMessage"
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="460dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/player_downloading_video"
+                android:textColor="#B8C2E2"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/playerSplashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextureView
+            android:id="@+id/playerSplashVideo"
+            android:layout_width="260dp"
+            android:layout_height="67dp"
+            android:layout_gravity="center" />
+    </FrameLayout>
+
+</FrameLayout>

@@ -1,201 +1,258 @@
-<div class="banner">
- 
-  <%= image_tag('logo.png', alt: 'Logo', class: 'logo') %>
+<% content_for :page_title, I18n.t("Users") %>
+<% content_for :page_subtitle, "Administre contas, permiss&otilde;es e hist&oacute;rico de acesso.".html_safe %>
 
+<div class="users-page">
+  <section class="users-card">
+    <div class="users-card__header">
+      <div>
+        <p class="users-kicker">Gerenciamento</p>
+        <h1><%= I18n.t("Users") %></h1>
+      </div>
 
+      <%= link_to new_user_path, class: "users-action users-action--primary" do %>
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span>Novo usu&aacute;rio</span>
+      <% end %>
+    </div>
 
-
-  
-</div>
-
-<!-- Banner topo -->
-<div class="user-banner">
-  <h1><i class="fas fa-users"></i> Gerenciamento de Usuários</h1>
-  <p class="subtitle">Administre contas e permissões dos usuários</p>
-</div>
-
-<table class="user-table">
-  <thead>
-    <tr>
-      <th>Email</th>
-      <th>Tipo</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @users.each do |user| %>
-      <tr>
-        <td><%= user.email %></td>
-        <td><%= user.admin? ? 'Admin' : 'Cliente' %></td>
-        <td class="actions">
-          <%= link_to '✏️ Editar', edit_user_path(user), class: 'btn btn-edit-account' %>
-          <% unless user == current_user %>
-            <%= button_to '🗑️ Excluir', user_path(user), method: :delete, data: { confirm: 'Tem certeza?' }, class: 'btn btn-delete' %>
+    <div class="users-table-wrap">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>E-mail</th>
+            <th>Tipo</th>
+            <th><%= I18n.t("LastAccess") %></th>
+            <th><%= I18n.t("LastLogout") %></th>
+            <th>A&ccedil;&otilde;es</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <tr>
+              <td><strong><%= user.email %></strong></td>
+              <td>
+                <span class="users-pill <%= user.admin? ? "is-admin" : "is-client" %>">
+                  <%= user.admin? ? "Admin" : "Cliente" %>
+                </span>
+              </td>
+              <td><%= user.last_accessed_at.present? ? l(user.last_accessed_at, format: :short) : "-" %></td>
+              <td><%= user.last_signed_out_at.present? ? l(user.last_signed_out_at, format: :short) : "-" %></td>
+              <td>
+                <div class="users-actions">
+                  <%= link_to edit_user_path(user), class: "users-icon-btn", title: I18n.t("Edit"), aria: { label: I18n.t("Edit") } do %>
+                    <i class="fas fa-edit" aria-hidden="true"></i>
+                  <% end %>
+                  <% unless user == current_user %>
+                    <%= button_to user_path(user), method: :delete, data: { confirm: "Tem certeza?", turbo_confirm: "Tem certeza?" }, class: "users-icon-btn users-icon-btn--danger", title: I18n.t("Delete"), aria: { label: I18n.t("Delete") } do %>
+                      <i class="fas fa-trash" aria-hidden="true"></i>
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
           <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<div class="new-user-btn">
-  <%= link_to '➕ Novo Usuário', new_user_path, class: 'btn btn-add' %>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
-
 
 <style>
-
-  .btn {
-      padding: 5px 10px;
-      border: none;
-      cursor: pointer;
-      background-color: #ff0000;
-      color: white;
-      border-radius: 5px;
-      font-size: 14px;
-      margin-top: -9px;
-      transition: background 0.3s ease;
-      text-decoration: none;
-      font-weight: bold;
-    }
-   
-    .btn-edit-account {
-      background-color: #2196F3;
-               }
-    
-    .btn-edit-account:focus {
-      background-color: #1e88e5;
-     }
-
-     .btn-edit-account:hover {
-      background-color: #0056b3;
-    }
-    
-    
-    /* Efeito de seleção de botão */
-    .btn:focus {
-      outline: none;
-    }
-    .btn-add{
-      background-color: #45a049; /* Cor do botão ao passar o mouse */
-      color: white;
-    }
-
-    .btn-add:hover {
-      background-color: #1e7e34;
-    }
-    
-    .btn-delete {
-      background-color: #dc3545;
-    }
-    
-    .btn-delete:hover {
-      background-color: #a71d2a;
-    }
-    
-    .new-user-btn {
-      text-align: center;
-      margin-top: 20px;
-    }
-body {
-    background-color: #f3f4f6;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
+  .users-page {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: 28px 18px 54px;
+    color: #f8fbff;
   }
-  
-.user-banner {
-    background: linear-gradient(135deg, #1f1c2c, #928dab);
-    color: white;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 30px;
-    position: relative;
-    top: 61px;
-    height: 57px;
-    margin-bottom: 8%;
-}
-  
-  .user-banner h1 {
-    margin: 0;
-    font-size: 32px;
+
+  .users-page i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
-  
-  .user-banner .subtitle {
-    margin-top: 8px;
-    font-size: 16px;
-    color: #e0e0e0;
-  }
-  
-  .user-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    background: #fff;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    border-radius: 8px;
+
+  .users-card {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 12px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .14), transparent 280px),
+      rgba(15, 23, 42, .72);
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .28);
     overflow: hidden;
   }
-  
-  .user-table th, .user-table td {
-    padding: 15px;
-    text-align: left;
-  }
-  
-  .user-table thead {
-    background-color: #282c34;
-    color: white;
-  }
-  
-  .user-table tr:nth-child(even) {
-    background-color: #f8f8f8;
-  }
-  
-  .user-table tr:hover {
-    background-color: #e2e6ea;
-  }
-  
-  .actions {
-       display: flex
-;
-    gap: 10px;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-}
-  }
-  
- 
-  
- 
-  
- 
 
-  
+  .users-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px;
+    border-bottom: 1px solid rgba(148, 163, 184, .14);
+  }
 
+  .users-kicker {
+    margin: 0 0 6px;
+    color: #b88cff;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
 
+  .users-card h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 26px;
+  }
 
-  .banner {
+  .users-action,
+  .users-icon-btn {
+    border: 1px solid rgba(148, 163, 184, .18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .users-action {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 9px;
+    font-weight: 900;
+  }
+
+  .users-action--primary {
+    border-color: rgba(168, 85, 247, .55);
+    background: linear-gradient(135deg, #a855f7, #7c2de2);
+    box-shadow: 0 14px 28px rgba(139, 47, 242, .22);
+  }
+
+  .users-table-wrap {
+    overflow: auto;
+  }
+
+  .users-table {
     width: 100%;
-      background-color: #cfcfd6;
-      text-align: center;
-      padding-top: 112px;
-      position: fixed;
-      z-index: 1000;
-      top: 0;
+    border-collapse: collapse;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .users-table th {
+    color: #a8b4ce;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .users-table td {
+    color: #dce4f8;
+  }
+
+  .users-pill {
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .users-pill.is-client {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, .14);
+  }
+
+  .users-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .users-actions form {
+    margin: 0;
+  }
+
+  .users-icon-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 9px;
+    background: rgba(15, 23, 42, .52);
+  }
+
+  .users-icon-btn--danger {
+    color: #fecaca;
+    border-color: rgba(239, 68, 68, .24);
+    background: rgba(127, 29, 29, .24);
+  }
+
+  html[data-theme="light"] .users-page,
+  html[data-theme="light"] .users-table td,
+  html[data-theme="light"] .users-card h1 {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .users-card {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .08), transparent 280px),
+      rgba(255, 255, 255, .92);
+    border-color: rgba(15, 23, 42, .1);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+  }
+
+  html[data-theme="light"] .users-table th {
+    color: #64748b;
+  }
+
+  html[data-theme="light"] .users-icon-btn {
+    color: #0f172a;
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, .12);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .users-page,
+    :root:not([data-theme="dark"]) .users-table td,
+    :root:not([data-theme="dark"]) .users-card h1 {
+      color: #111827;
     }
-    
-    .banner .logo {
-      max-width: 200px;
-      height: auto;
-      position: fixed;
-      top: 10px;
-      right: 50%;
-      left: 42%;
+
+    :root:not([data-theme="dark"]) .users-card {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .08), transparent 280px),
+        rgba(255, 255, 255, .92);
+      border-color: rgba(15, 23, 42, .1);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
     }
 
+    :root:not([data-theme="dark"]) .users-table th {
+      color: #64748b;
+    }
 
+    :root:not([data-theme="dark"]) .users-icon-btn {
+      color: #0f172a;
+      background: #ffffff;
+      border-color: rgba(15, 23, 42, .12);
+    }
+  }
 
-
-    </style>
+  @media (max-width: 760px) {
+    .users-card__header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>

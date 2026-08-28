@@ -1,0 +1,453 @@
+<% tv_type_value = form.object.tv_device_type.presence || "normal_tv" %>
+<% control_hint = %w[android_tv fire_tv].include?(tv_type_value) ? I18n.t("AdbPowerHint") : I18n.t("WakeOnLanPowerHint") %>
+<% selected_disabled_weekdays = Array(form.object.tv_disabled_weekdays).map(&:to_s) %>
+<% playback_type_value = form.object.playback_app_type.presence || "official_app" %>
+<% current_playlist_blob_ids = form.object.playlist_items.includes(media_attachment: :blob).map { |item| item.media.attached? ? item.media.blob_id : nil }.compact %>
+<% matched_playlist = @saved_playlists&.detect { |playlist| playlist.items.map(&:media_blob_id) == current_playlist_blob_ids } %>
+<% selected_playlist_id = params.dig(:broadcast, :selected_playlist_id).presence || matched_playlist&.id %>
+
+<div class="field">
+  <%= form.label :name %>
+  <%= form.text_field :name, class: "input-field" %>
+</div>
+
+<div class="field">
+  <div class="broadcast-playlist-picker__header">
+    <div>
+      <label><%= I18n.t("LibraryPlaylists") %></label>
+      <p class="helper-text"><%= I18n.t("LibraryPlaylistsHelp") %></p>
+    </div>
+    <button type="button" class="secondary-btn" data-playlist-new><%= I18n.t("ManagePlaylists") %></button>
+  </div>
+
+  <% if @saved_playlists.present? %>
+    <div class="broadcast-playlist-picker" id="broadcast-playlist-picker">
+      <% @saved_playlists.each do |playlist| %>
+        <% is_selected = selected_playlist_id.to_s == playlist.id.to_s %>
+        <% playlist_items = playlist.items.first(4) %>
+        <label class="broadcast-playlist-card <%= "is-selected" if is_selected %>" data-broadcast-playlist-card>
+          <%= radio_button_tag "broadcast[selected_playlist_id]", playlist.id, is_selected, class: "broadcast-playlist-card__radio" %>
+          <div class="broadcast-playlist-card__thumbs">
+            <% if playlist_items.any? %>
+              <% playlist_items.each do |item| %>
+                <% blob = item.media_blob %>
+                <div class="broadcast-playlist-card__thumb">
+                  <% if blob.content_type.to_s.start_with?("image/") %>
+                    <%= image_tag rails_blob_path(blob, only_path: true), alt: blob.filename.to_s, loading: "lazy" %>
+                  <% else %>
+                    <video muted playsinline preload="metadata">
+                      <source src="<%= rails_blob_path(blob, only_path: true) %>" type="<%= blob.content_type %>">
+                    </video>
+                    <i class="fas fa-play" aria-hidden="true"></i>
+                  <% end %>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="broadcast-playlist-card__empty">
+                <i class="fas fa-photo-video" aria-hidden="true"></i>
+              </div>
+            <% end %>
+          </div>
+          <div class="broadcast-playlist-card__body">
+            <strong><%= playlist.name %></strong>
+            <span><%= I18n.t("MediaCount", count: playlist.item_count) %></span>
+            <span><%= playlist.video_duration_mode == "video_end" ? I18n.t("VideoUntilEnd") : I18n.t("TimedVideo") %> - <%= playlist.transition_style %></span>
+          </div>
+          <button type="button" class="broadcast-playlist-card__edit" data-playlist-edit="<%= playlist.id %>"><%= I18n.t("Edit") %></button>
+        </label>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="helper-text"><%= I18n.t("NoPlaylistFound") %></p>
+  <% end %>
+</div>
+
+<div class="field">
+  <%= form.label :official_app_web_enabled, I18n.t("ShowOfficialWebPage") %>
+  <label class="broadcast-checkbox">
+    <%= form.check_box :official_app_web_enabled, id: "broadcast_official_app_web_enabled" %>
+    <span><%= I18n.t("EnableOfficialWebRotation") %></span>
+  </label>
+</div>
+
+<div class="field">
+  <%= form.label :playback_app_type, I18n.t("PlaybackApp") %>
+  <%= form.select :playback_app_type,
+                  options_for_select([[I18n.t("OfficialApp"), "official_app"], [I18n.t("GenericApp"), "generic_app"]], playback_type_value),
+                  {},
+                  class: "input-field",
+                  id: "broadcast_playback_app_type" %>
+</div>
+
+<div class="broadcast-power-card" id="official-app-browser-card" style="<%= playback_type_value == 'official_app' ? '' : 'display:none;' %>">
+  <div class="broadcast-power-card__header">
+    <h3><%= I18n.t("OfficialAppWebPage") %></h3>
+    <p><%= I18n.t("OfficialAppWebPageHelp") %></p>
+  </div>
+
+  <div class="field">
+    <%= form.label :official_app_page_url, I18n.t("WebPageUrl") %>
+    <%= form.url_field :official_app_page_url, class: "input-field", placeholder: "https://seusite.com/painel" %>
+    <p class="helper-text"><%= I18n.t("WebPageUrlHelp") %></p>
+  </div>
+
+  <div class="field">
+    <%= form.label :official_app_rotation_trigger, I18n.t("WhenOpenWebPage") %>
+    <%= form.select :official_app_rotation_trigger,
+                    [[I18n.t("ConfiguredTime"), "time_interval"], [I18n.t("WhenVideoEnds"), "video_end"]],
+                    {},
+                    class: "input-field",
+                    id: "broadcast_official_app_rotation_trigger" %>
+    <p class="helper-text"><%= I18n.t("WhenVideoEndsHelp") %></p>
+  </div>
+
+  <div class="broadcast-power-card__grid broadcast-power-card__grid--triple">
+    <div class="field" id="official-app-switch-interval-field">
+      <%= label_tag :official_app_switch_interval_value, I18n.t("SwitchVideoToWebEvery") %>
+      <%= number_field_tag :official_app_switch_interval_value, 1, class: "input-field", id: "official_app_switch_interval_value", min: 1, step: 1 %>
+      <%= form.hidden_field :official_app_switch_interval_seconds, id: "broadcast_official_app_switch_interval_seconds" %>
+    </div>
+
+    <div class="field" id="official-app-switch-interval-unit-field">
+      <%= label_tag :official_app_switch_interval_unit, I18n.t("SwitchUnit") %>
+      <%= form.select :official_app_switch_interval_unit,
+                      [[I18n.t("Seconds"), "seconds"], [I18n.t("Minutes"), "minutes"]],
+                      {},
+                      class: "input-field",
+                      id: "official_app_switch_interval_unit" %>
+    </div>
+
+    <div class="field">
+      <%= label_tag :official_app_page_duration_value, I18n.t("ShowPageFor") %>
+      <%= number_field_tag :official_app_page_duration_value, 1, class: "input-field", id: "official_app_page_duration_value", min: 1, step: 1 %>
+      <%= form.hidden_field :official_app_page_duration_seconds, id: "broadcast_official_app_page_duration_seconds" %>
+    </div>
+  </div>
+
+  <div class="broadcast-power-card__grid">
+    <div class="field">
+      <%= label_tag :official_app_page_duration_unit, I18n.t("DisplayUnit") %>
+      <%= form.select :official_app_page_duration_unit,
+                      [[I18n.t("Seconds"), "seconds"], [I18n.t("Minutes"), "minutes"]],
+                      {},
+                      class: "input-field",
+                      id: "official_app_page_duration_unit" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :official_app_transition_style, I18n.t("Transition") %>
+      <%= form.select :official_app_transition_style,
+                      [["Aponti Smooth", "aponti_smooth"], ["Fade", "fade"], ["Slide", "slide"], ["Blur", "blur"], ["Zoom", "zoom"], ["Wipe vertical", "wipe"], ["Push lateral", "push"], ["Flip", "flip"], ["Cross zoom", "cross_zoom"], [I18n.t("NoEffect"), "none"]],
+                      {},
+                      class: "input-field" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :official_app_transition_duration_ms, I18n.t("TransitionDurationMs") %>
+      <%= form.number_field :official_app_transition_duration_ms, class: "input-field", min: 0, max: 10000, step: 100 %>
+    </div>
+  </div>
+
+  <p class="helper-text"><%= I18n.t("OfficialWebDefaults") %></p>
+</div>
+
+<div class="field">
+  <%= form.label :tv_device_type, I18n.t("TvType") %>
+  <%= form.select :tv_device_type,
+                  [[I18n.t("NormalTv"), "normal_tv"], ["TV Android", "android_tv"], ["Fire Stick", "fire_tv"]],
+                  {},
+                  class: "input-field",
+                  id: "broadcast_tv_device_type" %>
+</div>
+
+<div class="field" id="keep-app-foreground-wrapper">
+  <label><%= I18n.t("KeepApontiOpen") %></label>
+  <label class="broadcast-checkbox">
+    <%= form.check_box :keep_app_foreground_enabled %>
+    <span><%= I18n.t("KeepApontiOpenHelp") %></span>
+  </label>
+  <p class="helper-text"><%= I18n.t("KeepApontiOpenNote") %></p>
+</div>
+
+<div class="field">
+  <label><%= I18n.t("PowerFunction") %></label>
+  <p id="power-method-hint" class="helper-text"><%= control_hint %></p>
+</div>
+
+<div class="field">
+  <%= form.label :tv_ip, I18n.t("TvIp") %>
+  <div class="inline-field">
+    <%= form.text_field :tv_ip, class: "input-field", id: "broadcast_tv_ip", placeholder: "192.168.0.10" %>
+    <button type="button" id="check-tv-status" class="secondary-btn"><%= I18n.t("CheckTv") %></button>
+  </div>
+  <p id="tv-status-result" class="helper-text"></p>
+</div>
+
+<div class="field" id="adb-host-wrapper">
+  <%= form.label :adb_host, I18n.t("TvAdbVpnIp") %>
+  <%= form.text_field :adb_host, class: "input-field", id: "broadcast_adb_host", placeholder: "100.x.x.x ou tv-corredor.tailnet.ts.net" %>
+  <p class="helper-text"><%= I18n.t("TvAdbVpnIpHelp") %></p>
+</div>
+
+<div class="field" id="tv-mac-wrapper">
+  <%= form.label :tv_mac_address, I18n.t("TvMac") %>
+  <%= form.text_field :tv_mac_address, class: "input-field", placeholder: "AA:BB:CC:DD:EE:FF" %>
+</div>
+
+<div class="field" id="adb-port-wrapper">
+  <%= form.label :adb_port, I18n.t("AdbPort") %>
+  <%= form.number_field :adb_port, class: "input-field", min: 1, max: 65535 %>
+</div>
+
+<div class="field">
+  <%= form.label :show_widgets, "Show Widgets" %>
+  <%= form.check_box :show_widgets %>
+</div>
+
+<div class="field">
+  <label><%= I18n.t("WidgetBarSpacing", default: "Espacamento da barra") %></label>
+  <label class="broadcast-checkbox">
+    <%= form.check_box :widget_bar_edge_spacing_enabled %>
+    <span><%= I18n.t("EnableWidgetBarSpacing", default: "Usar espacamento inferior/lateral da barra nesta TV") %></span>
+  </label>
+  <p class="helper-text"><%= I18n.t("WidgetBarSpacingHelp", default: "Desative quando a TV nao cortar a barra; mantenha ativo em aparelhos que precisam de margem de seguranca.") %></p>
+</div>
+
+<div class="field">
+  <%= form.label :orientation, I18n.t("ScreenOrientation") %>
+  <%= form.select :orientation,
+                  options_for_select([[I18n.t("Portrait"), "portrait"], [I18n.t("PortraitInverted"), "portrait_inverted"], [I18n.t("Landscape"), "landscape"]], form.object.orientation),
+                  {},
+                  class: "input-field" %>
+</div>
+
+<div class="broadcast-power-card">
+  <div class="broadcast-power-card__header">
+    <h3><%= I18n.t("TvPowerSchedule") %></h3>
+    <p><%= I18n.t("TvPowerScheduleHelp") %></p>
+  </div>
+
+  <div class="broadcast-power-card__grid">
+    <div class="field">
+      <%= form.label :tv_power_on_time, I18n.t("PowerOnTime") %>
+      <%= form.text_field :tv_power_on_time, type: "time", value: form.object.tv_power_on_time_input_value, class: "input-field", step: 60 %>
+    </div>
+
+    <div class="field">
+      <%= form.label :tv_power_off_time, I18n.t("PowerOffTime") %>
+      <%= form.text_field :tv_power_off_time, type: "time", value: form.object.tv_power_off_time_input_value, class: "input-field", step: 60 %>
+    </div>
+  </div>
+
+  <div class="field">
+    <label><%= I18n.t("DaysKeepOff") %></label>
+    <div class="broadcast-weekdays">
+      <% Broadcast::WEEKDAY_OPTIONS.each do |label, value| %>
+        <label class="broadcast-weekdays__item">
+          <%= check_box_tag "broadcast[tv_disabled_weekdays][]", value, selected_disabled_weekdays.include?(value), id: "broadcast_tv_disabled_weekdays_#{value}" %>
+          <span><%= label %></span>
+        </label>
+      <% end %>
+    </div>
+    <%= hidden_field_tag "broadcast[tv_disabled_weekdays][]", "" %>
+    <p class="helper-text"><%= I18n.t("DaysKeepOffHelp") %></p>
+    <% if form.object.tv_schedule_blocked_today? %>
+      <p class="helper-text status-offline"><%= form.object.tv_schedule_blocked_today_label %></p>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  function initializeBroadcastForm() {
+    const broadcastForm = document.querySelector(".broadcast-edit-form");
+    if (broadcastForm && broadcastForm.dataset.broadcastFormBound === "true") return;
+    if (broadcastForm) broadcastForm.dataset.broadcastFormBound = "true";
+
+    const playlistPicker = document.getElementById("broadcast-playlist-picker");
+    const playbackTypeField = document.getElementById("broadcast_playback_app_type");
+    const officialAppWebEnabledField = document.getElementById("broadcast_official_app_web_enabled");
+    const officialAppRotationTrigger = document.getElementById("broadcast_official_app_rotation_trigger");
+    const tvTypeField = document.getElementById("broadcast_tv_device_type");
+    const tvIpField = document.getElementById("broadcast_tv_ip");
+    const adbHostField = document.getElementById("broadcast_adb_host");
+    const adbPortField = document.getElementById("broadcast_adb_port");
+    const statusButton = document.getElementById("check-tv-status");
+    const statusResult = document.getElementById("tv-status-result");
+    const powerMethodHint = document.getElementById("power-method-hint");
+    const adbPortWrapper = document.getElementById("adb-port-wrapper");
+    const tvMacWrapper = document.getElementById("tv-mac-wrapper");
+    const keepAppForegroundWrapper = document.getElementById("keep-app-foreground-wrapper");
+    const officialAppBrowserCard = document.getElementById("official-app-browser-card");
+    const switchIntervalUnit = document.getElementById("official_app_switch_interval_unit");
+    const pageDurationUnit = document.getElementById("official_app_page_duration_unit");
+    const switchIntervalValue = document.getElementById("official_app_switch_interval_value");
+    const pageDurationValue = document.getElementById("official_app_page_duration_value");
+    const switchIntervalSeconds = document.getElementById("broadcast_official_app_switch_interval_seconds");
+    const pageDurationSeconds = document.getElementById("broadcast_official_app_page_duration_seconds");
+    const switchIntervalField = document.getElementById("official-app-switch-interval-field");
+    const switchIntervalUnitField = document.getElementById("official-app-switch-interval-unit-field");
+
+    if (playlistPicker) {
+      playlistPicker.querySelectorAll("video").forEach((preview) => {
+        preview.addEventListener("loadeddata", function () {
+          try {
+            preview.currentTime = 0.1;
+          } catch (_error) {
+          }
+        });
+      });
+
+      const syncVideoSelectionState = () => {
+        playlistPicker.querySelectorAll("[data-broadcast-playlist-card]").forEach((item) => {
+          const radio = item.querySelector(".broadcast-playlist-card__radio");
+          item.classList.toggle("is-selected", radio && radio.checked);
+        });
+      };
+
+      playlistPicker.addEventListener("change", syncVideoSelectionState);
+
+      syncVideoSelectionState();
+    }
+
+    function updatePlaybackModeFields() {
+      if (!playbackTypeField || !officialAppBrowserCard) return;
+
+      const showOfficialAppFields = playbackTypeField.value === "official_app";
+      officialAppBrowserCard.style.display = showOfficialAppFields ? "block" : "none";
+      officialAppBrowserCard.style.opacity = officialAppWebEnabledField && !officialAppWebEnabledField.checked ? "0.65" : "1";
+    }
+
+    function updateRotationTriggerFields() {
+      if (!officialAppRotationTrigger || !switchIntervalField || !switchIntervalUnitField) return;
+
+      const useVideoEnd = officialAppRotationTrigger.value === "video_end";
+      switchIntervalField.style.display = useVideoEnd ? "none" : "block";
+      switchIntervalUnitField.style.display = useVideoEnd ? "none" : "block";
+    }
+
+    function fillBrowserRotationFields() {
+      if (!switchIntervalUnit || !pageDurationUnit || !switchIntervalValue || !pageDurationValue || !switchIntervalSeconds || !pageDurationSeconds) {
+        return;
+      }
+
+      const switchDivisor = switchIntervalUnit.value === "minutes" ? 60 : 1;
+      const durationDivisor = pageDurationUnit.value === "minutes" ? 60 : 1;
+
+      switchIntervalValue.value = switchIntervalSeconds.value ? Math.max(1, Number(switchIntervalSeconds.value) / switchDivisor) : "";
+      pageDurationValue.value = pageDurationSeconds.value ? Math.max(1, Number(pageDurationSeconds.value) / durationDivisor) : "";
+    }
+
+    function syncBrowserRotationHiddenFields() {
+      if (!switchIntervalUnit || !pageDurationUnit || !switchIntervalValue || !pageDurationValue || !switchIntervalSeconds || !pageDurationSeconds) {
+        return;
+      }
+
+      const switchMultiplier = switchIntervalUnit.value === "minutes" ? 60 : 1;
+      const durationMultiplier = pageDurationUnit.value === "minutes" ? 60 : 1;
+
+      switchIntervalSeconds.value = switchIntervalValue.value ? Math.max(1, Math.round(Number(switchIntervalValue.value) * switchMultiplier)) : "";
+      pageDurationSeconds.value = pageDurationValue.value ? Math.max(1, Math.round(Number(pageDurationValue.value) * durationMultiplier)) : "";
+    }
+
+    if (!tvTypeField) return;
+
+    function updatePowerHint() {
+      const tvType = tvTypeField.value;
+
+      if (tvType === "android_tv" || tvType === "fire_tv") {
+        powerMethodHint.textContent = "<%= j I18n.t("AdbPowerHintFull") %>";
+        adbPortWrapper.style.display = "block";
+        tvMacWrapper.style.display = "none";
+        if (keepAppForegroundWrapper) keepAppForegroundWrapper.style.display = "block";
+      } else {
+        powerMethodHint.textContent = "<%= j I18n.t("WakeOnLanPowerHint") %>";
+        adbPortWrapper.style.display = "none";
+        tvMacWrapper.style.display = "block";
+        if (keepAppForegroundWrapper) keepAppForegroundWrapper.style.display = "none";
+      }
+    }
+
+    async function checkTvStatus() {
+      const tvIp = tvIpField.value.trim();
+      const adbHost = adbHostField ? adbHostField.value.trim() : "";
+      if (!tvIp && !adbHost) {
+        statusResult.textContent = "<%= j I18n.t("InformTvIpToCheck") %>";
+        statusResult.className = "helper-text status-offline";
+        return;
+      }
+
+      const requestUrl = new URL("<%= check_tv_status_broadcasts_path %>", window.location.origin);
+      requestUrl.searchParams.set("tv_ip", tvIp);
+      requestUrl.searchParams.set("adb_host", adbHost);
+      requestUrl.searchParams.set("tv_device_type", tvTypeField.value);
+      requestUrl.searchParams.set("adb_port", adbPortField ? adbPortField.value : "");
+
+      statusResult.textContent = "<%= j I18n.t("CheckingTv") %>";
+      statusResult.className = "helper-text";
+
+      try {
+        const response = await fetch(requestUrl.toString(), {
+          headers: { "Accept": "application/json" }
+        });
+        const data = await response.json();
+
+        powerMethodHint.textContent = data.control_mode;
+        statusResult.textContent = data.online ? "<%= j I18n.t("TvOnline") %>" : "<%= j I18n.t("TvOffline") %>";
+        statusResult.className = "helper-text " + (data.online ? "status-online" : "status-offline");
+      } catch (_error) {
+        statusResult.textContent = "<%= j I18n.t("TvCheckFailed") %>";
+        statusResult.className = "helper-text status-offline";
+      }
+    }
+
+    updatePowerHint();
+    tvTypeField.addEventListener("change", updatePowerHint);
+    updatePlaybackModeFields();
+    updateRotationTriggerFields();
+    fillBrowserRotationFields();
+
+    if (playbackTypeField) {
+      playbackTypeField.addEventListener("change", updatePlaybackModeFields);
+    }
+
+    if (officialAppWebEnabledField) {
+      officialAppWebEnabledField.addEventListener("change", updatePlaybackModeFields);
+    }
+
+    if (officialAppRotationTrigger) {
+      officialAppRotationTrigger.addEventListener("change", updateRotationTriggerFields);
+    }
+
+    [switchIntervalUnit, pageDurationUnit].forEach((field) => {
+      if (!field) return;
+
+      field.addEventListener("change", fillBrowserRotationFields);
+    });
+
+    [switchIntervalValue, pageDurationValue].forEach((field) => {
+      if (!field) return;
+
+      field.addEventListener("input", syncBrowserRotationHiddenFields);
+      field.addEventListener("change", syncBrowserRotationHiddenFields);
+    });
+
+    if (statusButton) {
+      statusButton.addEventListener("click", checkTvStatus);
+    }
+
+    if (tvIpField) {
+      tvIpField.addEventListener("blur", function () {
+        if (tvIpField.value.trim() !== "") {
+          checkTvStatus();
+        }
+      });
+    }
+
+    if (broadcastForm) {
+      broadcastForm.addEventListener("submit", syncBrowserRotationHiddenFields);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initializeBroadcastForm);
+  document.addEventListener("turbo:load", initializeBroadcastForm);
+</script>

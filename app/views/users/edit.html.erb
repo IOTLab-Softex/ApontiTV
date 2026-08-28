@@ -1,123 +1,516 @@
-<div class="banner">
- 
-  <%= image_tag('logo.png', alt: 'Logo', class: 'logo') %>
+<div class="user-edit-page">
+  <div class="user-edit-layout">
+    <section class="user-edit-content">
+      <aside class="user-edit-summary">
+        <div class="user-edit-avatar" aria-hidden="true">
+          <i class="fas fa-user"></i>
+        </div>
 
+        <div>
+          <span class="user-edit-label">Conta</span>
+          <strong><%= @user.email %></strong>
+        </div>
 
+        <div class="user-edit-status-grid">
+          <div>
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <span>Status</span>
+            <strong>Ativo</strong>
+          </div>
 
+          <div>
+            <i class="fas <%= @user.admin? ? "fa-user-shield" : "fa-user" %>" aria-hidden="true"></i>
+            <span>Perfil</span>
+            <strong><%= @user.admin? ? "Administrador" : "Cliente" %></strong>
+          </div>
+        </div>
 
-  
+        <p class="user-edit-hint">
+          O e-mail fica bloqueado para evitar alteração acidental do identificador principal da conta.
+        </p>
+      </aside>
+
+      <section class="user-edit-card">
+        <div class="user-edit-card__header">
+          <div>
+            <p class="user-edit-kicker">Permissões</p>
+            <h2>Dados do usuário</h2>
+          </div>
+          <span class="user-edit-role-pill <%= @user.admin? ? "is-admin" : "is-client" %>">
+            <i class="fas <%= @user.admin? ? "fa-crown" : "fa-id-badge" %>" aria-hidden="true"></i>
+            <%= @user.admin? ? "Admin" : "Cliente" %>
+          </span>
+        </div>
+
+        <% if @user.errors.any? %>
+          <div class="user-edit-errors">
+            <strong><%= pluralize(@user.errors.count, "erro") %> impediram salvar este usuário:</strong>
+            <ul>
+              <% @user.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <%= form_with(model: @user, local: true, class: "user-edit-form") do |form| %>
+          <label class="user-edit-field">
+            <span>E-mail</span>
+            <div class="user-edit-input user-edit-input--locked">
+              <i class="fas fa-envelope" aria-hidden="true"></i>
+              <%= form.email_field :email, readonly: true, class: "user-edit-control" %>
+            </div>
+          </label>
+
+          <label class="user-edit-field">
+            <span>Tipo de usuário</span>
+            <div class="user-edit-input">
+              <i class="fas fa-user-gear" aria-hidden="true"></i>
+              <%= form.select :admin, [["Cliente", false], ["Administrador", true]], {}, class: "user-edit-control user-edit-select" %>
+            </div>
+          </label>
+
+          <div class="user-edit-password-grid">
+            <label class="user-edit-field">
+              <span>Nova senha</span>
+              <div class="user-edit-input">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <%= form.password_field :password, autocomplete: "new-password", class: "user-edit-control", placeholder: "Deixe em branco para manter" %>
+              </div>
+            </label>
+
+            <label class="user-edit-field">
+              <span>Confirmar senha</span>
+              <div class="user-edit-input">
+                <i class="fas fa-key" aria-hidden="true"></i>
+                <%= form.password_field :password_confirmation, autocomplete: "new-password", class: "user-edit-control", placeholder: "Repita a nova senha" %>
+              </div>
+            </label>
+          </div>
+
+          <p class="user-edit-password-note">
+            <i class="fas fa-circle-info" aria-hidden="true"></i>
+            <span>Preencha os campos de senha somente quando quiser alterar o acesso do usuario.</span>
+          </p>
+
+          <div class="user-edit-actions">
+            <%= link_to users_path, class: "user-edit-button user-edit-button--ghost" do %>
+              <i class="fas fa-times" aria-hidden="true"></i>
+              <span>Cancelar</span>
+            <% end %>
+
+            <%= button_tag type: "submit", class: "user-edit-button user-edit-button--primary" do %>
+              <i class="fas fa-save" aria-hidden="true"></i>
+              <span>Salvar alterações</span>
+            <% end %>
+          </div>
+        <% end %>
+      </section>
+    </section>
+  </div>
 </div>
-
-
-
-<!-- Banner topo -->
-<div class="user-banner">
-  <h1><i class="fas fa-user-edit"></i> Editar Usuário</h1>
-  <p class="subtitle">Atualize os dados do usuário abaixo</p>
-</div>
-
-
-<div class="edit-user-form">
-  <%= form_with(model: @user, local: true) do |form| %>
-    <div class="field">
-      <%= form.label :email, "Email" %>
-      <%= form.email_field :email, class: "input-field", readonly: true %>
-    </div>
-
-    <div class="field">
-      <%= form.label :admin, "Tipo de Usuário" %><br>
-      <%= form.select :admin, [["Cliente", false], ["Admin", true]], {}, class: "input-field" %>
-    </div>
-
-    <div class="actions">
-      <%= form.submit "Salvar Alterações", class: "submit-btn" %>
-    </div>
-  <% end %>
-</div>
-
-<div class="back-to-list">
-  <%= link_to "← Voltar para lista", users_path, class: "btn btn-secondary" %>
-</div>
-
 
 <style>
+  .user-edit-page {
+    --user-edit-bg:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .24), transparent 34%),
+      linear-gradient(135deg, #070a18 0%, #0d1224 100%);
+    --user-edit-card: rgba(18, 24, 44, .84);
+    --user-edit-card-strong: rgba(8, 12, 26, .58);
+    --user-edit-border: rgba(148, 163, 184, .18);
+    --user-edit-text: #ffffff;
+    --user-edit-muted: #aeb7cf;
+    --user-edit-field: rgba(8, 12, 26, .58);
+    --user-edit-field-border: rgba(148, 163, 184, .24);
+    --user-edit-accent: #8b2ff2;
+    --user-edit-accent-soft: rgba(139, 47, 242, .16);
+    --user-edit-shadow: 0 24px 70px rgba(0, 0, 0, .26);
+    min-height: calc(100vh - 96px);
+    padding: 28px;
+    color: var(--user-edit-text);
+    background: var(--user-edit-bg);
+    box-sizing: border-box;
+  }
 
-.user-banner {
-    background: linear-gradient(135deg, #1f1c2c, #928dab);
-    color: white;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 30px;
-    position: relative;
-    top: 61px;
-    height: 57px;
-    margin-bottom: 8%;
-}
-  
-  .user-banner h1 {
+  .user-edit-page i {
+    width: 1.15em;
+    height: 1.15em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .user-edit-layout {
+    width: min(100%, 980px);
+    margin: 0 auto;
+    display: grid;
+    gap: 16px;
+  }
+
+  .user-edit-summary,
+  .user-edit-card {
+    border: 1px solid var(--user-edit-border);
+    background: var(--user-edit-card);
+    box-shadow: var(--user-edit-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .user-edit-kicker {
+    margin: 0 0 7px;
+    color: #c084fc;
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .user-edit-card h2 {
     margin: 0;
-    font-size: 32px;
+    color: var(--user-edit-text);
+    letter-spacing: 0;
+    line-height: 1.1;
   }
-  
-  .user-banner .subtitle {
-    margin-top: 8px;
-    font-size: 16px;
-    color: #e0e0e0;
+
+  .user-edit-hint,
+  .user-edit-label,
+  .user-edit-status-grid span {
+    color: var(--user-edit-muted);
   }
-  
-.edit-user-form {
-  max-width: 400px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  margin-top: 40px;
-}
 
-.field {
-  margin-bottom: 20px;
-}
+  .user-edit-content {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 16px;
+  }
 
-.input-field {
-  width: 100%;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-}
+  .user-edit-summary {
+    display: grid;
+    align-content: start;
+    gap: 20px;
+    padding: 22px;
+    border-radius: 14px;
+  }
 
-.submit-btn {
-  width: 100%;
-  background-color: #28a745;
-  border: none;
-  padding: 10px;
-  color: white;
-  font-size: 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
+  .user-edit-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--user-edit-accent);
+    box-shadow: 0 18px 34px rgba(139, 47, 242, .34);
+    font-size: 26px;
+  }
 
-.submit-btn:hover {
-  background-color: #218838;
-}
+  .user-edit-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
 
-.back-to-list {
-  text-align: center;
-  margin-top: 20px;
-}
+  .user-edit-summary strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 5px;
-  text-decoration: none;
-}
+  .user-edit-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 
-.btn-secondary:hover {
-  background-color: #5a6268;
-}
+  .user-edit-status-grid > div {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--user-edit-border);
+    border-radius: 12px;
+    background: var(--user-edit-card-strong);
+  }
 
+  .user-edit-status-grid i {
+    color: #c084fc;
+  }
+
+  .user-edit-hint {
+    margin: 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--user-edit-border);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .user-edit-card {
+    padding: 24px;
+    border-radius: 14px;
+  }
+
+  .user-edit-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .user-edit-card h2 {
+    font-size: 24px;
+  }
+
+  .user-edit-role-pill {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+    border: 1px solid rgba(168, 85, 247, .28);
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .user-edit-role-pill.is-client {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, .14);
+    border-color: rgba(96, 165, 250, .22);
+  }
+
+  .user-edit-form {
+    display: grid;
+    gap: 18px;
+  }
+
+  .user-edit-password-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .user-edit-field {
+    display: grid;
+    gap: 9px;
+  }
+
+  .user-edit-field > span {
+    color: var(--user-edit-text);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .user-edit-input {
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid var(--user-edit-field-border);
+    border-radius: 10px;
+    background: var(--user-edit-field);
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+
+  .user-edit-input:focus-within {
+    transform: translateY(-1px);
+    border-color: rgba(168, 85, 247, .62);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, .12);
+  }
+
+  .user-edit-input i {
+    color: #9ca8c3;
+  }
+
+  .user-edit-input--locked {
+    opacity: .88;
+  }
+
+  .user-edit-control {
+    width: 100%;
+    min-width: 0;
+    height: 50px;
+    border: 0;
+    outline: 0;
+    color: var(--user-edit-text);
+    background: transparent;
+    font: inherit;
+    font-weight: 750;
+  }
+
+  .user-edit-control[readonly] {
+    color: var(--user-edit-muted);
+    cursor: not-allowed;
+  }
+
+  .user-edit-select {
+    cursor: pointer;
+  }
+
+  .user-edit-select option {
+    color: #111827;
+    background: #ffffff;
+  }
+
+  .user-edit-password-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: -4px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(168, 85, 247, .18);
+    border-radius: 10px;
+    color: var(--user-edit-muted);
+    background: rgba(139, 47, 242, .10);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .user-edit-password-note i {
+    flex: 0 0 auto;
+    color: #c084fc;
+  }
+
+  .user-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .user-edit-button {
+    min-height: 44px;
+    border: 1px solid var(--user-edit-border);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+    color: var(--user-edit-text);
+    background: var(--user-edit-card-strong);
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  .user-edit-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(168, 85, 247, .45);
+  }
+
+  .user-edit-button--primary {
+    border-color: rgba(168, 85, 247, .55);
+    color: #ffffff;
+    background: var(--user-edit-accent);
+    box-shadow: 0 16px 34px rgba(139, 47, 242, .32);
+  }
+
+  .user-edit-errors {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(248, 113, 113, .42);
+    border-radius: 12px;
+    color: #fecaca;
+    background: rgba(127, 29, 29, .32);
+  }
+
+  .user-edit-errors ul {
+    margin: 8px 0 0;
+  }
+
+  html[data-theme="light"] .user-edit-page {
+    --user-edit-bg:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .10), transparent 34%),
+      linear-gradient(135deg, #f6f8fc 0%, #eef2f8 100%);
+    --user-edit-card: rgba(255, 255, 255, .88);
+    --user-edit-card-strong: rgba(255, 255, 255, .76);
+    --user-edit-border: rgba(15, 23, 42, .12);
+    --user-edit-text: #111827;
+    --user-edit-muted: #64748b;
+    --user-edit-field: rgba(255, 255, 255, .82);
+    --user-edit-field-border: rgba(15, 23, 42, .13);
+    --user-edit-shadow: 0 24px 70px rgba(15, 23, 42, .10);
+  }
+
+  html[data-theme="light"] .user-edit-input i {
+    color: #64748b;
+  }
+
+  html[data-theme="light"] .user-edit-errors {
+    color: #991b1b;
+    background: rgba(254, 242, 242, .9);
+    border-color: rgba(248, 113, 113, .42);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .user-edit-page {
+      --user-edit-bg:
+        radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .10), transparent 34%),
+        linear-gradient(135deg, #f6f8fc 0%, #eef2f8 100%);
+      --user-edit-card: rgba(255, 255, 255, .88);
+      --user-edit-card-strong: rgba(255, 255, 255, .76);
+      --user-edit-border: rgba(15, 23, 42, .12);
+      --user-edit-text: #111827;
+      --user-edit-muted: #64748b;
+      --user-edit-field: rgba(255, 255, 255, .82);
+      --user-edit-field-border: rgba(15, 23, 42, .13);
+      --user-edit-shadow: 0 24px 70px rgba(15, 23, 42, .10);
+    }
+
+    :root:not([data-theme="dark"]) .user-edit-input i {
+      color: #64748b;
+    }
+
+    :root:not([data-theme="dark"]) .user-edit-errors {
+      color: #991b1b;
+      background: rgba(254, 242, 242, .9);
+      border-color: rgba(248, 113, 113, .42);
+    }
+  }
+
+  @media (max-width: 860px) {
+    .user-edit-page {
+      padding: 18px;
+    }
+
+    .user-edit-content {
+      grid-template-columns: 1fr;
+    }
+
+    .user-edit-content {
+      display: grid;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .user-edit-page {
+      padding: 14px;
+    }
+
+    .user-edit-summary,
+    .user-edit-card {
+      padding: 18px;
+    }
+
+    .user-edit-status-grid,
+    .user-edit-password-grid,
+    .user-edit-actions {
+      grid-template-columns: 1fr;
+      display: grid;
+    }
+
+    .user-edit-card__header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
 </style>

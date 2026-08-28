@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.ApontiTv" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/aponti_primary</item>
+        <item name="colorPrimaryVariant">@color/aponti_primary_dark</item>
+        <item name="colorSecondary">@color/aponti_gold</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/aponti_background</item>
+        <item name="android:navigationBarColor">@color/aponti_background</item>
+    </style>
+</resources>

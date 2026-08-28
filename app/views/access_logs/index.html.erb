@@ -1,0 +1,429 @@
+<% content_for :page_title, I18n.t("AccessLogs") %>
+<% content_for :page_subtitle, I18n.t("AccessLogsSubtitle") %>
+
+<div class="access-logs-page">
+  <section class="access-logs-toolbar">
+    <div>
+      <p class="access-logs-kicker"><%= I18n.t("Audit") %></p>
+      <h1><%= I18n.t("AccessLogs") %></h1>
+      <p><%= current_user.admin? ? I18n.t("AccessLogsAdminHelp") : I18n.t("AccessLogsUserHelp") %></p>
+    </div>
+
+    <%= form_with url: access_logs_path, method: :get, local: true, class: "access-logs-filters" do %>
+      <label class="access-logs-search">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <%= text_field_tag :q, params[:q], placeholder: I18n.t("SearchLogs") %>
+      </label>
+
+      <% if current_user.admin? %>
+        <label class="access-logs-select">
+          <i class="fas fa-user" aria-hidden="true"></i>
+          <%= select_tag :user_id,
+                         options_from_collection_for_select(@users, :id, :email, params[:user_id]),
+                         include_blank: I18n.t("AllUsers") %>
+        </label>
+      <% end %>
+
+      <button type="submit" class="access-logs-button" title="<%= I18n.t("Filter") %>" aria-label="<%= I18n.t("Filter") %>">
+        <i class="fas fa-filter" aria-hidden="true"></i>
+        <span><%= I18n.t("Filter") %></span>
+      </button>
+    <% end %>
+  </section>
+
+  <section class="access-logs-session-summary">
+    <div>
+      <i class="fas fa-door-open" aria-hidden="true"></i>
+      <span><%= I18n.t("LastAccess") %></span>
+      <strong><%= current_user.last_accessed_at.present? ? l(current_user.last_accessed_at, format: :short) : "-" %></strong>
+    </div>
+    <div>
+      <i class="fas fa-door-closed" aria-hidden="true"></i>
+      <span><%= I18n.t("LastLogout") %></span>
+      <strong><%= current_user.last_signed_out_at.present? ? l(current_user.last_signed_out_at, format: :short) : "-" %></strong>
+    </div>
+  </section>
+
+  <section class="access-logs-card">
+    <% if @logs.any? %>
+      <div class="access-logs-list">
+        <% @logs.each do |log| %>
+          <article class="access-log-row">
+            <div class="access-log-row__icon <%= log.successful? ? "is-success" : "is-error" %>">
+              <i class="fas <%= log.successful? ? "fa-check" : "fa-exclamation" %>" aria-hidden="true"></i>
+            </div>
+
+            <div class="access-log-row__main">
+              <div class="access-log-row__title">
+                <strong><%= log.action_label %></strong>
+                <span><%= log.request_method %></span>
+              </div>
+              <p><%= log.path %></p>
+              <div class="access-log-row__meta">
+                <span><i class="far fa-clock" aria-hidden="true"></i><%= l(log.occurred_at, format: :short) %></span>
+                <span><i class="fas fa-user" aria-hidden="true"></i><%= log.user_email %></span>
+                <span><i class="fas fa-network-wired" aria-hidden="true"></i><%= log.ip_address.presence || "-" %></span>
+                <span><i class="fas fa-signal" aria-hidden="true"></i><%= log.status || "-" %></span>
+              </div>
+            </div>
+          </article>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="access-logs-empty">
+        <i class="far fa-file-alt" aria-hidden="true"></i>
+        <strong><%= I18n.t("NoAccessLogs") %></strong>
+        <span><%= I18n.t("NoAccessLogsHelp") %></span>
+      </div>
+    <% end %>
+  </section>
+</div>
+
+<style>
+  .access-logs-page {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: 28px 18px 54px;
+    color: #f8fbff;
+  }
+
+  .access-logs-page i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .access-logs-toolbar,
+  .access-logs-session-summary,
+  .access-logs-card {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 12px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .14), transparent 280px),
+      rgba(15, 23, 42, .72);
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .28);
+  }
+
+  .access-logs-session-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+
+  .access-logs-session-summary div {
+    min-height: 74px;
+    padding: 14px;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 12px;
+    background: rgba(8, 12, 26, .32);
+    border: 1px solid rgba(148, 163, 184, .12);
+  }
+
+  .access-logs-session-summary i {
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+  }
+
+  .access-logs-session-summary span {
+    color: #a8b4ce;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .access-logs-session-summary strong {
+    color: #ffffff;
+    font-size: 15px;
+  }
+
+  .access-logs-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, .9fr);
+    gap: 18px;
+    align-items: end;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  .access-logs-kicker {
+    margin: 0 0 6px;
+    color: #b88cff;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .access-logs-toolbar h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(1.8rem, 3vw, 2.3rem);
+  }
+
+  .access-logs-toolbar p {
+    margin: 8px 0 0;
+    color: #a8b4ce;
+    line-height: 1.55;
+  }
+
+  .access-logs-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .access-logs-search,
+  .access-logs-select {
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border: 1px solid rgba(172, 188, 230, .18);
+    border-radius: 9px;
+    background: rgba(8, 12, 26, .46);
+    color: #aeb9d0;
+  }
+
+  .access-logs-search input,
+  .access-logs-select select {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .access-logs-select select option {
+    color: #111827;
+  }
+
+  .access-logs-button {
+    min-height: 44px;
+    border: 1px solid rgba(168, 85, 247, .55);
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #a855f7, #7c2de2);
+    box-shadow: 0 14px 28px rgba(139, 47, 242, .22);
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .access-logs-card {
+    padding: 10px;
+  }
+
+  .access-logs-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .access-log-row {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, .12);
+    background: rgba(8, 12, 26, .32);
+  }
+
+  .access-log-row__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f8fbff;
+    background: rgba(148, 163, 184, .14);
+  }
+
+  .access-log-row__icon.is-success {
+    color: #86efac;
+    background: rgba(34, 197, 94, .14);
+  }
+
+  .access-log-row__icon.is-error {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, .14);
+  }
+
+  .access-log-row__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .access-log-row__title strong {
+    color: #ffffff;
+    font-size: 15px;
+  }
+
+  .access-log-row__title span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: #d8b4fe;
+    background: rgba(139, 47, 242, .16);
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .access-log-row__main p {
+    margin: 5px 0 10px;
+    color: #a8b4ce;
+    overflow-wrap: anywhere;
+  }
+
+  .access-log-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    color: #8f9bb5;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .access-log-row__meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .access-logs-empty {
+    min-height: 260px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 10px;
+    color: #a8b4ce;
+    text-align: center;
+  }
+
+  .access-logs-empty i {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: rgba(148, 163, 184, .1);
+    color: rgba(203, 213, 225, .44);
+    font-size: 26px;
+  }
+
+  .access-logs-empty strong {
+    color: #ffffff;
+    font-size: 18px;
+  }
+
+  html[data-theme="light"] .access-logs-page {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .access-logs-toolbar,
+  html[data-theme="light"] .access-logs-session-summary,
+  html[data-theme="light"] .access-logs-card {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .08), transparent 280px),
+      rgba(255, 255, 255, .92);
+    border-color: rgba(15, 23, 42, .1);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+  }
+
+  html[data-theme="light"] .access-logs-toolbar h1,
+  html[data-theme="light"] .access-logs-session-summary strong,
+  html[data-theme="light"] .access-log-row__title strong,
+  html[data-theme="light"] .access-logs-empty strong {
+    color: #111827;
+  }
+
+  html[data-theme="light"] .access-logs-toolbar p,
+  html[data-theme="light"] .access-logs-session-summary span,
+  html[data-theme="light"] .access-log-row__main p,
+  html[data-theme="light"] .access-log-row__meta,
+  html[data-theme="light"] .access-logs-empty {
+    color: #64748b;
+  }
+
+  html[data-theme="light"] .access-logs-search,
+  html[data-theme="light"] .access-logs-select,
+  html[data-theme="light"] .access-logs-session-summary div,
+  html[data-theme="light"] .access-log-row {
+    background: rgba(248, 250, 252, .86);
+    border-color: rgba(15, 23, 42, .1);
+  }
+
+  html[data-theme="light"] .access-logs-search input,
+  html[data-theme="light"] .access-logs-select select {
+    color: #111827;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .access-logs-page {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .access-logs-toolbar,
+    :root:not([data-theme="dark"]) .access-logs-session-summary,
+    :root:not([data-theme="dark"]) .access-logs-card {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(139, 47, 242, .08), transparent 280px),
+        rgba(255, 255, 255, .92);
+      border-color: rgba(15, 23, 42, .1);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+    }
+
+    :root:not([data-theme="dark"]) .access-logs-toolbar h1,
+    :root:not([data-theme="dark"]) .access-logs-session-summary strong,
+    :root:not([data-theme="dark"]) .access-log-row__title strong,
+    :root:not([data-theme="dark"]) .access-logs-empty strong {
+      color: #111827;
+    }
+
+    :root:not([data-theme="dark"]) .access-logs-toolbar p,
+    :root:not([data-theme="dark"]) .access-logs-session-summary span,
+    :root:not([data-theme="dark"]) .access-log-row__main p,
+    :root:not([data-theme="dark"]) .access-log-row__meta,
+    :root:not([data-theme="dark"]) .access-logs-empty {
+      color: #64748b;
+    }
+
+    :root:not([data-theme="dark"]) .access-logs-search,
+    :root:not([data-theme="dark"]) .access-logs-select,
+    :root:not([data-theme="dark"]) .access-logs-session-summary div,
+    :root:not([data-theme="dark"]) .access-log-row {
+      background: rgba(248, 250, 252, .86);
+      border-color: rgba(15, 23, 42, .1);
+    }
+
+    :root:not([data-theme="dark"]) .access-logs-search input,
+    :root:not([data-theme="dark"]) .access-logs-select select {
+      color: #111827;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .access-logs-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .access-logs-session-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

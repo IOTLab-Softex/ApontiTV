@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/aponti_background"
+    android:padding="28dp">
+
+    <ScrollView
+        android:id="@+id/serverSettingsScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="false"
+        app:layout_constraintBottom_toTopOf="@id/serverSettingsFooter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="620dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="@color/aponti_surface"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                style="@style/TextAppearance.Aponti.SectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/server_config_title"
+                android:textColor="@color/aponti_text"
+                android:textSize="22sp" />
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/server_config_message"
+                android:textColor="@color/aponti_text_soft"
+                android:textSize="13sp" />
+
+            <RadioGroup
+                android:id="@+id/accessModeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/accessModeAuto"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:text="@string/server_access_auto"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/accessModeLocal"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:text="@string/server_access_local"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/accessModeExternal"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:text="@string/server_access_external"
+                    android:textColor="@color/aponti_text" />
+            </RadioGroup>
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/server_local_url"
+                android:textColor="@color/aponti_text_soft" />
+
+            <EditText
+                android:id="@+id/localServerInput"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="@string/server_local_url_hint"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/aponti_text"
+                android:textColorHint="@color/aponti_text_soft" />
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/server_external_url"
+                android:textColor="@color/aponti_text_soft" />
+
+            <EditText
+                android:id="@+id/externalServerInput"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="@string/server_external_url_hint"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/aponti_text"
+                android:textColorHint="@color/aponti_text_soft" />
+
+            <TextView
+                style="@style/TextAppearance.Aponti.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/app_layout_rotation_title"
+                android:textColor="@color/aponti_text_soft" />
+
+            <RadioGroup
+                android:id="@+id/appLayoutRotationGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/appLayoutRotationSystem"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:text="@string/app_layout_rotation_system"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/appLayoutRotationLandscape"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:text="@string/app_layout_rotation_landscape"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/appLayoutRotationPortrait"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:text="@string/app_layout_rotation_portrait"
+                    android:textColor="@color/aponti_text" />
+
+                <RadioButton
+                    android:id="@+id/appLayoutRotationPortraitInverted"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:text="@string/app_layout_rotation_portrait_inverted"
+                    android:textColor="@color/aponti_text" />
+            </RadioGroup>
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/serverSettingsFooter"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/serverSettingsCancelButton"
+            android:layout_width="150dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="14dp"
+            android:text="@string/server_config_cancel"
+            android:textAllCaps="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/serverSettingsSaveButton"
+            android:layout_width="170dp"
+            android:layout_height="48dp"
+            android:text="@string/server_config_save"
+            android:textAllCaps="false" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

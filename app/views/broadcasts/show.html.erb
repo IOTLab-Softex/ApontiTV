@@ -16,5 +16,35 @@
   <%= @broadcast.stream_url %>
 </p>
 
+<p>
+  <strong>Reproducao:</strong>
+  <%= @broadcast.playback_app_type_official_app? ? "App oficial" : "App generico" %>
+</p>
+
+<p>
+  <strong>Tipo da TV:</strong>
+  <%= @broadcast.tv_device_type_label %>
+</p>
+
+<p>
+  <strong>IP da TV:</strong>
+  <%= @broadcast.tv_ip.presence || "-" %>
+</p>
+
+<p>
+  <strong>Status da TV:</strong>
+  <%= @broadcast.tv_power_status_label %>
+</p>
+
+<p>
+  <strong>Metodo de energia:</strong>
+  <%= @broadcast.control_method_summary %>
+</p>
+
+<div style="display:flex; gap: 8px; margin: 16px 0;">
+  <%= button_to "Ligar TV", power_on_tv_broadcast_path(@broadcast), method: :post %>
+  <%= button_to "Desligar TV", power_off_tv_broadcast_path(@broadcast), method: :post %>
+</div>
+
 <%= link_to 'Edit', edit_broadcast_path(@broadcast) %> |
 <%= link_to 'Back', broadcasts_path %>

@@ -1,0 +1,157 @@
+<% content_for :page_title, "Agentes Windows" %>
+<% content_for :page_subtitle, "Conecte computadores ao Aponti TV para receber wallpaper automaticamente." %>
+
+<% pending_agents = @desktop_agents.select(&:pending?) %>
+<% approved_agents = @desktop_agents.reject(&:pending?) %>
+<% online_count = approved_agents.count(&:online?) %>
+
+<div class="desktop-agents-page">
+  <% if notice.present? && notice.include?("Token:") %>
+    <% token = notice.split("Token:", 2).last.to_s.strip %>
+    <section class="desktop-agent-token">
+      <div class="desktop-agent-token__icon">
+        <i class="fas fa-key" aria-hidden="true"></i>
+      </div>
+      <div>
+        <strong>Token criado</strong>
+        <p>Use este token no instalador do agente. Ele sera exibido apenas agora.</p>
+      </div>
+      <code><%= token %></code>
+    </section>
+  <% end %>
+
+  <section class="desktop-agent-overview" aria-label="Resumo dos agentes">
+    <article>
+      <i class="fas fa-desktop" aria-hidden="true"></i>
+      <span>Total</span>
+      <strong><%= approved_agents.size %></strong>
+    </article>
+    <article>
+      <i class="fas fa-wifi" aria-hidden="true"></i>
+      <span>Online</span>
+      <strong><%= online_count %></strong>
+    </article>
+    <article>
+      <i class="fas fa-user-clock" aria-hidden="true"></i>
+      <span>Pendentes</span>
+      <strong><%= pending_agents.size %></strong>
+    </article>
+  </section>
+
+  <section class="desktop-agent-card">
+    <div class="desktop-agent-card__head">
+      <span><i class="fas fa-plus" aria-hidden="true"></i></span>
+      <div>
+        <h2>Novo computador</h2>
+        <p>Abra o instalador no computador. Ele aparece aqui para aprovacao e recebe o token sozinho.</p>
+      </div>
+    </div>
+
+    <% if @desktop_agent.errors.any? %>
+      <div class="desktop-agent-errors">
+        <strong><%= pluralize(@desktop_agent.errors.count, "erro") %> impediram criar o agente:</strong>
+        <ul>
+          <% @desktop_agent.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with model: @desktop_agent, local: true, class: "desktop-agent-form" do |form| %>
+      <label>
+        <span>Nome do computador</span>
+        <div class="desktop-agent-input">
+          <i class="fas fa-computer" aria-hidden="true"></i>
+          <%= form.text_field :name, placeholder: "Recepcao, Sala 01, Financeiro...", required: true %>
+        </div>
+      </label>
+
+      <%= button_tag type: "submit", class: "desktop-agent-action desktop-agent-action--primary", title: "Criar token" do %>
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span>Criar token</span>
+      <% end %>
+    <% end %>
+  </section>
+
+  <% if pending_agents.any? %>
+    <section class="desktop-agent-card">
+      <div class="desktop-agent-card__head">
+        <span><i class="fas fa-user-check" aria-hidden="true"></i></span>
+        <div>
+          <h2>Aguardando aprovacao</h2>
+          <p>Confira o nome e o codigo no instalador antes de aprovar.</p>
+        </div>
+      </div>
+
+      <div class="desktop-agent-list">
+        <% pending_agents.each do |agent| %>
+          <article class="desktop-agent-row desktop-agent-row--pending">
+            <div class="desktop-agent-row__status is-pending" title="Pendente"></div>
+            <div class="desktop-agent-row__main">
+              <strong><%= agent.name %></strong>
+              <small>
+                <%= agent.hostname.presence || "Sem hostname" %>
+                <% if agent.ip_address.present? %> - <%= agent.ip_address %><% end %>
+              </small>
+            </div>
+            <div class="desktop-agent-row__meta">
+              <span>Codigo</span>
+              <strong><%= agent.approval_code.presence || "-" %></strong>
+            </div>
+            <div class="desktop-agent-row__meta">
+              <span>Solicitado</span>
+              <strong><%= agent.created_at&.strftime("%d/%m/%Y %H:%M:%S") || "-" %></strong>
+            </div>
+            <%= button_to approve_desktop_agent_path(agent), method: :post, class: "desktop-agent-icon-btn desktop-agent-icon-btn--approve", title: "Aprovar", aria: { label: "Aprovar" } do %>
+              <i class="fas fa-check" aria-hidden="true"></i>
+            <% end %>
+          </article>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <section class="desktop-agent-card">
+    <div class="desktop-agent-card__head">
+      <span><i class="fas fa-shield-halved" aria-hidden="true"></i></span>
+      <div>
+        <h2>Computadores conectados</h2>
+        <p>O agente consulta o servidor, baixa o wallpaper quando muda e confirma a aplicacao.</p>
+      </div>
+    </div>
+
+    <div class="desktop-agent-list">
+      <% approved_agents.each do |agent| %>
+        <article class="desktop-agent-row">
+          <div class="desktop-agent-row__status <%= agent.online? ? "is-online" : "is-offline" %>" title="<%= agent.online? ? "Online" : "Offline" %>"></div>
+          <div class="desktop-agent-row__main">
+            <strong><%= agent.name %></strong>
+            <small>
+              <%= agent.hostname.presence || "Sem hostname" %>
+              <% if agent.ip_address.present? %> - <%= agent.ip_address %><% end %>
+            </small>
+          </div>
+          <div class="desktop-agent-row__meta">
+            <span>Visto</span>
+            <strong><%= agent.last_seen_at&.strftime("%d/%m/%Y %H:%M:%S") || "-" %></strong>
+          </div>
+          <div class="desktop-agent-row__meta">
+            <span>Wallpaper</span>
+            <strong><%= agent.last_wallpaper_applied_at&.strftime("%d/%m/%Y %H:%M:%S") || "-" %></strong>
+          </div>
+          <%= button_to desktop_agent_path(agent), method: :delete, class: "desktop-agent-icon-btn desktop-agent-icon-btn--delete", form: { data: { turbo_confirm: "Desativar este agente?" } }, title: "Desativar", aria: { label: "Desativar" } do %>
+            <i class="fas fa-ban" aria-hidden="true"></i>
+          <% end %>
+        </article>
+      <% end %>
+
+      <% if approved_agents.blank? %>
+        <p class="desktop-agent-empty">
+          <i class="fas fa-desktop" aria-hidden="true"></i>
+          <span>Nenhum agente cadastrado ainda.</span>
+        </p>
+      <% end %>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,539 @@
+<% content_for :page_kicker, "Aponti TV" %>
+<% content_for :page_title, I18n.t("Dashboard") %>
+<% content_for :page_subtitle, I18n.t("DashboardSubtitle") %>
+
+<% total_tvs = @broadcasts.size %>
+<% online_tvs = @broadcasts.count { |broadcast| broadcast.app_player_online? || broadcast.mobile_tv_power_status == :on } %>
+<% offline_tvs = [total_tvs - online_tvs, 0].max %>
+<% inactive_tvs = @broadcasts.count { |broadcast| !broadcast.app_player_online? } %>
+<% production_tvs = @broadcasts.count { |broadcast| broadcast.effective_production_status == "running" } %>
+<% media_count = ActiveStorage::Blob.where("content_type LIKE ? OR content_type LIKE ?", "video/%", "image/%").count %>
+<% playlist_count = @saved_playlists.size %>
+<% agent_count = DesktopAgent.enabled.count %>
+<% online_agents = DesktopAgent.enabled.select(&:online?).count %>
+<% activity_count = UserActivityLog.count %>
+<% publish_count = UserActivityLog.where(action_key: "broadcasts.publish_video").count %>
+<% health = total_tvs.positive? ? ((online_tvs.to_f / total_tvs) * 100).round : 0 %>
+<% group_data = [
+  ["Android", @broadcasts.count(&:tv_device_type_android_tv?)],
+  ["Fire Stick", @broadcasts.count(&:tv_device_type_fire_tv?)],
+  [I18n.t("Normal"), @broadcasts.count(&:tv_device_type_normal_tv?)],
+  [I18n.t("Official"), @broadcasts.count(&:playback_app_type_official_app?)],
+  [I18n.t("Portrait"), @broadcasts.count { |broadcast| %w[portrait portrait_inverted].include?(broadcast.orientation.to_s) }],
+  [I18n.t("Landscape"), @broadcasts.count { |broadcast| broadcast.orientation.to_s == "landscape" }]
+].select { |_, value| value.to_i.positive? } %>
+<% group_data = [[I18n.t("RegisteredTvs"), total_tvs]] if group_data.blank? %>
+<% max_group = [group_data.map(&:last).max.to_i, 1].max %>
+<% recent_logs = UserActivityLog.recent.limit(5) %>
+
+<div class="dashboard-page" data-dashboard-page>
+  <section class="broadcast-dashboard">
+    <div class="broadcast-dashboard__metrics">
+      <article class="broadcast-dashboard-stat">
+        <span><%= I18n.t("DashboardOnlineScreens") %></span>
+        <strong data-dashboard-online><%= online_tvs %></strong>
+        <small><%= I18n.t("OfTotal") %> <span data-dashboard-total><%= total_tvs %></span></small>
+        <em><i class="fas fa-arrow-up" aria-hidden="true"></i> <span data-dashboard-health><%= health %></span>%</em>
+      </article>
+
+      <article class="broadcast-dashboard-stat">
+        <span><%= I18n.t("DashboardActiveContent") %></span>
+        <strong><%= media_count %></strong>
+        <small><%= I18n.t("InLibrary") %></small>
+      </article>
+
+      <article class="broadcast-dashboard-stat">
+        <span><%= I18n.t("DashboardActivePlaylists") %></span>
+        <strong><%= playlist_count %></strong>
+        <small><%= I18n.t("SavedLists") %></small>
+      </article>
+
+      <article class="broadcast-dashboard-stat">
+        <span><%= I18n.t("DashboardProductionScreens") %></span>
+        <strong data-dashboard-production><%= production_tvs %></strong>
+        <small><%= I18n.t("OfTotal") %> <span data-dashboard-total><%= total_tvs %></span></small>
+      </article>
+    </div>
+
+    <div class="broadcast-dashboard__main">
+      <article class="broadcast-dashboard-panel">
+        <h2><%= I18n.t("DashboardScreenStatus") %></h2>
+        <div class="broadcast-dashboard-status">
+          <div class="broadcast-dashboard-donut" data-dashboard-donut style="--online: <%= health %>%; --offline: <%= total_tvs.positive? ? ((offline_tvs.to_f / total_tvs) * 100).round : 0 %>%;">
+            <strong data-dashboard-total><%= total_tvs %></strong>
+            <span><%= I18n.t("Total") %></span>
+          </div>
+          <div class="broadcast-dashboard-legend">
+            <span><i class="is-online"></i> Online <strong data-dashboard-online-legend><%= online_tvs %> (<%= health %>%)</strong></span>
+            <span><i class="is-offline"></i> Offline <strong data-dashboard-offline-legend><%= offline_tvs %> (<%= total_tvs.positive? ? ((offline_tvs.to_f / total_tvs) * 100).round : 0 %>%)</strong></span>
+            <span><i class="is-idle"></i> <%= I18n.t("InactiveScreens") %> <strong><%= inactive_tvs %> (<%= total_tvs.positive? ? ((inactive_tvs.to_f / total_tvs) * 100).round : 0 %>%)</strong></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="broadcast-dashboard-panel">
+        <h2><%= I18n.t("DashboardScreensByGroup") %></h2>
+        <div class="broadcast-dashboard-bars">
+          <% group_data.each do |label, value| %>
+            <div class="broadcast-dashboard-bar" style="--bar-size: <%= ((value.to_f / max_group) * 100).round %>%;">
+              <span><%= label %></span>
+              <div><i></i></div>
+              <strong><%= value %></strong>
+            </div>
+          <% end %>
+        </div>
+      </article>
+
+      <article class="broadcast-dashboard-panel">
+        <div class="broadcast-dashboard-panel__header">
+          <h2><%= I18n.t("LatestActivities") %></h2>
+          <%= link_to I18n.t("ViewAll"), access_logs_path, class: "broadcast-dashboard-link" if current_user.admin? %>
+        </div>
+        <div class="broadcast-dashboard-activity">
+          <% if recent_logs.any? %>
+            <% recent_logs.each do |log| %>
+              <div class="broadcast-dashboard-activity__item">
+                <i class="fas <%= log.successful? ? "fa-check-circle is-success" : "fa-triangle-exclamation is-error" %>" aria-hidden="true"></i>
+                <div>
+                  <strong><%= log.action_label.presence || log.action_key %></strong>
+                  <span><%= I18n.t("TimeAgo", time: time_ago_in_words(log.occurred_at || log.created_at)) %></span>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="broadcast-dashboard-activity__empty">
+              <i class="fas fa-clock" aria-hidden="true"></i>
+              <span><%= I18n.t("NoActivityYet") %></span>
+            </div>
+          <% end %>
+        </div>
+      </article>
+    </div>
+
+    <div class="broadcast-dashboard__footer">
+      <article>
+        <i class="fas fa-chart-line" aria-hidden="true"></i>
+        <span><%= I18n.t("Activities") %></span>
+        <strong><%= number_with_delimiter(activity_count, delimiter: ".") %></strong>
+        <em><%= I18n.t("RegisteredLogs") %></em>
+      </article>
+      <article>
+        <i class="fas fa-qrcode" aria-hidden="true"></i>
+        <span><%= I18n.t("Publications") %></span>
+        <strong><%= number_with_delimiter(publish_count, delimiter: ".") %></strong>
+        <em><%= I18n.t("SentPlaylists") %></em>
+      </article>
+      <article>
+        <i class="fas fa-clock" aria-hidden="true"></i>
+        <span><%= I18n.t("FleetHealth") %></span>
+        <strong><span data-dashboard-health><%= health %></span>%</strong>
+        <em><%= I18n.t("OnlineScreens") %></em>
+      </article>
+      <article>
+        <i class="fas fa-desktop" aria-hidden="true"></i>
+        <span><%= I18n.t("Agents") %></span>
+        <strong><%= online_agents %>/<%= agent_count %></strong>
+        <em><%= I18n.t("OnlineNow") %></em>
+      </article>
+    </div>
+  </section>
+</div>
+
+<script>
+  function initializeDashboardPage() {
+    var root = document.querySelector("[data-dashboard-page]");
+    if (!root || root.dataset.dashboardBound === "true") return;
+    root.dataset.dashboardBound = "true";
+
+    function setText(selector, value) {
+      root.querySelectorAll(selector).forEach(function(element) {
+        element.textContent = value;
+      });
+    }
+
+    function refreshDashboard() {
+      fetch("<%= mobile_index_broadcasts_path(format: :json) %>", { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+        .then(function(response) { return response.ok ? response.json() : Promise.reject(); })
+        .then(function(channels) {
+          var total = channels.length;
+          var online = 0;
+          var production = 0;
+
+          channels.forEach(function(channel) {
+            var playerOnline = channel.app_player_presence_status === "online" || channel.app_player_presence_status === "playing" || channel.app_player_presence_status === "error";
+            var tvOn = channel.tv_power_status === "on";
+            var running = (channel.production_status || channel.status) === "running";
+            if (playerOnline || tvOn) online += 1;
+            if (running) production += 1;
+          });
+
+          var offline = Math.max(0, total - online);
+          var onlinePercent = total > 0 ? Math.round((online / total) * 100) : 0;
+          var offlinePercent = total > 0 ? Math.round((offline / total) * 100) : 0;
+
+          setText("[data-dashboard-total]", total);
+          setText("[data-dashboard-online]", online);
+          setText("[data-dashboard-production]", production);
+          setText("[data-dashboard-health]", onlinePercent);
+          setText("[data-dashboard-online-legend]", online + " (" + onlinePercent + "%)");
+          setText("[data-dashboard-offline-legend]", offline + " (" + offlinePercent + "%)");
+
+          root.querySelectorAll("[data-dashboard-donut]").forEach(function(element) {
+            element.style.setProperty("--online", onlinePercent + "%");
+            element.style.setProperty("--offline", offlinePercent + "%");
+          });
+        })
+        .catch(function() {});
+    }
+
+    refreshDashboard();
+    window.dashboardStatusPoller = window.dashboardStatusPoller || setInterval(refreshDashboard, 3000);
+  }
+
+  document.addEventListener("DOMContentLoaded", initializeDashboardPage);
+  document.addEventListener("turbo:load", initializeDashboardPage);
+</script>
+
+<style>
+  .dashboard-page {
+    --dashboard-card: rgba(17, 24, 39, .88);
+    --dashboard-card-muted: rgba(15, 23, 42, .46);
+    --dashboard-border: rgba(148, 163, 184, .18);
+    --dashboard-text: #f8fafc;
+    --dashboard-muted: #a8b4ce;
+    --dashboard-soft: #cbd5e1;
+    --dashboard-accent: #8b2ff2;
+    --dashboard-green: #22c55e;
+    --dashboard-red: #ef4444;
+    --dashboard-violet: #a855f7;
+    min-height: calc(100vh - 96px);
+    padding: 28px 0 88px;
+    color: var(--dashboard-text);
+  }
+
+  .broadcast-dashboard {
+    display: grid;
+    gap: 20px;
+  }
+
+  .broadcast-dashboard__metrics,
+  .broadcast-dashboard__footer {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .broadcast-dashboard__main {
+    display: grid;
+    grid-template-columns: minmax(260px, .95fr) minmax(280px, .9fr) minmax(300px, .8fr);
+    gap: 20px;
+  }
+
+  .broadcast-dashboard-stat,
+  .broadcast-dashboard-panel,
+  .broadcast-dashboard__footer article {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 8px;
+    background: var(--dashboard-card);
+    box-shadow: none;
+  }
+
+  .broadcast-dashboard-stat {
+    min-height: 128px;
+    padding: 24px 26px;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .broadcast-dashboard-stat span,
+  .broadcast-dashboard-panel h2,
+  .broadcast-dashboard__footer span {
+    margin: 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .broadcast-dashboard-stat strong {
+    color: var(--dashboard-text);
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 950;
+    line-height: .98;
+  }
+
+  .broadcast-dashboard-stat small {
+    color: var(--dashboard-soft);
+    font-size: 15px;
+    font-weight: 850;
+  }
+
+  .broadcast-dashboard-stat em {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--dashboard-green);
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 950;
+  }
+
+  .broadcast-dashboard-panel {
+    min-height: 310px;
+    padding: 24px;
+  }
+
+  .broadcast-dashboard-panel h2 {
+    color: var(--dashboard-text);
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .broadcast-dashboard-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .broadcast-dashboard-panel__header h2 {
+    margin: 0;
+  }
+
+  .broadcast-dashboard-link {
+    color: var(--dashboard-accent);
+    font-size: 13px;
+    font-weight: 950;
+    text-decoration: none;
+  }
+
+  .broadcast-dashboard-status {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+  }
+
+  .broadcast-dashboard-donut {
+    width: 176px;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle, var(--dashboard-card) 0 44%, transparent 45%), conic-gradient(var(--dashboard-green) 0 var(--online), var(--dashboard-red) var(--online) calc(var(--online) + var(--offline)), var(--dashboard-violet) calc(var(--online) + var(--offline)) 100%);
+    box-shadow: none;
+  }
+
+  .broadcast-dashboard-donut strong,
+  .broadcast-dashboard-donut span {
+    grid-area: 1 / 1;
+  }
+
+  .broadcast-dashboard-donut strong {
+    margin-top: -8px;
+    color: var(--dashboard-text);
+    font-size: 36px;
+    font-weight: 950;
+  }
+
+  .broadcast-dashboard-donut span {
+    margin-top: 40px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .broadcast-dashboard-legend {
+    display: grid;
+    gap: 20px;
+  }
+
+  .broadcast-dashboard-legend span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .broadcast-dashboard-legend i {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    margin-right: 8px;
+  }
+
+  .broadcast-dashboard-legend strong,
+  .broadcast-dashboard-bar strong,
+  .broadcast-dashboard-activity__item strong,
+  .broadcast-dashboard__footer strong {
+    color: var(--dashboard-text);
+  }
+
+  .broadcast-dashboard-legend .is-online { background: var(--dashboard-green); }
+  .broadcast-dashboard-legend .is-offline { background: var(--dashboard-red); }
+  .broadcast-dashboard-legend .is-idle { background: var(--dashboard-violet); }
+
+  .broadcast-dashboard-bars {
+    display: grid;
+    gap: 15px;
+    padding: 8px 4px 0;
+  }
+
+  .broadcast-dashboard-bar {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) 34px;
+    align-items: center;
+    gap: 12px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .broadcast-dashboard-bar div {
+    height: 34px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 4px;
+    background: var(--dashboard-card-muted);
+  }
+
+  .broadcast-dashboard-bar i {
+    display: block;
+    width: var(--bar-size);
+    height: 100%;
+    border-radius: 3px;
+    background: var(--dashboard-accent);
+  }
+
+  .broadcast-dashboard-activity {
+    display: grid;
+    gap: 12px;
+  }
+
+  .broadcast-dashboard-activity__item {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    min-height: 42px;
+  }
+
+  .broadcast-dashboard-activity__item i,
+  .broadcast-dashboard-activity__empty i {
+    width: 22px;
+    height: 22px;
+    display: inline-grid;
+    place-items: center;
+    color: var(--dashboard-green);
+    font-size: 14px;
+  }
+
+  .broadcast-dashboard-activity__item i.is-error {
+    color: #fb7185;
+  }
+
+  .broadcast-dashboard-activity__item strong {
+    display: block;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .broadcast-dashboard-activity__item span,
+  .broadcast-dashboard-activity__empty span {
+    display: block;
+    margin-top: 3px;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .broadcast-dashboard-activity__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 190px;
+  }
+
+  .broadcast-dashboard__footer article {
+    min-height: 92px;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 22px;
+  }
+
+  .broadcast-dashboard__footer i {
+    width: 42px;
+    height: 42px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--dashboard-accent);
+    background: var(--dashboard-card-muted);
+    font-size: 18px;
+  }
+
+  .broadcast-dashboard__footer strong {
+    font-size: 22px;
+    font-weight: 950;
+  }
+
+  .broadcast-dashboard__footer em {
+    grid-column: 2 / -1;
+    margin-top: -16px;
+    color: var(--dashboard-green);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 900;
+  }
+
+  html[data-theme="light"] .dashboard-page {
+    --dashboard-card: rgba(255, 255, 255, .96);
+    --dashboard-card-muted: rgba(15, 23, 42, .045);
+    --dashboard-border: rgba(15, 23, 42, .12);
+    --dashboard-text: #0f172a;
+    --dashboard-muted: #64748b;
+    --dashboard-soft: #475569;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .dashboard-page {
+      --dashboard-card: rgba(255, 255, 255, .96);
+      --dashboard-card-muted: rgba(15, 23, 42, .045);
+      --dashboard-border: rgba(15, 23, 42, .12);
+      --dashboard-text: #0f172a;
+      --dashboard-muted: #64748b;
+      --dashboard-soft: #475569;
+    }
+  }
+
+  @media (max-width: 1280px) {
+    .broadcast-dashboard__metrics,
+    .broadcast-dashboard__footer,
+    .broadcast-dashboard__main {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .broadcast-dashboard__metrics,
+    .broadcast-dashboard__footer,
+    .broadcast-dashboard__main,
+    .broadcast-dashboard-status {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,90 @@
+<div class="broadcast-edit-page">
+  <% if flash[:notice].present? || flash[:alert].present? %>
+    <div class="broadcast-edit-flash <%= flash[:alert].present? ? "broadcast-edit-flash--alert" : "broadcast-edit-flash--notice" %>">
+      <%= flash[:alert].presence || flash[:notice] %>
+    </div>
+  <% end %>
+
+  <% if show_delete && current_user.admin? %>
+    <div class="broadcast-edit-topbar">
+      <%= form_with model: broadcast, method: :delete, data: { confirm: 'Are you sure you want to delete this broadcast?' }, class: "broadcast-delete-form" do |form| %>
+        <%= form.submit I18n.t("DeleteBroadcast"), class: 'broadcast-delete-btn' %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="broadcast-edit-layout">
+    <section class="broadcast-edit-main">
+      <%= form_with(model: broadcast, local: true, class: 'broadcast-edit-form', html: form_html || {}) do |form| %>
+        <% if broadcast.errors.any? %>
+          <div class="broadcast-edit-errors" id="error_explanation">
+            <h2><%= pluralize(broadcast.errors.count, "error") %> prohibited this broadcast from being saved:</h2>
+            <ul>
+              <% broadcast.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="broadcast-edit-section">
+          <div class="broadcast-edit-section__header">
+            <h2>Informacoes principais</h2>
+            <p><%= subtitle %></p>
+          </div>
+
+          <%= render "form", form: form %>
+        </div>
+
+        <div class="broadcast-edit-actions">
+          <% if show_timeline_button %>
+            <button type="button" id="open-timeline" class="broadcast-secondary-btn">Schedule Videos</button>
+          <% end %>
+          <%= form.submit submit_label, class: 'broadcast-primary-btn' %>
+        </div>
+      <% end %>
+    </section>
+
+    <aside class="broadcast-edit-side">
+      <div class="broadcast-edit-side__card">
+        <p class="broadcast-edit-side__kicker">Resumo</p>
+        <h3><%= broadcast.name.presence || "Broadcast sem nome" %></h3>
+        <% root_email = ENV.fetch("ROOT_USER_EMAIL", "root@apontitv.local") %>
+        <% if broadcast.persisted? && broadcast.playback_app_type_official_app? && broadcast.adb_device? && current_user&.admin? %>
+          <div class="broadcast-edit-side__actions">
+            <%= button_to open_official_app_broadcast_path(broadcast),
+                          method: :post,
+                          class: "broadcast-root-action-btn broadcast-root-action-btn--open",
+                          form: { data: { turbo_confirm: I18n.t("ConfirmOpenApontiApp") } } do %>
+              <%= I18n.t("OpenApontiApp") %>
+            <% end %>
+            <% if current_user.email.to_s == root_email %>
+            <%= button_to set_android_launcher_broadcast_path(broadcast),
+                          method: :post,
+                          class: "broadcast-root-action-btn",
+                          form: { data: { turbo_confirm: I18n.t("ConfirmSetApontiLauncher") } } do %>
+              <%= I18n.t("SetApontiLauncher") %>
+            <% end %>
+            <%= button_to remove_android_launcher_broadcast_path(broadcast),
+                          method: :post,
+                          class: "broadcast-root-action-btn broadcast-root-action-btn--restore",
+                          form: { data: { turbo_confirm: I18n.t("ConfirmRemoveApontiLauncher") } } do %>
+              <%= I18n.t("RemoveApontiLauncher") %>
+            <% end %>
+            <% end %>
+          </div>
+        <% end %>
+        <ul class="broadcast-edit-side__list">
+          <li><span><%= I18n.t("Orientation") %></span><strong><%= broadcast.orientation.presence || I18n.t("NotDefined") %></strong></li>
+          <li><span>Widgets</span><strong><%= broadcast.show_widgets? ? I18n.t("Active") : I18n.t("Disabled") %></strong></li>
+          <li><span>TV</span><strong><%= broadcast.tv_device_type_label %></strong></li>
+          <li><span><%= I18n.t("KeepApontiOpen") %></span><strong><%= broadcast.keep_app_foreground_enabled? ? I18n.t("Active") : I18n.t("Disabled") %></strong></li>
+          <li><span><%= I18n.t("Power") %></span><strong><%= broadcast.tv_power_schedule_summary %></strong></li>
+          <li><span><%= I18n.t("OfficialWeb") %></span><strong><%= broadcast.official_app_browser_rotation_summary %></strong></li>
+          <li><span><%= I18n.t("LastAttempt") %></span><strong><%= broadcast.last_tv_power_action_summary %></strong></li>
+          <li><span><%= I18n.t("Message") %></span><strong><%= broadcast.last_tv_power_action_message.presence || I18n.t("NoDetailsYet") %></strong></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>

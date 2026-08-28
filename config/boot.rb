@@ -1,4 +1,5 @@
 ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
 
 require "bundler/setup" # Set up gems listed in the Gemfile.
-require "bootsnap/setup" # Speed up boot time by caching expensive operations.
+# Bootsnap is disabled on this Windows environment because App Control blocks
+# native extensions such as msgpack/date when loaded from the project bundle.

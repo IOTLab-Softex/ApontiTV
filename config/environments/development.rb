@@ -69,6 +69,13 @@ Rails.application.configure do
 
   # Add this line to help with permissions issues
   config.assets.check_precompiled_asset = false
-  config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+
+  dev_https = ENV["HTTPS"].to_s.downcase == "true" || ENV["SSL"].to_s.downcase == "true"
+  dev_port = ENV.fetch(dev_https ? "SSL_PORT" : "PORT") { 3000 }
+  config.action_mailer.default_url_options = {
+    host: "localhost",
+    port: dev_port,
+    protocol: dev_https ? "https" : "http"
+  }
 
 end
