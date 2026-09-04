@@ -1,15 +1,14 @@
 <div class="broadcast-edit-page">
+  <header class="broadcast-edit-hero">
+    <div>
+      <p class="broadcast-edit-hero__eyebrow">Configuração da TV</p>
+      <h1><%= broadcast.name.presence || "Nova TV" %></h1>
+      <p>Gerencie conteúdo, reprodução, conexão e automações em um só lugar.</p>
+    </div>
+  </header>
   <% if flash[:notice].present? || flash[:alert].present? %>
     <div class="broadcast-edit-flash <%= flash[:alert].present? ? "broadcast-edit-flash--alert" : "broadcast-edit-flash--notice" %>">
       <%= flash[:alert].presence || flash[:notice] %>
-    </div>
-  <% end %>
-
-  <% if show_delete && current_user.admin? %>
-    <div class="broadcast-edit-topbar">
-      <%= form_with model: broadcast, method: :delete, data: { confirm: 'Are you sure you want to delete this broadcast?' }, class: "broadcast-delete-form" do |form| %>
-        <%= form.submit I18n.t("DeleteBroadcast"), class: 'broadcast-delete-btn' %>
-      <% end %>
     </div>
   <% end %>
 

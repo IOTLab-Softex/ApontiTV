@@ -40,6 +40,30 @@
 
   <section class="desktop-agent-card">
     <div class="desktop-agent-card__head">
+      <span><i class="fas fa-layer-group" aria-hidden="true"></i></span>
+      <div>
+        <h2>Grupos de computadores</h2>
+        <p>Organize os computadores para enviar um wallpaper somente a uma área.</p>
+      </div>
+    </div>
+    <%= form_with model: DesktopGroup.new, local: true, class: "desktop-agent-form" do |form| %>
+      <label>
+        <span>Nome do grupo</span>
+        <div class="desktop-agent-input"><i class="fas fa-folder" aria-hidden="true"></i><%= form.text_field :name, placeholder: "Recepção, Financeiro, Salas...", required: true %></div>
+      </label>
+      <%= button_tag type: "submit", class: "desktop-agent-action desktop-agent-action--primary" do %><i class="fas fa-plus"></i><span>Criar grupo</span><% end %>
+    <% end %>
+    <% if @desktop_groups.any? %>
+      <div class="desktop-group-chips">
+        <% @desktop_groups.each do |group| %>
+          <span class="desktop-group-chip"><i class="fas fa-layer-group"></i><%= group.name %><small><%= group.desktop_agents.enabled.count %></small><%= button_to desktop_group_path(group), method: :delete, form: { data: { turbo_confirm: "Excluir o grupo #{group.name}?" } }, title: "Excluir grupo" do %><i class="fas fa-times"></i><% end %></span>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="desktop-agent-card">
+    <div class="desktop-agent-card__head">
       <span><i class="fas fa-plus" aria-hidden="true"></i></span>
       <div>
         <h2>Novo computador</h2>
@@ -140,6 +164,9 @@
             <span>Wallpaper</span>
             <strong><%= agent.last_wallpaper_applied_at&.strftime("%d/%m/%Y %H:%M:%S") || "-" %></strong>
           </div>
+          <%= form_with model: agent, local: true, class: "desktop-agent-group-form" do |form| %>
+            <%= form.select :desktop_group_id, options_from_collection_for_select(@desktop_groups, :id, :name, agent.desktop_group_id), { include_blank: "Sem grupo" }, { onchange: "this.form.requestSubmit()", title: "Grupo do computador" } %>
+          <% end %>
           <%= button_to desktop_agent_path(agent), method: :delete, class: "desktop-agent-icon-btn desktop-agent-icon-btn--delete", form: { data: { turbo_confirm: "Desativar este agente?" } }, title: "Desativar", aria: { label: "Desativar" } do %>
             <i class="fas fa-ban" aria-hidden="true"></i>
           <% end %>
@@ -155,3 +182,13 @@
     </div>
   </section>
 </div>
+
+<style>
+  .desktop-group-chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .desktop-group-chip { display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid rgba(139,92,246,.32); border-radius:999px; background:rgba(109,40,217,.1); color:var(--text-color,#eef2ff); }
+  .desktop-group-chip small { display:grid; place-items:center; min-width:22px; height:22px; border-radius:50%; background:rgba(139,92,246,.22); }
+  .desktop-group-chip form, .desktop-group-chip button { display:inline-flex; margin:0; }
+  .desktop-group-chip button { border:0; background:transparent; color:#fb7185; cursor:pointer; padding:2px; }
+  .desktop-agent-group-form select { min-width:150px; padding:10px 12px; border:1px solid rgba(148,163,184,.25); border-radius:10px; background:rgba(15,23,42,.72); color:#eef2ff; }
+  @media (max-width: 760px) { .desktop-agent-group-form, .desktop-agent-group-form select { width:100%; } }
+</style>

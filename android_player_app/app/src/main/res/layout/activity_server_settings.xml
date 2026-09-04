@@ -149,6 +149,15 @@
                     android:text="@string/app_layout_rotation_portrait_inverted"
                     android:textColor="@color/aponti_text" />
             </RadioGroup>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/presentationRemoteButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="22dp"
+                android:text="Modo controle de apresentação"
+                android:textAllCaps="false"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 

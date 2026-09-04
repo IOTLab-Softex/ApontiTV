@@ -6,11 +6,22 @@
 <% matched_playlist = @saved_playlists&.detect { |playlist| playlist.items.map(&:media_blob_id) == current_playlist_blob_ids } %>
 <% selected_playlist_id = params.dig(:broadcast, :selected_playlist_id).presence || matched_playlist&.id %>
 
-<div class="field">
-  <%= form.label :name %>
-  <%= form.text_field :name, class: "input-field" %>
-</div>
+<section class="broadcast-settings-card broadcast-settings-card--identity">
+  <div class="broadcast-settings-card__header">
+    <span><i class="fas fa-tv" aria-hidden="true"></i></span>
+    <div><h3>Identificação</h3><p>Nome usado para localizar esta TV no painel.</p></div>
+  </div>
+  <div class="field">
+    <%= form.label :name, "Nome da TV" %>
+    <%= form.text_field :name, class: "input-field", placeholder: "Ex.: TV Recepção" %>
+  </div>
+</section>
 
+<section class="broadcast-settings-card broadcast-settings-card--content">
+  <div class="broadcast-settings-card__header">
+    <span><i class="fas fa-photo-video" aria-hidden="true"></i></span>
+    <div><h3>Conteúdo e playlist</h3><p>Escolha o conteúdo que será reproduzido nesta tela.</p></div>
+  </div>
 <div class="field">
   <div class="broadcast-playlist-picker__header">
     <div>
@@ -62,6 +73,26 @@
   <% end %>
 </div>
 
+<div class="broadcast-sync-panel">
+  <div class="broadcast-power-card__header">
+    <h3>Sincronização automática</h3>
+    <p>Controle geral da sincronização desta TV com outras que utilizam a mesma playlist.</p>
+  </div>
+  <div class="field">
+    <label class="broadcast-checkbox">
+      <%= form.check_box :playlist_sync_enabled %>
+      <span>Manter esta TV sincronizada com a playlist compartilhada</span>
+    </label>
+    <p class="helper-text">Quando ativada, fotos e vídeos seguem o mesmo slide e posição das demais TVs sincronizadas. Quando desativada, esta TV reproduz de forma independente.</p>
+  </div>
+</div>
+</section>
+
+<section class="broadcast-settings-card broadcast-settings-card--playback">
+  <div class="broadcast-settings-card__header">
+    <span><i class="fas fa-play-circle" aria-hidden="true"></i></span>
+    <div><h3>Reprodução e página web</h3><p>Defina o aplicativo e a alternância com conteúdo web.</p></div>
+  </div>
 <div class="field">
   <%= form.label :official_app_web_enabled, I18n.t("ShowOfficialWebPage") %>
   <label class="broadcast-checkbox">
@@ -90,6 +121,17 @@
     <%= form.url_field :official_app_page_url, class: "input-field", placeholder: "https://seusite.com/painel" %>
     <p class="helper-text"><%= I18n.t("WebPageUrlHelp") %></p>
   </div>
+
+  <div class="field">
+    <%= form.label :official_app_web_only, I18n.t("OfficialAppWebDisplayMode") %>
+    <label class="broadcast-checkbox">
+      <%= form.check_box :official_app_web_only, id: "broadcast_official_app_web_only" %>
+      <span><%= I18n.t("OfficialAppWebOnly") %></span>
+    </label>
+    <p class="helper-text"><%= I18n.t("OfficialAppWebOnlyHelp") %></p>
+  </div>
+
+  <div id="official-app-web-rotation-fields">
 
   <div class="field">
     <%= form.label :official_app_rotation_trigger, I18n.t("WhenOpenWebPage") %>
@@ -149,8 +191,15 @@
   </div>
 
   <p class="helper-text"><%= I18n.t("OfficialWebDefaults") %></p>
+  </div>
 </div>
+</section>
 
+<section class="broadcast-settings-card broadcast-settings-card--device">
+  <div class="broadcast-settings-card__header">
+    <span><i class="fas fa-network-wired" aria-hidden="true"></i></span>
+    <div><h3>Dispositivo e conexão</h3><p>Configure o modelo da TV, endereço de rede e controle remoto.</p></div>
+  </div>
 <div class="field">
   <%= form.label :tv_device_type, I18n.t("TvType") %>
   <%= form.select :tv_device_type,
@@ -198,10 +247,19 @@
   <%= form.label :adb_port, I18n.t("AdbPort") %>
   <%= form.number_field :adb_port, class: "input-field", min: 1, max: 65535 %>
 </div>
+</section>
 
+<section class="broadcast-settings-card broadcast-settings-card--display">
+  <div class="broadcast-settings-card__header">
+    <span><i class="fas fa-sliders-h" aria-hidden="true"></i></span>
+    <div><h3>Tela e aparência</h3><p>Ajuste widgets, margens e orientação da exibição.</p></div>
+  </div>
 <div class="field">
-  <%= form.label :show_widgets, "Show Widgets" %>
-  <%= form.check_box :show_widgets %>
+  <label>Widgets na tela</label>
+  <label class="broadcast-checkbox">
+    <%= form.check_box :show_widgets %>
+    <span>Exibir widgets durante a reprodução</span>
+  </label>
 </div>
 
 <div class="field">
@@ -220,11 +278,12 @@
                   {},
                   class: "input-field" %>
 </div>
+</section>
 
-<div class="broadcast-power-card">
+<div class="broadcast-power-card broadcast-settings-card broadcast-settings-card--schedule">
   <div class="broadcast-power-card__header">
-    <h3><%= I18n.t("TvPowerSchedule") %></h3>
-    <p><%= I18n.t("TvPowerScheduleHelp") %></p>
+    <span><i class="fas fa-calendar-alt" aria-hidden="true"></i></span>
+    <div><h3><%= I18n.t("TvPowerSchedule") %></h3><p><%= I18n.t("TvPowerScheduleHelp") %></p></div>
   </div>
 
   <div class="broadcast-power-card__grid">
@@ -266,6 +325,8 @@
     const playlistPicker = document.getElementById("broadcast-playlist-picker");
     const playbackTypeField = document.getElementById("broadcast_playback_app_type");
     const officialAppWebEnabledField = document.getElementById("broadcast_official_app_web_enabled");
+    const officialAppWebOnlyField = document.getElementById("broadcast_official_app_web_only");
+    const officialAppWebRotationFields = document.getElementById("official-app-web-rotation-fields");
     const officialAppRotationTrigger = document.getElementById("broadcast_official_app_rotation_trigger");
     const tvTypeField = document.getElementById("broadcast_tv_device_type");
     const tvIpField = document.getElementById("broadcast_tv_ip");
@@ -315,6 +376,9 @@
       const showOfficialAppFields = playbackTypeField.value === "official_app";
       officialAppBrowserCard.style.display = showOfficialAppFields ? "block" : "none";
       officialAppBrowserCard.style.opacity = officialAppWebEnabledField && !officialAppWebEnabledField.checked ? "0.65" : "1";
+      if (officialAppWebRotationFields) {
+        officialAppWebRotationFields.style.display = officialAppWebOnlyField && officialAppWebOnlyField.checked ? "none" : "block";
+      }
     }
 
     function updateRotationTriggerFields() {
@@ -412,6 +476,10 @@
 
     if (officialAppWebEnabledField) {
       officialAppWebEnabledField.addEventListener("change", updatePlaybackModeFields);
+    }
+
+    if (officialAppWebOnlyField) {
+      officialAppWebOnlyField.addEventListener("change", updatePlaybackModeFields);
     }
 
     if (officialAppRotationTrigger) {

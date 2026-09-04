@@ -18,9 +18,20 @@ data class TvChannel(
     val configVersion: String?,
     val playlistItemsJson: String?,
     val playlistSync: PlaylistSync?,
+    val presentationControl: PresentationControl?,
     val playlistNotificationSound: PlaylistNotificationSound?,
     val officialAppBrowserRotation: OfficialAppBrowserRotation?,
     val officialAppWidgetBar: OfficialAppWidgetBar?
+)
+
+data class PresentationControl(
+    val enabled: Boolean,
+    val paused: Boolean,
+    val command: String?,
+    val commandVersion: Int,
+    val commandUrl: String?,
+    val playlistItemCount: Int,
+    val currentItemId: Long?
 )
 
 data class TvPowerSchedule(

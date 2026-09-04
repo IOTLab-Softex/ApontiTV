@@ -28,6 +28,7 @@ class Broadcast < ApplicationRecord
   attribute :official_app_switch_interval_unit, :string, default: "minutes"
   attribute :official_app_page_duration_unit, :string, default: "seconds"
   attribute :official_app_web_enabled, :boolean, default: false
+  attribute :official_app_web_only, :boolean, default: false
   attribute :widget_bar_edge_spacing_enabled, :boolean, default: true
   attribute :keep_app_foreground_enabled, :boolean, default: false
 
@@ -317,6 +318,14 @@ class Broadcast < ApplicationRecord
     playback_app_type_official_app? && official_app_web_enabled? && official_app_page_url.present?
   end
 
+  def official_app_web_enabled?
+    ActiveModel::Type::Boolean.new.cast(self[:official_app_web_enabled])
+  end
+
+  def official_app_web_only?
+    ActiveModel::Type::Boolean.new.cast(self[:official_app_web_only])
+  end
+
   def official_app_direct_video_playback_enabled?
     playback_app_type_official_app? && (video.attached? || playlist_enabled?)
   end
@@ -326,6 +335,7 @@ class Broadcast < ApplicationRecord
   end
 
   def preview_playback_mode_label
+    return "Página web no app oficial" if official_app_browser_rotation_enabled? && official_app_web_only?
     return "Playlist" if playlist_enabled?
 
     official_app_direct_video_playback_enabled? ? "Video direto" : "FFmpeg / HLS"
@@ -357,6 +367,7 @@ class Broadcast < ApplicationRecord
 
     {
       enabled: enabled,
+      web_only: enabled && official_app_web_only?,
       page_url: enabled ? official_app_page_url : nil,
       rotation_trigger: enabled ? (official_app_rotation_trigger.presence || "time_interval") : nil,
       switch_interval_unit: official_app_switch_interval_unit.presence || "minutes",
@@ -576,6 +587,7 @@ class Broadcast < ApplicationRecord
     return unless playback_app_type_official_app?
     return unless official_app_web_enabled?
     return if official_app_page_url.blank?
+    return if official_app_web_only?
 
     if official_app_rotation_trigger.to_s != "video_end" && official_app_switch_interval_seconds.blank?
       errors.add(:official_app_switch_interval_seconds, "deve ser informado quando houver pagina web no app oficial")
@@ -608,10 +620,6 @@ class Broadcast < ApplicationRecord
 
   def normalized_tv_disabled_weekdays
     Array(tv_disabled_weekdays).map(&:to_s).select { |value| value.match?(/\A[0-6]\z/) }.uniq
-  end
-
-  def official_app_web_enabled?
-    ActiveModel::Type::Boolean.new.cast(self[:official_app_web_enabled])
   end
 
   def normalize_playback_app_type

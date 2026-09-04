@@ -3,8 +3,9 @@ require "digest"
 class DesktopWallpaperPayload
   FILENAME = "wallpaper.jpeg".freeze
 
-  def initialize(request:)
+  def initialize(request:, group: nil)
     @request = request
+    @group = group
   end
 
   def available?
@@ -32,10 +33,10 @@ class DesktopWallpaperPayload
 
   private
 
-  attr_reader :request
+  attr_reader :request, :group
 
   def path
-    Rails.root.join("public", "wallpapers", FILENAME)
+    group.present? && File.exist?(group.wallpaper_path) ? group.wallpaper_path : Rails.root.join("public", "wallpapers", FILENAME)
   end
 
   def sha256
@@ -43,6 +44,7 @@ class DesktopWallpaperPayload
   end
 
   def url
-    "#{request.protocol}#{request.host_with_port}/wallpapers/#{FILENAME}?v=#{version}"
+    relative = group.present? && File.exist?(group.wallpaper_path) ? "wallpapers/groups/#{group.id}.jpeg" : "wallpapers/#{FILENAME}"
+    "#{request.protocol}#{request.host_with_port}/#{relative}?v=#{version}"
   end
 end

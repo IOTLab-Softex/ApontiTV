@@ -48,6 +48,14 @@
             android:visibility="invisible" />
     </FrameLayout>
 
+    <br.com.softextv.player.PresentationPointerView
+        android:id="@+id/presentationPointer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/widgetBar"
         android:layout_width="match_parent"

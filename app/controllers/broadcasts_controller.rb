@@ -17,8 +17,8 @@ class BroadcastsController < ApplicationController
 
   before_action :authenticate_user!
   skip_before_action :verify_authenticity_token
-  skip_before_action :authenticate_user!, only: [:mobile_index, :mobile_status, :mobile_presence, :mobile_player_status, :request_adb_authorization, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
-  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :preview_stream, :mobile_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
+  skip_before_action :authenticate_user!, only: [:mobile_index, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :presentation_command, :request_adb_authorization, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
+  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :toggle_presentation_mode, :presentation_command, :preview_stream, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
   before_action :require_admin_for_broadcast_edit, only: [:edit, :update]
   before_action :set_available_video_blobs, only: [:new, :edit, :create, :update]
   before_action :set_playlist_library, only: [:index, :new, :edit, :create, :update]
@@ -291,8 +291,19 @@ class BroadcastsController < ApplicationController
       return
     end
 
+    broadcasts = Broadcast.where(id: broadcast_ids)
+    if broadcasts.none?
+      redirect_to broadcasts_path, alert: "Selecione pelo menos uma TV válida para receber a playlist."
+      return
+    end
+
     playlist = SavedBroadcastPlaylist.includes(items: :media_blob).find_by(id: params[:playlist_id])
-    blobs = playlist.present? ? playlist.items.map(&:media_blob) : published_media_blobs
+    if playlist.blank?
+      redirect_to broadcasts_path, alert: "Selecione uma playlist antes de publicar."
+      return
+    end
+
+    blobs = playlist.items.map(&:media_blob)
     if blobs.blank?
       redirect_to broadcasts_path, alert: "Selecione uma playlist com midias ou crie uma nova."
       return
@@ -301,7 +312,7 @@ class BroadcastsController < ApplicationController
     updated = []
     restarted = []
 
-    Broadcast.where(id: broadcast_ids).find_each do |broadcast|
+    broadcasts.find_each do |broadcast|
       publish_playlist_to_broadcast(broadcast, blobs, playlist: playlist)
       if broadcast.video.attached?
         broadcast.update!(command: broadcast.generate_command(broadcast.show_widgets))
@@ -378,6 +389,7 @@ class BroadcastsController < ApplicationController
         playback_mode: broadcast.preview_playback_mode_label,
         playlist_items: broadcast.mobile_playlist_payload(streaming_configuration),
         playlist_sync: mobile_playlist_sync_payload(broadcast),
+        presentation_control: presentation_control_payload(broadcast),
         playback_app_type: broadcast.playback_app_type,
         official_app_browser_rotation: broadcast.playback_app_type_official_app? ? broadcast.official_app_payload(streaming_configuration) : nil,
         official_app_widget_bar: mobile_widget_bar_payload_for(broadcast, streaming_configuration),
@@ -416,6 +428,7 @@ class BroadcastsController < ApplicationController
       playback_mode: @broadcast.preview_playback_mode_label,
       playlist_items: @broadcast.mobile_playlist_payload(streaming_configuration),
       playlist_sync: mobile_playlist_sync_payload(@broadcast),
+      presentation_control: presentation_control_payload(@broadcast),
       official_app_browser_rotation: @broadcast.playback_app_type_official_app? ? @broadcast.official_app_payload(streaming_configuration) : nil,
       official_app_widget_bar: mobile_widget_bar_payload_for(@broadcast, streaming_configuration),
       power_schedule: mobile_power_schedule_payload(@broadcast),
@@ -426,6 +439,13 @@ class BroadcastsController < ApplicationController
       config_version: mobile_config_version_for(@broadcast, streaming_configuration),
       orientation: normalized_mobile_orientation(@broadcast)
     }
+  end
+
+  # Lightweight endpoint for real-time presentation commands. Keeping this
+  # separate avoids rebuilding and transferring the full playlist many times
+  # per second for every connected TV.
+  def presentation_status
+    render json: { presentation_control: presentation_control_payload(@broadcast) }
   end
 
   def mobile_presence
@@ -455,6 +475,52 @@ class BroadcastsController < ApplicationController
       app_player_presence_status: @broadcast.app_player_presence_status,
       app_player_presence_updated_at: @broadcast.app_player_presence_updated_at
     }
+  end
+
+  def toggle_presentation_mode
+    enabled = !@broadcast.presentation_mode_enabled?
+    @broadcast.update!(
+      presentation_mode_enabled: enabled,
+      presentation_command: nil,
+      presentation_paused: false,
+      presentation_command_version: @broadcast.presentation_command_version.to_i + 1,
+      presentation_command_updated_at: Time.current
+    )
+
+    respond_to do |format|
+      format.html { redirect_back fallback_location: broadcasts_path, notice: "Modo apresentação #{enabled ? 'ativado' : 'desativado'} para #{@broadcast.name}." }
+      format.json { render json: { ok: true, presentation_control: presentation_control_payload(@broadcast) } }
+    end
+  end
+
+  def presentation_command
+    unless @broadcast.presentation_mode_enabled?
+      render json: { ok: false, error: "presentation_mode_disabled" }, status: :unprocessable_entity
+      return
+    end
+
+    command = params[:command].to_s
+    valid_command = %w[play pause next previous pointer_hide].include?(command) ||
+      command.match?(/\Ashow:\d+\z/) ||
+      command.match?(/\Apointer:(?:0(?:\.\d+)?|1(?:\.0+)?):(?:0(?:\.\d+)?|1(?:\.0+)?)\z/)
+    unless valid_command
+      render json: { ok: false, error: "invalid_presentation_command" }, status: :unprocessable_entity
+      return
+    end
+
+    @broadcast.with_lock do
+      # Remote presentation commands are transient player state, not configuration.
+      # Avoid touching updated_at so the Android app does not restart playback or
+      # replay the playlist-update notification for every button press.
+      @broadcast.update_columns(
+        presentation_command: command,
+        presentation_command_version: @broadcast.presentation_command_version.to_i + 1,
+        presentation_command_updated_at: Time.current,
+        presentation_paused: command == "pause" ? true : (command == "play" ? false : @broadcast.presentation_paused?)
+      )
+    end
+
+    render json: { ok: true, presentation_control: presentation_control_payload(@broadcast) }
   end
 
   def mobile_player_status
@@ -550,9 +616,17 @@ class BroadcastsController < ApplicationController
       message: "#{@broadcast.name}: #{result.message}",
       severity: result.success? ? "info" : "error"
     )
-    redirect_back fallback_location: broadcasts_path,
-                  notice: (result.success? ? result.message : nil),
-                  alert: (result.success? ? nil : result.message)
+    respond_to do |format|
+      format.html do
+        redirect_back fallback_location: broadcasts_path,
+                      notice: (result.success? ? result.message : nil),
+                      alert: (result.success? ? nil : result.message)
+      end
+      format.json do
+        render json: { ok: result.success?, message: result.message, power_state: "on" },
+               status: (result.success? ? :ok : :unprocessable_entity)
+      end
+    end
   end
 
   def power_off_tv
@@ -569,9 +643,17 @@ class BroadcastsController < ApplicationController
       message: "#{@broadcast.name}: #{result.message}",
       severity: result.success? ? "info" : "error"
     )
-    redirect_back fallback_location: broadcasts_path,
-                  notice: (result.success? ? result.message : nil),
-                  alert: (result.success? ? nil : result.message)
+    respond_to do |format|
+      format.html do
+        redirect_back fallback_location: broadcasts_path,
+                      notice: (result.success? ? result.message : nil),
+                      alert: (result.success? ? nil : result.message)
+      end
+      format.json do
+        render json: { ok: result.success?, message: result.message, power_state: "off" },
+               status: (result.success? ? :ok : :unprocessable_entity)
+      end
+    end
   end
 
   def volume_up_tv
@@ -589,9 +671,20 @@ class BroadcastsController < ApplicationController
   def set_volume_tv
     result = TvDeviceService.new(@broadcast).set_volume_percent(params[:volume_percent])
 
-    redirect_back fallback_location: broadcasts_path,
-                  notice: (result.success? ? result.message : nil),
-                  alert: (result.success? ? nil : result.message)
+    respond_to do |format|
+      format.html do
+        redirect_back fallback_location: broadcasts_path,
+                      notice: (result.success? ? result.message : nil),
+                      alert: (result.success? ? nil : result.message)
+      end
+      format.json do
+        render json: {
+          ok: result.success?,
+          message: result.message,
+          volume_percent: @broadcast.reload.tv_volume_percent
+        }, status: (result.success? ? :ok : :unprocessable_entity)
+      end
+    end
   end
 
   def update_power_schedule
@@ -956,9 +1049,25 @@ class BroadcastsController < ApplicationController
   end
 
   def dashboard_preview_payload_for(broadcast)
+    playlist_items = broadcast.playlist_items.ordered.to_a
     current_item = broadcast.current_player_playlist_item ||
-                   (broadcast.playlist_enabled? ? broadcast.playlist_items.includes(media_attachment: :blob).first : nil)
+                   (broadcast.playlist_enabled? ? playlist_items.first : nil)
+    current_slide_index = current_item.present? ? playlist_items.index { |item| item.id == current_item.id } : nil
     orientation = broadcast.orientation.presence || "landscape"
+
+    if broadcast.official_app_browser_rotation_enabled? && broadcast.official_app_web_only?
+      return {
+        key: "web-only-#{broadcast.id}-#{broadcast.updated_at.to_i}",
+        name: broadcast.name,
+        mode: broadcast.preview_playback_mode_label,
+        orientation: orientation,
+        slide_count: 0,
+        slide_index: 0,
+        thumb_url: nil,
+        source_url: broadcast.official_app_page_url,
+        source_type: "text/html"
+      }
+    end
 
     if current_item&.media&.attached?
       blob = current_item.media.blob
@@ -967,6 +1076,8 @@ class BroadcastsController < ApplicationController
         name: broadcast.name,
         mode: broadcast.preview_playback_mode_label,
         orientation: orientation,
+        slide_count: playlist_items.length,
+        slide_index: current_slide_index || 0,
         thumb_url: media_library_thumbnail_path(blob, v: blob.created_at.to_i),
         source_url: mobile_playlist_item_broadcast_path(broadcast, current_item, v: current_item.updated_at.to_i),
         source_type: current_item.media.content_type
@@ -979,6 +1090,8 @@ class BroadcastsController < ApplicationController
         name: broadcast.name,
         mode: broadcast.preview_playback_mode_label,
         orientation: orientation,
+        slide_count: 1,
+        slide_index: 0,
         thumb_url: mobile_thumbnail_broadcast_path(broadcast, v: broadcast.cache_key_with_version),
         source_url: mobile_prepared_video_broadcast_path(broadcast, v: broadcast.cache_key_with_version),
         source_type: "video/mp4"
@@ -1211,10 +1324,10 @@ class BroadcastsController < ApplicationController
   def publish_playlist_to_broadcast(broadcast, blobs, playlist: nil)
     broadcast.playlist_items.destroy_all
     sync_started_at = playlist&.updated_at || Time.current
+    sync_enabled = broadcast.playlist_sync_enabled?
     broadcast.assign_attributes(
       saved_broadcast_playlist_id: playlist&.id,
-      playlist_sync_enabled: playlist&.sync_enabled? || false,
-      playlist_sync_started_at: playlist&.sync_enabled? ? sync_started_at : nil
+      playlist_sync_started_at: sync_enabled ? sync_started_at : nil
     )
 
     blobs.each_with_index do |blob, index|
@@ -1240,11 +1353,12 @@ class BroadcastsController < ApplicationController
 
   def mobile_playlist_sync_payload(broadcast)
     expected = expected_playlist_position_for(broadcast)
+    sync_started_at = effective_playlist_sync_started_at(broadcast)
 
     {
-      enabled: broadcast.playlist_sync_enabled? && broadcast.playlist_items.any?,
-      started_at: broadcast.playlist_sync_started_at&.iso8601,
-      started_at_ms: broadcast.playlist_sync_started_at ? (broadcast.playlist_sync_started_at.to_f * 1000).to_i : nil,
+      enabled: automatic_playlist_sync_enabled?(broadcast) && broadcast.playlist_items.any?,
+      started_at: sync_started_at&.iso8601,
+      started_at_ms: sync_started_at ? (sync_started_at.to_f * 1000).to_i : nil,
       server_time_ms: (Time.current.to_f * 1000).to_i,
       playlist_id: broadcast.saved_broadcast_playlist_id,
       expected_item_id: expected&.dig(:item)&.id,
@@ -1255,8 +1369,21 @@ class BroadcastsController < ApplicationController
     }
   end
 
+  def presentation_control_payload(broadcast)
+    {
+      enabled: broadcast.presentation_mode_enabled?,
+      paused: broadcast.presentation_paused?,
+      command: broadcast.presentation_command,
+      command_version: broadcast.presentation_command_version.to_i,
+      command_updated_at: broadcast.presentation_command_updated_at&.iso8601,
+      command_url: presentation_command_broadcast_path(broadcast),
+      playlist_item_count: broadcast.playlist_items.count,
+      current_item_id: broadcast.current_player_playlist_item_id
+    }
+  end
+
   def analyze_playlist_sync_for!(broadcast)
-    return unless broadcast.playlist_sync_enabled?
+    return unless automatic_playlist_sync_enabled?(broadcast)
     return if broadcast.saved_broadcast_playlist_id.blank?
     return unless broadcast.app_player_playing?
 
@@ -1282,8 +1409,10 @@ class BroadcastsController < ApplicationController
   end
 
   def expected_playlist_position_for(broadcast)
-    return unless broadcast.playlist_sync_enabled?
-    return if broadcast.playlist_sync_started_at.blank?
+    return unless automatic_playlist_sync_enabled?(broadcast)
+
+    sync_started_at = effective_playlist_sync_started_at(broadcast)
+    return if sync_started_at.blank?
 
     items = broadcast.playlist_items.ordered.to_a
     return if items.blank?
@@ -1292,7 +1421,7 @@ class BroadcastsController < ApplicationController
     total_duration_ms = durations.sum
     return if total_duration_ms <= 0
 
-    cursor_ms = (((Time.current - broadcast.playlist_sync_started_at) * 1000).to_i % total_duration_ms)
+    cursor_ms = (((Time.current - sync_started_at) * 1000).to_i % total_duration_ms)
     items.each_with_index do |item, index|
       duration_ms = durations[index]
       return { item: item, index: index, elapsed_ms: cursor_ms, remaining_ms: duration_ms - cursor_ms } if cursor_ms < duration_ms
@@ -1301,6 +1430,17 @@ class BroadcastsController < ApplicationController
     end
 
     { item: items.first, index: 0, elapsed_ms: 0, remaining_ms: durations.first }
+  end
+
+  def automatic_playlist_sync_enabled?(broadcast)
+    broadcast.playlist_sync_enabled?
+  end
+
+  def effective_playlist_sync_started_at(broadcast)
+    return broadcast.playlist_sync_started_at if broadcast.playlist_sync_started_at.present?
+    return unless automatic_playlist_sync_enabled?(broadcast)
+
+    SavedBroadcastPlaylist.where(id: broadcast.saved_broadcast_playlist_id).pick(:updated_at)
   end
 
   def mobile_power_schedule_payload(broadcast)
@@ -1490,6 +1630,7 @@ class BroadcastsController < ApplicationController
       :adb_port,
       :official_app_page_url,
       :official_app_web_enabled,
+      :official_app_web_only,
       :official_app_rotation_trigger,
       :official_app_switch_interval_unit,
       :official_app_switch_interval_seconds,
@@ -1499,6 +1640,7 @@ class BroadcastsController < ApplicationController
       :official_app_transition_duration_ms,
       :widget_bar_edge_spacing_enabled,
       :keep_app_foreground_enabled,
+      :playlist_sync_enabled,
       :tv_power_on_time,
       :tv_power_off_time,
       tv_disabled_weekdays: []

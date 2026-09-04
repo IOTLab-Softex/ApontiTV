@@ -10,12 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_03_150000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
-    t.bigint "record_id", null: false
-    t.bigint "blob_id", null: false
+    t.integer "record_id", null: false
+    t.integer "blob_id", null: false
     t.datetime "created_at", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
@@ -34,7 +34,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
   end
 
   create_table "active_storage_variant_records", force: :cascade do |t|
-    t.bigint "blob_id", null: false
+    t.integer "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
@@ -112,6 +112,12 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
     t.boolean "keep_app_foreground_enabled", default: false, null: false
     t.datetime "last_app_foreground_reopen_at"
     t.string "last_app_foreground_reopen_message"
+    t.boolean "presentation_mode_enabled", default: false, null: false
+    t.string "presentation_command"
+    t.integer "presentation_command_version", default: 0, null: false
+    t.datetime "presentation_command_updated_at"
+    t.boolean "presentation_paused", default: false, null: false
+    t.boolean "official_app_web_only", default: false, null: false
     t.index ["app_device_token"], name: "index_broadcasts_on_app_device_token", unique: true
     t.index ["current_player_playlist_item_id"], name: "index_broadcasts_on_current_player_playlist_item_id"
     t.index ["saved_broadcast_playlist_id"], name: "index_broadcasts_on_saved_broadcast_playlist_id"
@@ -134,12 +140,21 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
     t.string "status", default: "approved", null: false
     t.datetime "approved_at"
     t.datetime "paired_at"
+    t.integer "desktop_group_id"
     t.index ["approval_code"], name: "index_desktop_agents_on_approval_code"
+    t.index ["desktop_group_id"], name: "index_desktop_agents_on_desktop_group_id"
     t.index ["enabled"], name: "index_desktop_agents_on_enabled"
     t.index ["last_seen_at"], name: "index_desktop_agents_on_last_seen_at"
     t.index ["pairing_secret_digest"], name: "index_desktop_agents_on_pairing_secret_digest"
     t.index ["status"], name: "index_desktop_agents_on_status"
     t.index ["token_digest"], name: "index_desktop_agents_on_token_digest", unique: true
+  end
+
+  create_table "desktop_groups", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_desktop_groups_on_name", unique: true
   end
 
   create_table "licenses", force: :cascade do |t|
@@ -271,6 +286,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
     t.boolean "admin"
     t.datetime "last_accessed_at"
     t.datetime "last_signed_out_at"
+    t.datetime "onboarding_seen_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["last_accessed_at"], name: "index_users_on_last_accessed_at"
     t.index ["last_signed_out_at"], name: "index_users_on_last_signed_out_at"
@@ -285,12 +301,14 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_120000) do
     t.integer "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_video_editor_projects_on_user_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "broadcast_playlist_items", "broadcasts"
   add_foreign_key "broadcasts", "saved_broadcast_playlists"
+  add_foreign_key "desktop_agents", "desktop_groups"
   add_foreign_key "saved_broadcast_playlist_items", "active_storage_blobs", column: "media_blob_id"
   add_foreign_key "saved_broadcast_playlist_items", "saved_broadcast_playlists"
   add_foreign_key "schedules", "broadcasts"

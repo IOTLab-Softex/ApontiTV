@@ -159,7 +159,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        stopSplashVideo()
+        // Release the splash decoder while PlayerActivity is in front. Some
+        // MediaTek TVs only provide one reliable H.264 decoder to WebView.
+        releaseSplashPlayer()
         super.onPause()
     }
 
@@ -560,6 +562,9 @@ class MainActivity : AppCompatActivity() {
             ?: return false
         val playableUrl = matchedChannel.playbackUrl ?: matchedChannel.streamUrl
         val hasPlaylist = !matchedChannel.playlistItemsJson.isNullOrBlank() && matchedChannel.playlistItemsJson != "[]"
+        val hasWebOnly = matchedChannel.officialAppBrowserRotation?.let {
+            it.enabled && it.webOnly && !it.pageUrl.isNullOrBlank()
+        } ?: false
         reportPresence(matchedChannel.id, "online")
         if (matchedChannel.status != "running") {
             if (suppressedChannelId == matchedChannel.id) {
@@ -568,7 +573,7 @@ class MainActivity : AppCompatActivity() {
             }
             return false
         }
-        if (playableUrl.isBlank() && !hasPlaylist) return false
+        if (playableUrl.isBlank() && !hasPlaylist && !hasWebOnly) return false
 
         val isSameSuppressedPlayback =
             forceSelectionMode &&
@@ -914,8 +919,11 @@ class MainActivity : AppCompatActivity() {
     private fun openPlayer(channel: TvChannel) {
         val playableUrl = channel.playbackUrl?.takeIf { it.isNotBlank() } ?: channel.streamUrl
         val hasPlaylist = !channel.playlistItemsJson.isNullOrBlank() && channel.playlistItemsJson != "[]"
+        val hasWebOnly = channel.officialAppBrowserRotation?.let {
+            it.enabled && it.webOnly && !it.pageUrl.isNullOrBlank()
+        } ?: false
         require(channel.id > 0L) { "ID da TV invalido" }
-        require(playableUrl.isNotBlank() || hasPlaylist) { "URL de reproducao vazia" }
+        require(playableUrl.isNotBlank() || hasPlaylist || hasWebOnly) { "URL de reproducao vazia" }
 
         val orientation = channel.orientation?.takeIf { it == "landscape" || it == "portrait" || it == "portrait_inverted" } ?: "portrait"
         val playbackAppType = channel.playbackAppType?.takeIf { it.isNotBlank() } ?: "official_app"
@@ -938,6 +946,7 @@ class MainActivity : AppCompatActivity() {
             .putExtra(PlayerActivity.EXTRA_PLAYLIST_NOTIFICATION_VERSION, channel.playlistNotificationSound?.version)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_PAGE_URL, channel.officialAppBrowserRotation?.pageUrl)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_ROTATION_ENABLED, channel.officialAppBrowserRotation?.enabled ?: false)
+            .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_WEB_ONLY, channel.officialAppBrowserRotation?.webOnly ?: false)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_ROTATION_TRIGGER, channel.officialAppBrowserRotation?.rotationTrigger ?: "time_interval")
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS, channel.officialAppBrowserRotation?.switchIntervalSeconds ?: 300)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_PAGE_DURATION_SECONDS, channel.officialAppBrowserRotation?.pageDurationSeconds ?: 15)

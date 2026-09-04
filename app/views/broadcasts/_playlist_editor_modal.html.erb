@@ -363,27 +363,36 @@
     grid-template-columns: 34px 64px minmax(0, 1fr);
   }
   .broadcast-playlist-selected-remove {
-    width: 32px;
-    height: 32px;
-    border: 1px solid rgba(248, 113, 113, .2);
-    border-radius: 999px;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border: 1px solid rgba(248, 113, 113, .38);
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 23, 42, .58);
-    color: #fca5a5;
+    background: linear-gradient(145deg, rgba(127, 29, 29, .24), rgba(69, 10, 10, .14));
+    color: #fb7185;
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
-    transition: transform .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 4px 12px rgba(0, 0, 0, .12);
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
   }
   .broadcast-playlist-selected-remove:hover {
-    transform: scale(1.06);
-    border-color: rgba(248, 113, 113, .62);
-    background: rgba(220, 38, 38, .88);
+    transform: translateY(-2px) scale(1.04);
+    border-color: rgba(251, 113, 133, .9);
+    background: linear-gradient(145deg, #ef4444, #be123c);
     color: #ffffff;
+    box-shadow: 0 8px 20px rgba(225, 29, 72, .32), 0 0 0 3px rgba(244, 63, 94, .1);
+  }
+  .broadcast-playlist-selected-remove:active {
+    transform: translateY(0) scale(.97);
+  }
+  .broadcast-playlist-selected-remove:focus-visible {
+    outline: 2px solid #fda4af;
+    outline-offset: 3px;
   }
   .broadcast-playlist-selected-remove i {
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1;
   }
   .broadcast-playlist-editor__settings {
@@ -1139,7 +1148,7 @@
         return `
           <div class="broadcast-publish-video broadcast-publish-video--selected" data-selected-library-blob-id="${escapeHtml(input.value)}">
             <button type="button" class="broadcast-playlist-selected-remove" data-playlist-remove-selected="${escapeHtml(input.value)}" title="<%= j I18n.t("Remove", default: "Remover") %>" aria-label="<%= j I18n.t("Remove", default: "Remover") %>">
-              <i class="fas fa-times" aria-hidden="true"></i>
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
             </button>
             <span class="broadcast-playlist-thumb-preview" data-playlist-hover-preview>
               <img src="${escapeHtml(previewSrc)}" alt="" loading="lazy" decoding="async">

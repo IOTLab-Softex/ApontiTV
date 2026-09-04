@@ -1,0 +1,24 @@
+<div class="app-banner__help" data-general-help>
+  <button type="button"
+          class="<%= local_assigns.fetch(:button_class, "app-banner__help-button") %>"
+          data-general-help-button
+          aria-label="Abrir ajuda geral"
+          aria-expanded="false">
+    <i class="far fa-circle-question" aria-hidden="true"></i>
+    <span>Ajuda</span>
+  </button>
+  <div class="app-banner__help-menu" data-general-help-menu hidden>
+    <strong>Como podemos ajudar?</strong>
+    <p>Selecione uma pergunta para abrir o tutorial na fun&ccedil;&atilde;o correta.</p>
+    <nav aria-label="Perguntas de ajuda">
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "main_menu") do %><i class="fas fa-bars"></i><span>Como usar o Menu principal e acessar cada área do sistema?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "toolbar_actions") do %><i class="fas fa-sliders-h"></i><span>Como usar as ações para adicionar TVs, publicar playlists e configurar horários?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "publish_modal") do %><i class="fas fa-upload"></i><span>Como escolher uma playlist e publicá-la em uma ou várias TVs?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "view_switch") do %><i class="fas fa-columns"></i><span>Como alternar entre as visualizações Tabela e Cards?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "desktop_all") do %><i class="fas fa-desktop"></i><span>Como alterar o papel de parede de todos os computadores?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "desktop_group") do %><i class="fas fa-layer-group"></i><span>Como alterar o papel de parede de um grupo?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "tv_controls") do %><i class="fas fa-tv"></i><span>Como usar os controles dos cards das TVs?</span><% end %>
+      <%= link_to broadcasts_path(locale: I18n.locale, help: "tv_schedule") do %><i class="fas fa-calendar-alt"></i><span>Como configurar o agendamento de uma TV?</span><% end %>
+    </nav>
+  </div>
+</div>

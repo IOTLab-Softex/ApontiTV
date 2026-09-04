@@ -62,11 +62,12 @@
                          !(controller_name == "sessions" && action_name == "new") %>
 
     <% if show_app_chrome %>
-      <aside class="app-sidebar" aria-label="<%= I18n.t("MainMenu") %>">
+      <aside class="app-sidebar" aria-label="<%= I18n.t("MainMenu") %>" data-main-menu-help-panel>
         <div class="app-sidebar__brand">
           <%= tag.img src: asset_path("APONTI_MARCA.png"), alt: "Aponti TV", class: "app-sidebar__logo", onerror: "this.hidden=true;this.nextElementSibling.hidden=false;" %>
           <%= tag.img src: asset_path("icone.png"), alt: "Aponti TV", class: "app-sidebar__logo-icon" %>
           <span class="app-sidebar__brand-fallback" hidden>Aponti TV</span>
+          <button type="button" class="app-sidebar__help" data-main-menu-help-open title="Ajuda do Menu principal" aria-label="Abrir ajuda do Menu principal"><i class="far fa-circle-question" aria-hidden="true"></i></button>
         </div>
 
         <nav class="app-sidebar__nav">
@@ -182,6 +183,7 @@
           <% end %>
         </div>
       </aside>
+      <%= render "shared/main_menu_help" %>
     <% end %>
 
     <% unless (controller_name == "license" && (action_name == "new" || action_name == "create")) ||
@@ -205,6 +207,10 @@
 
         <div class="app-banner__tools">
           <% unless controller_name == "sessions" && action_name == "new" %>
+            <% if user_signed_in? %>
+              <%= render "shared/general_help" %>
+            <% end %>
+
             <div class="app-banner__language">
               <i class="fas fa-globe" aria-hidden="true"></i>
               <%= form_with(url: "/change_locale", method: :get, local: true) do %>
@@ -264,6 +270,31 @@
       </div>
     </main>
 
+    <% if user_signed_in? && current_user.onboarding_seen_at.nil? && controller_name == "broadcasts" && action_name == "index" %>
+      <%= render "shared/first_access_modal" %>
+    <% end %>
+
+    <script>
+      function setupGeneralHelpMenu() {
+        const root = document.querySelector("[data-general-help]");
+        if (!root || root.dataset.ready === "true") return;
+        root.dataset.ready = "true";
+        const button = root.querySelector("[data-general-help-button]");
+        const menu = root.querySelector("[data-general-help-menu]");
+        const close = function() { menu.hidden = true; button.setAttribute("aria-expanded", "false"); };
+        button.addEventListener("click", function(event) {
+          event.stopPropagation();
+          menu.hidden = !menu.hidden;
+          button.setAttribute("aria-expanded", String(!menu.hidden));
+        });
+        root.addEventListener("click", function(event) { event.stopPropagation(); });
+        document.addEventListener("click", close);
+        document.addEventListener("keydown", function(event) { if (event.key === "Escape") close(); });
+      }
+      document.addEventListener("DOMContentLoaded", setupGeneralHelpMenu);
+      document.addEventListener("turbo:load", setupGeneralHelpMenu);
+      if (document.readyState !== "loading") setupGeneralHelpMenu();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       function initializeApontiShell() {
@@ -317,6 +348,7 @@
         applyTheme(currentTheme(), false);
 
         function applySidebarCompact(isCompact) {
+          if (isCompact && document.body.classList.contains("main-menu-help-open")) return;
           root.classList.toggle("app-sidebar-compact", isCompact);
         }
 
@@ -333,7 +365,7 @@
               if (menuButton) menuButton.setAttribute("aria-expanded", "false");
               if (avatarMenuButton) avatarMenuButton.setAttribute("aria-expanded", "false");
             }
-            applySidebarCompact(true);
+            if (!document.body.classList.contains("main-menu-help-open")) applySidebarCompact(true);
           });
         }
 
@@ -1226,6 +1258,27 @@
     color: var(--app-banner-control-text);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
   }
+
+  .app-banner__help { position:relative; }
+  .app-banner__help-button { height:46px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:0 12px; border:1px solid var(--app-banner-control-border); border-radius:10px; background:var(--app-banner-control-bg); color:var(--app-banner-control-text); cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.03); transition:.2s ease; }
+  .app-banner__help-button:hover, .app-banner__help-button[aria-expanded="true"] { border-color:rgba(168,85,247,.62); background:var(--app-banner-control-hover); box-shadow:0 0 18px rgba(139,47,242,.24); color:#fff; }
+  .app-banner__help-button i { color:#d8b4fe; font-size:17px; filter:drop-shadow(0 0 6px rgba(168,85,247,.72)); transition:color .2s ease, filter .2s ease, transform .2s ease; }
+  .app-banner__help-button:hover i, .app-banner__help-button:focus-visible i, .app-banner__help-button[aria-expanded="true"] i { color:#fff; filter:drop-shadow(0 0 10px rgba(192,132,252,1)); transform:scale(1.12); }
+  html[data-theme="light"] .app-banner__help-button i { color:#6d28d9; filter:drop-shadow(0 0 4px rgba(109,40,217,.3)); }
+  html[data-theme="light"] .app-banner__help-button:hover i,
+  html[data-theme="light"] .app-banner__help-button:focus-visible i,
+  html[data-theme="light"] .app-banner__help-button[aria-expanded="true"] i { color:#4c1d95; filter:drop-shadow(0 0 7px rgba(109,40,217,.5)); }
+  html[data-theme="dark"] .app-banner__help-button i,
+  body.theme-dark .app-banner__help-button i { color:#d8b4fe; }
+  .app-banner__help-button span { font-size:12px; font-weight:800; }
+  .app-banner__help-menu { position:absolute; z-index:5000; top:calc(100% + 10px); right:0; width:min(390px, calc(100vw - 24px)); padding:16px; border:1px solid rgba(167,139,250,.3); border-radius:16px; background:var(--app-banner-bg-solid); color:var(--app-banner-text); box-shadow:0 22px 55px rgba(2,6,23,.42), 0 0 24px rgba(124,58,237,.14); }
+  .app-banner__help-menu[hidden] { display:none; }
+  .app-banner__help-menu > strong { display:block; margin-bottom:4px; font-size:15px; }
+  .app-banner__help-menu > p { margin:0 0 12px; color:var(--app-banner-muted); font-size:11px; line-height:1.45; }
+  .app-banner__help-menu nav { display:grid; gap:7px; }
+  .app-banner__help-menu nav a { display:grid; grid-template-columns:32px 1fr; align-items:center; gap:10px; min-height:48px; padding:8px 10px; border:1px solid var(--app-banner-control-border); border-radius:12px; background:var(--app-banner-control-bg); color:var(--app-banner-control-text); text-decoration:none; font-size:12px; line-height:1.35; transition:.18s ease; }
+  .app-banner__help-menu nav a:hover { transform:translateX(-3px); border-color:rgba(168,85,247,.62); background:var(--app-banner-control-hover); }
+  .app-banner__help-menu nav a i { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; background:rgba(139,47,242,.16); color:#c4b5fd; }
 
   .app-banner__profile {
     display: flex;

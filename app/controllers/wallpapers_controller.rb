@@ -17,11 +17,20 @@ class WallpapersController < ApplicationController
       return
     end
 
+    group = DesktopGroup.find_by(id: params[:desktop_group_id].presence)
     wallpapers_dir = Rails.root.join("public", "wallpapers")
     FileUtils.mkdir_p(wallpapers_dir)
-    File.binwrite(wallpapers_dir.join("wallpaper.jpeg"), wallpaper.read)
+    image_data = wallpaper.read
+    if group.present?
+      FileUtils.mkdir_p(wallpapers_dir.join("groups"))
+      File.binwrite(group.wallpaper_path, image_data)
+    else
+      File.binwrite(wallpapers_dir.join("wallpaper.jpeg"), image_data)
+      FileUtils.mkdir_p(wallpapers_dir.join("groups"))
+      DesktopGroup.find_each { |desktop_group| File.binwrite(desktop_group.wallpaper_path, image_data) }
+    end
 
-    payload = DesktopWallpaperPayload.new(request: request).as_json
+    payload = DesktopWallpaperPayload.new(request: request, group: group).as_json
 
     respond_to do |format|
       format.html { redirect_back fallback_location: broadcasts_path, notice: "Wallpaper atualizado com sucesso." }
@@ -30,7 +39,7 @@ class WallpapersController < ApplicationController
           ok: true,
           notice: "Wallpaper atualizado com sucesso.",
           wallpaper: payload,
-          progress: wallpaper_progress_for(payload[:version])
+          progress: wallpaper_progress_for(payload[:version], group)
         }
       end
     end
@@ -41,8 +50,9 @@ class WallpapersController < ApplicationController
   end
 
   def status
-    version = params[:version].presence || DesktopWallpaperPayload.new(request: request).version
-    render json: wallpaper_progress_for(version)
+    group = DesktopGroup.find_by(id: params[:desktop_group_id].presence)
+    version = params[:version].presence || DesktopWallpaperPayload.new(request: request, group: group).version
+    render json: wallpaper_progress_for(version, group)
   end
 
   private
@@ -54,8 +64,9 @@ class WallpapersController < ApplicationController
     end
   end
 
-  def wallpaper_progress_for(version)
+  def wallpaper_progress_for(version, group = nil)
     agents = DesktopAgent.enabled.where(status: "approved")
+    agents = agents.where(desktop_group: group) if group.present?
     online_agents = agents.select(&:online?)
     target_agents = online_agents.any? ? online_agents : agents.to_a
     applied_agents = target_agents.select { |agent| version.present? && agent.last_wallpaper_version.to_s == version.to_s }

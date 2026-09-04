@@ -4,9 +4,17 @@
 
 <div class="broadcasts-index">
   <section class="broadcasts-toolbar">
-    <div class="broadcasts-toolbar__actions">
-      <%= link_to safe_join([tag.i("", class: "fas fa-plus", aria: { hidden: true }), content_tag(:span, I18n.t("AddNewTV"))]), new_broadcast_path, class: "broadcasts-toolbar__btn broadcasts-toolbar__btn--primary", title: I18n.t("AddNewTV"), aria: { label: I18n.t("AddNewTV") } %>
-      <button type="button" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary broadcasts-toolbar__publish" data-publish-open title="<%= I18n.t("PublishPlaylist") %>" aria-label="<%= I18n.t("PublishPlaylist") %>">
+    <div class="broadcasts-toolbar__actions" data-toolbar-help-panel data-toolbar-help-kind="actions">
+      <button type="button"
+              class="broadcast-card-modern__tv-help broadcasts-toolbar__help"
+              data-toolbar-help-open
+              aria-label="Explicar as ações desta barra"
+              aria-pressed="false"
+              title="Ajuda das ações">
+        <i class="far fa-circle-question" aria-hidden="true"></i>
+      </button>
+      <%= link_to safe_join([tag.i("", class: "fas fa-plus", aria: { hidden: true }), content_tag(:span, I18n.t("AddNewTV"))]), new_broadcast_path, class: "broadcasts-toolbar__btn broadcasts-toolbar__btn--primary", title: I18n.t("AddNewTV"), aria: { label: I18n.t("AddNewTV") }, data: { toolbar_help_tip: "Cadastre uma nova TV e configure como ela receberá e exibirá o conteúdo." } %>
+      <button type="button" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary broadcasts-toolbar__publish" data-publish-open data-toolbar-help-tip="Envie uma playlist para várias TVs de uma só vez." title="<%= I18n.t("PublishPlaylist") %>" aria-label="<%= I18n.t("PublishPlaylist") %>">
         <i class="fas fa-upload" aria-hidden="true"></i>
         <span><%= I18n.t("PublishPlaylist") %></span>
       </button>
@@ -14,6 +22,7 @@
         <button type="button"
                 class="broadcasts-toolbar__btn broadcasts-toolbar__btn--secondary"
                 data-power-schedule-open
+                data-toolbar-help-tip="Defina em conjunto os horários de ligar e desligar das TVs."
                 data-power-schedule-scope="all"
                 data-power-schedule-action="<%= update_power_schedule_all_broadcasts_path(locale: I18n.locale) %>"
                 data-power-schedule-name="<%= I18n.t("AllTvs", default: "Todas as TVs") %>"
@@ -28,28 +37,158 @@
       <% end %>
     </div>
 
-    <div class="broadcasts-view-switch" role="tablist" aria-label="<%= I18n.t("ViewMode") %>">
-      <button type="button" class="broadcasts-view-switch__btn" data-view-target="table"><%= I18n.t("Table") %></button>
-      <button type="button" class="broadcasts-view-switch__btn is-active" data-view-target="cards">Cards</button>
+    <div class="broadcasts-view-switch" role="tablist" aria-label="<%= I18n.t("ViewMode") %>" data-toolbar-help-panel data-toolbar-help-kind="views">
+      <button type="button"
+              class="broadcast-card-modern__tv-help broadcasts-toolbar__help"
+              data-toolbar-help-open
+              aria-label="Explicar os modos de visualização"
+              aria-pressed="false"
+              title="Ajuda da visualização">
+        <i class="far fa-circle-question" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="broadcasts-view-switch__btn" data-view-target="table" data-toolbar-help-tip="Mostra as TVs em uma tabela compacta, com os principais dados em colunas."><%= I18n.t("Table") %></button>
+      <button type="button" class="broadcasts-view-switch__btn is-active" data-view-target="cards" data-toolbar-help-tip="Mostra cada TV em um card visual com prévia, estado e controles.">Cards</button>
     </div>
   </section>
+
+  <script>
+    function setupBroadcastsToolbarHelp() {
+      const toolbar = document.querySelector(".broadcasts-toolbar");
+      if (!toolbar || toolbar.dataset.toolbarHelpReady === "true") return;
+      toolbar.dataset.toolbarHelpReady = "true";
+
+      toolbar.querySelectorAll("[data-toolbar-help-panel]").forEach(function(panel) {
+        const openButton = panel.querySelector("[data-toolbar-help-open]");
+        if (!openButton) return;
+        let spotlight = null;
+        let callouts = [];
+
+        const positionHelp = function() {
+          if (!spotlight) return;
+          const panelRect = panel.getBoundingClientRect();
+          const hole = spotlight.querySelector(".toolbar-help-spotlight__hole");
+          hole?.setAttribute("x", panelRect.left - 12);
+          hole?.setAttribute("y", panelRect.top - 12);
+          hole?.setAttribute("width", panelRect.width + 24);
+          hole?.setAttribute("height", panelRect.height + 24);
+          hole?.setAttribute("rx", "20");
+          hole?.setAttribute("ry", "20");
+
+          const occupied = [];
+          callouts.forEach(function(item, index) {
+            const targetRect = item.target.getBoundingClientRect();
+            const bubbleRect = item.bubble.getBoundingClientRect();
+            const preferredPlace = index % 2 === 1 ? "bottom" : "top";
+            const places = [preferredPlace, preferredPlace === "top" ? "bottom" : "top"];
+            const horizontalOffsets = [0, -100, 100, -(bubbleRect.width + 10), bubbleRect.width + 10];
+            let best = null;
+
+            places.forEach(function(place, placeIndex) {
+              horizontalOffsets.forEach(function(offset) {
+                let left = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2 + offset;
+                let top = place === "bottom" ? targetRect.bottom + 14 : targetRect.top - bubbleRect.height - 14;
+                left = Math.max(8, Math.min(left, innerWidth - bubbleRect.width - 8));
+                top = Math.max(8, Math.min(top, innerHeight - bubbleRect.height - 8));
+                const box = { left: left, top: top, right: left + bubbleRect.width, bottom: top + bubbleRect.height, place: place };
+                let overlap = 0;
+                occupied.forEach(function(other) {
+                  const overlapWidth = Math.max(0, Math.min(box.right + 10, other.right) - Math.max(box.left - 10, other.left));
+                  const overlapHeight = Math.max(0, Math.min(box.bottom + 10, other.bottom) - Math.max(box.top - 10, other.top));
+                  overlap += overlapWidth * overlapHeight;
+                });
+                const score = overlap * 10000 + placeIndex * 500 + Math.abs(offset);
+                if (!best || score < best.score) best = Object.assign(box, { score: score });
+              });
+            });
+
+            item.bubble.dataset.place = best.place;
+            item.bubble.style.left = `${best.left}px`;
+            item.bubble.style.top = `${best.top}px`;
+            const targetCenterX = targetRect.left + targetRect.width / 2;
+            const arrowX = Math.max(14, Math.min(targetCenterX - best.left, bubbleRect.width - 14));
+            item.bubble.style.setProperty("--callout-arrow-x", `${arrowX}px`);
+            item.bubble.style.setProperty("--toolbar-help-delay", `${index * 70}ms`);
+            occupied.push(best);
+          });
+        };
+
+        const closeHelp = function() {
+          panel.classList.remove("is-toolbar-help-active");
+          document.body.classList.remove("toolbar-help-callouts-visible");
+          openButton.setAttribute("aria-pressed", "false");
+          callouts.forEach(function(item) { item.bubble.remove(); });
+          callouts = [];
+          spotlight?.remove();
+          spotlight = null;
+        };
+
+        const openHelp = function() {
+          toolbar.querySelectorAll("[data-toolbar-help-open][aria-pressed='true']").forEach(function(button) {
+            if (button !== openButton) button.click();
+          });
+          panel.classList.add("is-toolbar-help-active");
+          openButton.setAttribute("aria-pressed", "true");
+          spotlight = document.createElement("div");
+          spotlight.className = "toolbar-help-spotlight";
+          spotlight.innerHTML = '<svg width="100%" height="100%"><defs><filter id="toolbar-help-soft-edge" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter><mask id="toolbar-help-cutout" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white"></rect><rect class="toolbar-help-spotlight__hole" fill="black" filter="url(#toolbar-help-soft-edge)"></rect></mask></defs><rect width="100%" height="100%" fill="rgba(2,6,23,.84)" mask="url(#toolbar-help-cutout)"></rect></svg>';
+          document.body.appendChild(spotlight);
+
+          panel.querySelectorAll("[data-toolbar-help-tip]").forEach(function(target) {
+            if (target.hidden || target.offsetParent === null) return;
+            const bubble = document.createElement("div");
+            bubble.className = "desktop-help-callout toolbar-help-callout";
+            bubble.innerHTML = `<span>${callouts.length + 1}</span><p>${target.dataset.toolbarHelpTip}</p>`;
+            document.body.appendChild(bubble);
+            callouts.push({ target: target, bubble: bubble });
+          });
+          requestAnimationFrame(function() { positionHelp(); document.body.classList.add("toolbar-help-callouts-visible"); });
+        };
+
+        openButton.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          spotlight ? closeHelp() : openHelp();
+        });
+        panel.addEventListener("click", function(event) {
+          if (spotlight && !event.target.closest("[data-toolbar-help-open]")) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }, true);
+        document.addEventListener("click", function() { if (spotlight) closeHelp(); });
+        document.addEventListener("keydown", function(event) { if (event.key === "Escape" && spotlight) closeHelp(); });
+        window.addEventListener("resize", positionHelp);
+        window.addEventListener("scroll", positionHelp, true);
+      });
+
+      const requestedHelp = new URLSearchParams(window.location.search).get("help");
+      const requestedKind = requestedHelp === "toolbar_actions" ? "actions" : (requestedHelp === "view_switch" ? "views" : null);
+      if (requestedKind && document.body.dataset.requestedToolbarHelpOpened !== "true") {
+        const requestedPanel = toolbar.querySelector(`[data-toolbar-help-kind="${requestedKind}"]`);
+        const requestedButton = requestedPanel?.querySelector("[data-toolbar-help-open]");
+        if (requestedButton) {
+          document.body.dataset.requestedToolbarHelpOpened = "true";
+          window.setTimeout(function() {
+            requestedPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+            window.setTimeout(function() { requestedButton.click(); }, 350);
+          }, 180);
+        }
+      }
+    }
+    document.addEventListener("DOMContentLoaded", setupBroadcastsToolbarHelp);
+    document.addEventListener("turbo:load", setupBroadcastsToolbarHelp);
+    if (document.readyState !== "loading") setupBroadcastsToolbarHelp();
+  </script>
 
   <section class="broadcasts-panel broadcasts-panel--table" data-view-panel="table" hidden>
     <div class="broadcasts-table-wrap">
       <table class="broadcasts-table">
         <thead>
           <tr>
-            <th><%= I18n.t("Name") %></th>
-            <th>Status</th>
-            <th>TV Power</th>
-            <th>App</th>
-            <th>Player</th>
-            <th><%= I18n.t("Flow") %></th>
             <th>TV</th>
-            <th>IP</th>
-            <th><%= I18n.t("Power") %></th>
-            <th><%= I18n.t("LastAttempt") %></th>
-            <th><%= I18n.t("Video") %></th>
+            <th>Status</th>
+            <th>Conteúdo</th>
+            <th>Dispositivo</th>
             <th><%= I18n.t("Actions") %></th>
           </tr>
         </thead>
@@ -66,8 +205,11 @@
             <% stream_display_url = broadcast.ffmpeg_stream_url %>
             <% playback_display_url = broadcast.app_playback_url %>
             <% current_preview_item = broadcast.current_player_playlist_item || (broadcast.playlist_enabled? ? broadcast.playlist_items.includes(media_attachment: :blob).first : nil) %>
+            <% web_only_preview = broadcast.official_app_browser_rotation_enabled? && broadcast.official_app_web_only? %>
             <% preview_src =
-              if current_preview_item&.media&.attached?
+              if web_only_preview
+                broadcast.official_app_page_url
+              elsif current_preview_item&.media&.attached?
                 mobile_playlist_item_broadcast_path(broadcast, current_preview_item, v: current_preview_item.updated_at.to_i)
               elsif broadcast.official_app_direct_video_playback_enabled?
                 mobile_prepared_video_broadcast_path(broadcast, v: broadcast.cache_key_with_version)
@@ -75,7 +217,9 @@
                 preview_stream_broadcast_path(broadcast, filename: broadcast.current_stream_filename)
               end %>
             <% preview_type =
-              if current_preview_item&.media&.attached?
+              if web_only_preview
+                "text/html"
+              elsif current_preview_item&.media&.attached?
                 current_preview_item.media.content_type
               elsif broadcast.official_app_direct_video_playback_enabled?
                 "video/mp4"
@@ -83,7 +227,9 @@
                 "application/x-mpegURL"
               end %>
             <% preview_key =
-              if current_preview_item&.media&.attached?
+              if web_only_preview
+                "web-only-#{broadcast.id}-#{broadcast.updated_at.to_i}"
+              elsif current_preview_item&.media&.attached?
                 "playlist-item-#{current_preview_item.id}-#{current_preview_item.updated_at.to_i}"
               elsif broadcast.official_app_direct_video_playback_enabled?
                 "direct-video-#{broadcast.id}-#{broadcast.cache_key_with_version}"
@@ -98,47 +244,42 @@
                   <span class="broadcasts-table__avatar" aria-hidden="true"><i class="fas fa-tv"></i></span>
                   <div>
                     <strong><%= broadcast.name %></strong>
-                    <small><%= broadcast.video.attached? ? broadcast.video.filename.to_s : I18n.t("FlowNotConfigured") %></small>
+                    <small><i class="fas fa-shield-alt" aria-hidden="true"></i> <%= broadcast.playback_app_type_official_app? ? I18n.t("Official") : I18n.t("Generic") %></small>
                   </div>
                 </div>
               </td>
-              <td>
-                <span class="broadcasts-status <%= broadcast.status == 'running' ? 'broadcasts-status--online' : 'broadcasts-status--offline' %>"
-                      data-broadcast-status-id="<%= broadcast.id %>">
-                  <%= broadcast.status == "running" ? I18n.t("InProduction") : I18n.t("Stopped") %>
-                </span>
-              </td>
-              <td>
-                <span class="broadcasts-status <%= tv_power_status_class %>"
-                      data-tv-power-status-id="<%= broadcast.id %>">
-                  <%= tv_power_status_label %>
-                </span>
-              </td>
-              <td>
-                <span class="broadcasts-table__pill"><%= broadcast.playback_app_type_official_app? ? I18n.t("Official") : I18n.t("Generic") %></span>
-              </td>
-              <td>
+              <td class="broadcasts-table__status-cell">
                 <span class="broadcasts-status broadcasts-status--player-<%= broadcast.app_player_online? ? 'online' : 'offline' %>"
-                      data-player-status-id="<%= broadcast.id %>">
-                  <%= broadcast.app_player_online? ? I18n.t("AppOpen") : I18n.t("AppClosed") %>
+                      data-player-status-id="<%= broadcast.id %>" data-status-icon="true"
+                      title="<%= broadcast.app_player_online? ? I18n.t("AppOpen") : I18n.t("AppClosed") %>">
+                  <i class="fas fa-mobile-alt" aria-hidden="true"></i>
+                  <span data-status-label><%= broadcast.app_player_online? ? I18n.t("AppOpen") : I18n.t("AppClosed") %></span>
                 </span>
-                <% if broadcast.app_player_presence_updated_at.present? %>
-                  <div class="broadcasts-player-time" data-player-time-id="<%= broadcast.id %>">
-                    <%= broadcast.app_player_presence_updated_at.strftime("%d/%m %H:%M") %>
-                  </div>
-                <% end %>
+                <span class="broadcasts-status <%= broadcast.effective_production_status == 'running' ? 'broadcasts-status--online' : 'broadcasts-status--offline' %>"
+                      data-broadcast-status-id="<%= broadcast.id %>" data-status-icon="true"
+                      title="<%= broadcast.effective_production_status == 'running' ? I18n.t("InProduction") : I18n.t("Stopped") %>">
+                  <i class="fas <%= broadcast.effective_production_status == 'running' ? 'fa-broadcast-tower' : 'fa-pause' %>" aria-hidden="true"></i>
+                  <span data-status-label><%= broadcast.effective_production_status == "running" ? I18n.t("InProduction") : I18n.t("Stopped") %></span>
+                </span>
+                <span class="broadcasts-status <%= tv_power_status_class %>"
+                      data-tv-power-status-id="<%= broadcast.id %>" data-status-icon="true"
+                      title="<%= tv_power_status_label %>">
+                  <i class="fas <%= tv_power_on ? 'fa-tv' : (tv_power_available ? 'fa-power-off' : 'fa-exclamation-triangle') %>" aria-hidden="true"></i>
+                  <span data-status-label><%= tv_power_status_label %></span>
+                </span>
               </td>
               <td>
                 <div class="broadcasts-table__stream">
                   <strong><%= broadcast.preview_playback_mode_label %></strong>
-                  <code><%= stream_display_url.presence || playback_display_url.presence || I18n.t("FlowNotConfigured") %></code>
+                  <span class="broadcasts-table__muted"><%= broadcast.video.attached? ? broadcast.video.filename.to_s : I18n.t("FlowNotConfigured") %></span>
                 </div>
               </td>
-              <td><span class="broadcasts-table__pill"><%= broadcast.tv_device_type_label %></span></td>
-              <td><code class="broadcasts-table__code"><%= broadcast.tv_ip.presence || "-" %></code></td>
-              <td><span class="broadcasts-table__muted"><%= broadcast.control_method_summary %></span></td>
-              <td><span class="broadcasts-table__muted"><%= broadcast.last_tv_power_action_summary %></span></td>
-              <td><span class="broadcasts-table__muted"><%= broadcast.video.attached? ? broadcast.video.filename.to_s : "-" %></span></td>
+              <td>
+                <div class="broadcasts-table__device">
+                  <span class="broadcasts-table__pill"><%= broadcast.tv_device_type_label %></span>
+                  <span class="broadcasts-table__muted"><%= broadcast.playback_app_type_official_app? ? I18n.t("Official") : I18n.t("Generic") %></span>
+                </div>
+              </td>
               <td>
                 <div class="broadcasts-actions broadcasts-actions--clean">
                   <% if preview_src.present? %>
@@ -191,7 +332,6 @@
     <%= link_to safe_join([tag.i("", class: "fas fa-edit", aria: { hidden: true }), content_tag(:span, I18n.t("Edit"))]),
       edit_broadcast_path(broadcast),
       class: "dropdown-item",
-      title: I18n.t("Edit"),
       aria: { label: I18n.t("Edit") } %>
   <% end %>
 
@@ -213,11 +353,22 @@
         </tbody>
       </table>
     </div>
+    <footer class="broadcasts-table-footer">
+      <span>Mostrando <%= @broadcasts.size %> de <%= @broadcasts.size %> TVs</span>
+      <nav class="broadcasts-table-pagination" aria-label="Paginação da tabela">
+        <button type="button" disabled aria-label="Página anterior"><i class="fas fa-chevron-left"></i></button>
+        <button type="button" class="is-current" aria-current="page">1</button>
+        <button type="button" disabled aria-label="Próxima página"><i class="fas fa-chevron-right"></i></button>
+      </nav>
+    </footer>
   </section>
 
   <section class="broadcasts-panel broadcasts-panel--cards" data-view-panel="cards">
     <div class="broadcasts-cards-grid">
       <div class="broadcasts-cards-main">
+      <button type="button" class="broadcast-card-modern__tv-help" data-tv-help-open aria-label="Ajuda dos controles das TVs" title="Como usar os cards das TVs">
+        <i class="far fa-circle-question" aria-hidden="true"></i>
+      </button>
       <% @broadcasts.each do |broadcast| %>
         <% tv_power_status = broadcast.tv_power_status %>
         <% tv_power_on = tv_power_status == :on %>
@@ -232,8 +383,13 @@
         <% stream_display_url = broadcast.ffmpeg_stream_url %>
         <% playback_display_url = broadcast.app_playback_url %>
         <% current_preview_item = broadcast.current_player_playlist_item || (broadcast.playlist_enabled? ? broadcast.playlist_items.includes(media_attachment: :blob).first : nil) %>
+        <% preview_playlist_items = broadcast.playlist_items.ordered.to_a %>
+        <% preview_slide_index = current_preview_item.present? ? (preview_playlist_items.index { |item| item.id == current_preview_item.id } || 0) : 0 %>
+        <% web_only_preview = broadcast.official_app_browser_rotation_enabled? && broadcast.official_app_web_only? %>
         <% preview_src =
-          if current_preview_item&.media&.attached?
+          if web_only_preview
+            broadcast.official_app_page_url
+          elsif current_preview_item&.media&.attached?
             mobile_playlist_item_broadcast_path(broadcast, current_preview_item, v: current_preview_item.updated_at.to_i)
           elsif broadcast.official_app_direct_video_playback_enabled?
             mobile_prepared_video_broadcast_path(broadcast, v: broadcast.cache_key_with_version)
@@ -241,7 +397,9 @@
             preview_stream_broadcast_path(broadcast, filename: broadcast.current_stream_filename)
           end %>
         <% preview_type =
-          if current_preview_item&.media&.attached?
+          if web_only_preview
+            "text/html"
+          elsif current_preview_item&.media&.attached?
             current_preview_item.media.content_type
           elsif broadcast.official_app_direct_video_playback_enabled?
             "video/mp4"
@@ -250,13 +408,17 @@
           end %>
         <% preview_is_image = preview_type.to_s.start_with?("image/") %>
         <% preview_thumb_src =
-          if current_preview_item&.media&.attached?
+          if web_only_preview
+            nil
+          elsif current_preview_item&.media&.attached?
             media_library_thumbnail_path(current_preview_item.media.blob)
           else
             mobile_thumbnail_broadcast_path(broadcast, v: broadcast.cache_key_with_version)
           end %>
         <% preview_key =
-          if current_preview_item&.media&.attached?
+          if web_only_preview
+            "web-only-#{broadcast.id}-#{broadcast.updated_at.to_i}"
+          elsif current_preview_item&.media&.attached?
             "playlist-item-#{current_preview_item.id}-#{current_preview_item.updated_at.to_i}"
           elsif broadcast.official_app_direct_video_playback_enabled?
             "direct-video-#{broadcast.id}-#{broadcast.cache_key_with_version}"
@@ -266,7 +428,7 @@
             "empty-#{broadcast.id}-#{broadcast.updated_at.to_i}"
           end %>
         <% production_running = broadcast.effective_production_status == "running" %>
-        <article class="broadcast-card-modern">
+        <article class="broadcast-card-modern" data-tv-help-card>
           <div class="broadcast-card-modern__top">
             <div>
               <h2><%= broadcast.name %></h2>
@@ -297,6 +459,11 @@
                 <i class="fas <%= tv_power_on ? 'fa-tv' : (tv_power_available ? 'fa-power-off' : 'fa-exclamation-triangle') %>" aria-hidden="true"></i>
                 <span class="broadcast-status-icon__label" data-status-label><%= tv_power_status_label %></span>
               </span>
+              <% if current_user.admin? %>
+                <%= button_to toggle_presentation_mode_broadcast_path(broadcast), method: :post, form: { class: "broadcast-presentation-toggle-form" }, class: "broadcast-presentation-toggle #{'is-active' if broadcast.presentation_mode_enabled?}", title: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação"), aria: { label: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação") } do %>
+                  <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                <% end %>
+              <% end %>
             </div>
           </div>
 
@@ -304,7 +471,7 @@
                data-orientation="<%= broadcast.orientation.presence || 'landscape' %>"
                data-dashboard-preview-card-id="<%= broadcast.id %>"
                data-dashboard-preview-key="<%= preview_key %>">
-            <div class="broadcast-card-modern__preview-loading" data-dashboard-preview-loading>
+            <div class="broadcast-card-modern__preview-loading" data-dashboard-preview-loading <%= "hidden" if web_only_preview %>>
               <span></span>
             </div>
             <%= image_tag "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
@@ -317,7 +484,15 @@
                             dashboard_preview_kind: "image",
                             dashboard_preview_src: preview_thumb_src,
                             dashboard_preview_image_id: broadcast.id
-                          } %>
+                          },
+                          hidden: web_only_preview %>
+            <iframe class="broadcast-video broadcast-preview-web"
+                    data-dashboard-preview-web
+                    src="<%= web_only_preview ? preview_src : nil %>"
+                    title="Preview web de <%= broadcast.name %>"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    <%= "hidden" unless web_only_preview %>></iframe>
             <button type="button"
                     class="broadcast-card-modern__preview-open"
                     data-preview-open
@@ -350,13 +525,22 @@
             <code><%= stream_display_url.presence || playback_display_url.presence || I18n.t("FlowNotConfigured") %></code>
           </div>
 
+          <% if preview_playlist_items.any? && !web_only_preview %>
+            <div class="broadcast-card-modern__slide-dots"
+                 data-preview-slide-dots
+                 data-slide-count="<%= preview_playlist_items.length %>"
+                 data-slide-index="<%= preview_slide_index %>"
+                 role="img"
+                 aria-label="Slide <%= preview_slide_index + 1 %> de <%= preview_playlist_items.length %>">
+              <% preview_playlist_items.each_index do |index| %>
+                <span class="<%= 'is-active' if index == preview_slide_index %>" aria-hidden="true"></span>
+              <% end %>
+            </div>
+          <% end %>
+
           <div class="broadcasts-actions broadcasts-actions--card">
-            <span class="broadcast-action-slot" data-production-play-action-id="<%= broadcast.id %>" <%= "hidden" if production_running %>>
-              <%= button_to safe_join([tag.i("", class: "fas fa-play", aria: { hidden: true }), content_tag(:span, I18n.t("Play"), class: "broadcast-action__label")]), start_broadcast_path(broadcast), method: :post, class: "broadcasts-action broadcasts-action--play", title: I18n.t("Play"), aria: { label: I18n.t("Play") } %>
-            </span>
-            <%= button_to safe_join([tag.i("", class: "fas fa-stop", aria: { hidden: true }), content_tag(:span, I18n.t("Stop"), class: "broadcast-action__label")]), stop_broadcast_path(broadcast), method: :post, class: "broadcasts-action broadcasts-action--stop", title: I18n.t("Stop"), aria: { label: I18n.t("Stop") } %>
             <% if tv_power_available %>
-              <%= button_to safe_join([tag.i("", class: "fas fa-power-off", aria: { hidden: true }), content_tag(:span, tv_power_button_label, class: "broadcast-action__label")]), tv_power_button_path, method: :post, class: "broadcasts-action broadcasts-action--power #{tv_power_button_class}", title: tv_power_button_label, aria: { label: tv_power_button_label } %>
+              <%= button_to safe_join([tag.i("", class: "fas fa-power-off", aria: { hidden: true }), content_tag(:span, tv_power_button_label, class: "broadcast-action__label")]), tv_power_button_path, method: :post, class: "broadcasts-action broadcasts-action--power #{tv_power_button_class}", title: tv_power_button_label, aria: { label: tv_power_button_label }, data: { power_control: true, power_state: (tv_power_on ? "on" : "off"), power_on_action: power_on_tv_broadcast_path(broadcast), power_off_action: power_off_tv_broadcast_path(broadcast), power_on_label: I18n.t("PowerOnTv"), power_off_label: I18n.t("PowerOffTv") } %>
             <% end %>
             <% if tv_volume_available %>
               <button type="button"
@@ -372,6 +556,12 @@
                 <span class="broadcast-action__label"><%= I18n.t("SetVolume") %></span>
               </button>
             <% end %>
+            <span class="broadcast-action-slot" data-production-play-action-id="<%= broadcast.id %>" <%= "hidden" if production_running %>>
+              <%= button_to safe_join([tag.i("", class: "fas fa-play", aria: { hidden: true }), content_tag(:span, I18n.t("Play"), class: "broadcast-action__label")]), start_broadcast_path(broadcast), method: :post, class: "broadcasts-action broadcasts-action--play", title: I18n.t("Play"), aria: { label: I18n.t("Play") } %>
+            </span>
+            <span class="broadcast-action-slot" data-production-stop-action-id="<%= broadcast.id %>" <%= "hidden" unless production_running %>>
+              <%= button_to safe_join([tag.i("", class: "fas fa-stop", aria: { hidden: true }), content_tag(:span, I18n.t("Stop"), class: "broadcast-action__label")]), stop_broadcast_path(broadcast), method: :post, class: "broadcasts-action broadcasts-action--stop", title: I18n.t("Stop"), aria: { label: I18n.t("Stop") } %>
+            </span>
             <% if current_user.admin? %>
               <button type="button"
                       class="broadcasts-action broadcasts-action--schedule"
@@ -399,21 +589,150 @@
       <% end %>
       </div>
 
+      <script>
+        function setupTvCardHelp() {
+            const cardsMain = document.querySelector(".broadcasts-cards-main");
+            const card = cardsMain?.querySelector("[data-tv-help-card]");
+            const helpButton = cardsMain?.querySelector("[data-tv-help-open]");
+            if (!cardsMain || !card || !helpButton || cardsMain.dataset.tvHelpReady === "true") return;
+            cardsMain.dataset.tvHelpReady = "true";
+            let bubbles = [];
+            let spotlight = null;
+
+            const descriptions = [
+              { selector:".broadcast-card-modern__badges", text:"Mostra o estado do aplicativo, da transmissão e da energia da TV." },
+              { selector:".broadcast-card-modern__video", text:"Mostra uma prévia do conteúdo que está sendo exibido nesta TV." },
+              { selector:".broadcast-card-modern__meta", text:"Exibe o tipo de aplicativo, dispositivo, IP e método de controle configurado." },
+              { selector:".broadcast-card-modern__slide-dots", text:"Indica quantos slides existem e qual deles está sendo exibido agora." },
+              { selector:".broadcasts-action--play", text:"Inicia a reprodução da playlist nesta TV." },
+              { selector:".broadcasts-action--stop", text:"Para a reprodução no slide atual." },
+              { selector:".broadcasts-action--schedule", text:"Programa os horários para ligar e desligar a TV.", place:"bottom", lock:true }
+            ];
+
+            const positionSpotlight = function() {
+              if (!spotlight) return;
+              const rect = card.getBoundingClientRect();
+              const hole = spotlight.querySelector(".tv-help-spotlight__hole");
+              hole?.setAttribute("x", rect.left - 12);
+              hole?.setAttribute("y", rect.top - 12);
+              hole?.setAttribute("width", rect.width + 24);
+              hole?.setAttribute("height", rect.height + 24);
+              hole?.setAttribute("rx", "28");
+              hole?.setAttribute("ry", "28");
+            };
+
+            const positionBubbles = function() {
+              positionSpotlight();
+              const occupied = [];
+              bubbles.forEach(function(item) {
+                const target = item.target.getBoundingClientRect();
+                const bubbleRect = item.bubble.getBoundingClientRect();
+                const gap = 14;
+                const candidates = item.lock ? [item.place] : [item.place || "top", "top", "left", "right", "bottom"].filter(function(place, index, list) { return list.indexOf(place) === index; });
+                let best = null;
+                candidates.forEach(function(place, placeIndex) {
+                  [0, -38, 38, -76, 76].forEach(function(offset) {
+                    let left = target.left + target.width / 2 - bubbleRect.width / 2;
+                    let top = target.top - bubbleRect.height - gap;
+                    if (place === "bottom") top = target.bottom + gap;
+                    if (place === "left") { left = target.left - bubbleRect.width - gap; top = target.top + target.height / 2 - bubbleRect.height / 2; }
+                    if (place === "right") { left = target.right + gap; top = target.top + target.height / 2 - bubbleRect.height / 2; }
+                    if (place === "top" || place === "bottom") left += offset; else top += offset;
+                    left = Math.max(8, Math.min(left, innerWidth - bubbleRect.width - 8));
+                    top = Math.max(8, Math.min(top, innerHeight - bubbleRect.height - 8));
+                    const box = { left:left, top:top, right:left + bubbleRect.width, bottom:top + bubbleRect.height, place:place };
+                    let overlap = 0;
+                    occupied.forEach(function(other) { overlap += Math.max(0, Math.min(box.right + 8, other.right) - Math.max(box.left - 8, other.left)) * Math.max(0, Math.min(box.bottom + 8, other.bottom) - Math.max(box.top - 8, other.top)); });
+                    const score = overlap * 10000 + placeIndex * 500 + Math.abs(offset);
+                    if (!best || score < best.score) best = Object.assign(box, { score:score });
+                  });
+                });
+                item.bubble.dataset.place = best.place;
+                item.bubble.style.left = `${best.left}px`;
+                item.bubble.style.top = `${best.top}px`;
+                item.bubble.style.setProperty("--callout-arrow-x", `${Math.max(14, Math.min(target.left + target.width / 2 - best.left, bubbleRect.width - 14))}px`);
+                item.bubble.style.setProperty("--callout-arrow-y", `${Math.max(14, Math.min(target.top + target.height / 2 - best.top, bubbleRect.height - 14))}px`);
+                occupied.push(best);
+              });
+            };
+
+            const closeHelp = function() {
+              card.classList.remove("is-tv-help-active");
+              cardsMain.classList.remove("is-tv-help-active");
+              bubbles.forEach(function(item) { item.bubble.remove(); });
+              bubbles = [];
+              spotlight?.remove();
+              spotlight = null;
+              helpButton.setAttribute("aria-pressed", "false");
+              document.body.classList.remove("tv-help-callouts-visible");
+            };
+
+            const openHelp = function() {
+              card.classList.add("is-tv-help-active");
+              cardsMain.classList.add("is-tv-help-active");
+              helpButton.setAttribute("aria-pressed", "true");
+              spotlight = document.createElement("div");
+              spotlight.className = "tv-help-spotlight";
+              spotlight.innerHTML = '<svg width="100%" height="100%"><defs><filter id="tv-help-soft-edge" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter><mask id="tv-help-cutout" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white"></rect><rect class="tv-help-spotlight__hole" fill="black" filter="url(#tv-help-soft-edge)"></rect></mask></defs><rect width="100%" height="100%" fill="rgba(2,6,23,.84)" mask="url(#tv-help-cutout)"></rect></svg>';
+              document.body.appendChild(spotlight);
+              let number = 0;
+              descriptions.forEach(function(entry) {
+                const target = card.querySelector(entry.selector);
+                if (!target || target.hidden || target.offsetParent === null) return;
+                number += 1;
+                const bubble = document.createElement("div");
+                bubble.className = "desktop-help-callout tv-help-callout";
+                bubble.innerHTML = `<span>${number}</span><p>${entry.text}</p>`;
+                document.body.appendChild(bubble);
+                bubbles.push({ target:target, bubble:bubble, place:entry.place || "top", lock:Boolean(entry.lock) });
+              });
+              requestAnimationFrame(function() { positionBubbles(); document.body.classList.add("tv-help-callouts-visible"); });
+            };
+
+            helpButton.setAttribute("aria-pressed", "false");
+            helpButton.addEventListener("click", function(event) { event.preventDefault(); event.stopPropagation(); card.classList.contains("is-tv-help-active") ? closeHelp() : openHelp(); });
+            card.addEventListener("click", function(event) { if (card.classList.contains("is-tv-help-active") && !event.target.closest("[data-tv-help-open]")) { event.preventDefault(); event.stopPropagation(); } }, true);
+            document.addEventListener("click", function() { if (card.classList.contains("is-tv-help-active")) closeHelp(); });
+            document.addEventListener("keydown", function(event) { if (event.key === "Escape" && card.classList.contains("is-tv-help-active")) closeHelp(); });
+            window.addEventListener("resize", positionBubbles);
+            window.addEventListener("scroll", positionBubbles, true);
+            const requestedTvHelp = new URLSearchParams(window.location.search).get("help");
+            if ((requestedTvHelp === "tv_controls" || requestedTvHelp === "tv_schedule") && document.body.dataset.requestedHelpOpened !== "true") {
+              document.body.dataset.requestedHelpOpened = "true";
+              window.setTimeout(function() {
+                cardsMain.scrollIntoView({ behavior:"smooth", block:"center" });
+                window.setTimeout(function() { if (!card.classList.contains("is-tv-help-active")) helpButton.click(); }, 450);
+              }, 180);
+            }
+        }
+        document.addEventListener("DOMContentLoaded", setupTvCardHelp);
+        document.addEventListener("turbo:load", setupTvCardHelp);
+        if (document.readyState !== "loading") setupTvCardHelp();
+      </script>
+
       <aside class="broadcasts-side-panel">
+        <button type="button" class="broadcast-card-modern__help" data-desktop-help-open aria-label="Abrir manual da Área de trabalho" title="Como usar este card">
+          <i class="far fa-circle-question" aria-hidden="true"></i>
+        </button>
       <article class="broadcast-card-modern broadcast-card-modern--desktop">
         <div class="broadcast-card-modern__top broadcast-card-modern__top--desktop">
           <i class="fas fa-desktop" aria-hidden="true"></i>
           <div>
             <h2><%= I18n.t("Desktop") %></h2>
-            <p><%= I18n.t("DesktopDescription") %></p>
+            <p>Personalize o papel de parede dos computadores por grupo.</p>
           </div>
+          <%= link_to desktop_agents_path, class: "broadcast-card-modern__groups-link", data: { desktop_help_tip: "Crie grupos e escolha quais computadores pertencem a cada um.", desktop_help_place: "top-left", desktop_help_lock: "true" } do %><i class="fas fa-list-ul"></i><span>Ver grupos</span><% end %>
         </div>
 
         <div class="broadcast-card-modern__desktop">
+          <% desktop_groups = DesktopGroup.order(:name).to_a %>
+          <% wallpaper_targets = [{ id: nil, name: "Todos", count: DesktopAgent.enabled.where(status: "approved").count, path: Rails.root.join("public", "wallpapers", "wallpaper.jpeg"), url: "/wallpapers/wallpaper.jpeg" }] + desktop_groups.map { |group| { id: group.id, name: group.name, count: group.desktop_agents.enabled.where(status: "approved").count, path: group.wallpaper_path, url: "/wallpapers/groups/#{group.id}.jpeg" } } %>
           <% wallpaper_path = Rails.root.join("public", "wallpapers", "wallpaper.jpeg") %>
           <% wallpaper_version = File.exist?(wallpaper_path) ? File.mtime(wallpaper_path).to_i : Time.current.to_i %>
           <% current_wallpaper_url = File.exist?(wallpaper_path) ? "/wallpapers/wallpaper.jpeg?v=#{wallpaper_version}" : nil %>
           <div class="broadcast-card-modern__wallpaper-frame">
+            <button type="button" class="broadcast-card-modern__desktop-arrow is-prev" data-desktop-group-prev data-desktop-help-tip="Volta para o grupo anterior." data-desktop-help-place="left" data-desktop-help-lock="true" aria-label="Grupo anterior"><i class="fas fa-chevron-left"></i></button>
+            <div class="broadcast-card-modern__group-peek is-prev" data-desktop-group-peek-prev aria-hidden="true"><img alt="Preview do grupo anterior"></div>
             <div
               class="broadcast-card-modern__wallpaper-progress <%= 'broadcast-card-modern__wallpaper-progress--has-image' if current_wallpaper_url.present? %>"
               data-wallpaper-progress
@@ -435,20 +754,30 @@
                 <% end %>
               </div>
               <div class="broadcast-card-modern__wallpaper-actions">
-                <label class="broadcast-card-modern__wallpaper-upload" title="<%= I18n.t("ChooseImage") %>" aria-label="<%= I18n.t("ChooseImage") %>">
+                <label class="broadcast-card-modern__wallpaper-upload" data-desktop-help-tip="Escolha uma nova imagem. O anexo fica salvo como rascunho deste grupo." data-desktop-help-place="top" data-desktop-help-lock="true" title="<%= I18n.t("ChooseImage") %>" aria-label="<%= I18n.t("ChooseImage") %>">
                   <i class="fas fa-upload" aria-hidden="true"></i>
                   <span data-wallpaper-file-name><%= I18n.t("ChooseImage") %></span>
                   <%= file_field_tag :wallpaper, class: "broadcasts-upload broadcasts-upload--hidden", accept: "image/*", data: { wallpaper_input: true }, form: "wallpaper-upload-form" %>
                 </label>
-                <button type="submit" form="wallpaper-upload-form" class="broadcast-card-modern__wallpaper-apply" title="<%= I18n.t("ApplyWallpaper") %>" aria-label="<%= I18n.t("ApplyWallpaper") %>" data-wallpaper-apply hidden disabled>
+                <button type="submit" form="wallpaper-upload-form" class="broadcast-card-modern__wallpaper-apply" data-desktop-help-tip="Aplica a imagem nova nos computadores do grupo selecionado." data-desktop-help-place="top" title="<%= I18n.t("ApplyWallpaper") %>" aria-label="<%= I18n.t("ApplyWallpaper") %>" data-wallpaper-apply hidden disabled>
                   <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
+            <div class="broadcast-card-modern__group-peek is-next" data-desktop-group-peek-next aria-hidden="true"><img alt="Preview do próximo grupo"></div>
+            <button type="button" class="broadcast-card-modern__desktop-arrow is-next" data-desktop-group-next data-desktop-help-tip="Avança para o próximo grupo." data-desktop-help-place="right" data-desktop-help-lock="true" aria-label="Próximo grupo"><i class="fas fa-chevron-right"></i></button>
             <span class="broadcast-card-modern__wallpaper-apply-hint">
               <span class="broadcast-card-modern__wallpaper-apply-hint-icon" aria-hidden="true">&#128071;</span>
               <span class="broadcast-card-modern__wallpaper-apply-hint-text"><%= I18n.t("ClickHereApplyHtml").html_safe %></span>
             </span>
+          </div>
+          <div class="broadcast-card-modern__group-dots" data-desktop-group-dots>
+            <% wallpaper_targets.each_with_index do |target, index| %><button type="button" class="<%= 'is-active' if index.zero? %>" data-desktop-group-dot="<%= index %>" data-group-id="<%= target[:id] %>" data-group-name="<%= target[:name] %>" data-group-count="<%= target[:count] %>" data-group-total="<%= wallpaper_targets.size %>" data-group-wallpaper-url="<%= File.exist?(target[:path]) ? "#{target[:url]}?v=#{File.mtime(target[:path]).to_i}" : current_wallpaper_url %>" aria-label="<%= target[:name] %>"></button><% end %>
+          </div>
+          <div class="broadcast-card-modern__group-current">
+            <span>Grupo atual</span>
+            <strong data-desktop-group-name>Todos</strong>
+            <small data-desktop-group-count><%= wallpaper_targets.first[:count] %> computadores · 1 de <%= wallpaper_targets.size %></small>
           </div>
           <div class="broadcast-card-modern__agent-progress" data-wallpaper-agent-progress hidden>
             <div class="broadcast-card-modern__agent-progress-track">
@@ -459,10 +788,150 @@
 
           <form action="<%= wallpapers_path %>" method="post" enctype="multipart/form-data" id="wallpaper-upload-form" data-wallpaper-upload-form>
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+            <input type="hidden" name="desktop_group_id" value="" data-desktop-group-input>
             <p><%= I18n.t("RecommendedResolution") %></p>
           </form>
         </div>
       </article>
+
+      <script>
+        function setupDesktopCardHelp() {
+          const panel = document.querySelector(".broadcasts-side-panel");
+          const openButton = document.querySelector("[data-desktop-help-open]");
+          if (!panel || !openButton || panel.dataset.desktopHelpReady === "true") return;
+          panel.dataset.desktopHelpReady = "true";
+          let callouts = [];
+          let spotlight = null;
+          const positionSpotlight = function() {
+            if (!spotlight) return;
+            const card = panel.querySelector(".broadcast-card-modern--desktop");
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const padding = 13;
+            const hole = spotlight.querySelector(".desktop-help-spotlight__hole");
+            if (!hole) return;
+            hole.setAttribute("x", rect.left - padding);
+            hole.setAttribute("y", rect.top - padding);
+            hole.setAttribute("width", rect.width + (padding * 2));
+            hole.setAttribute("height", rect.height + (padding * 2));
+            hole.setAttribute("rx", "38");
+            hole.setAttribute("ry", "38");
+          };
+          const positionCallouts = function() {
+            positionSpotlight();
+            const occupied = [];
+            const viewportPadding = 8;
+            const separation = 10;
+            callouts.forEach(function(item) {
+              const rect = item.target.getBoundingClientRect();
+              const bubble = item.bubble;
+              const bubbleRect = bubble.getBoundingClientRect();
+              const gap = 15;
+              const placements = item.target.dataset.desktopHelpLock === "true" ? [item.place] : [item.place, "top", "bottom", "left", "right"].filter(function(place, index, list) { return list.indexOf(place) === index; });
+              const offsets = [0, -28, 28, -56, 56];
+              let best = null;
+
+              placements.forEach(function(place, placeIndex) {
+                offsets.forEach(function(offset) {
+                  let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
+                  let top = rect.top - bubbleRect.height - gap;
+                  if (place === "bottom") top = rect.bottom + gap;
+                  if (place === "bottom-left") { left = rect.left - bubbleRect.width + (rect.width * .35); top = rect.bottom + gap; }
+                  if (place === "top-left") { left = rect.left - bubbleRect.width + (rect.width * .35); top = rect.top - bubbleRect.height - gap; }
+                  if (place === "left") { left = rect.left - bubbleRect.width - gap; top = rect.top + (rect.height / 2) - (bubbleRect.height / 2); }
+                  if (place === "right") { left = rect.right + gap; top = rect.top + (rect.height / 2) - (bubbleRect.height / 2); }
+                  if (place === "top" || place === "bottom" || place === "bottom-left" || place === "top-left") left += offset; else top += offset;
+                  left = Math.max(viewportPadding, Math.min(left, window.innerWidth - bubbleRect.width - viewportPadding));
+                  top = Math.max(viewportPadding, Math.min(top, window.innerHeight - bubbleRect.height - viewportPadding));
+                  const candidate = { left:left, top:top, right:left + bubbleRect.width, bottom:top + bubbleRect.height, place:place };
+                  let overlap = 0;
+                  occupied.forEach(function(box) {
+                    const width = Math.max(0, Math.min(candidate.right + separation, box.right) - Math.max(candidate.left - separation, box.left));
+                    const height = Math.max(0, Math.min(candidate.bottom + separation, box.bottom) - Math.max(candidate.top - separation, box.top));
+                    overlap += width * height;
+                  });
+                  const score = (overlap * 10000) + (placeIndex * 900) + (Math.abs(offset) * 3);
+                  if (!best || score < best.score) best = Object.assign(candidate, { score:score });
+                });
+              });
+
+              bubble.dataset.place = best.place;
+              bubble.style.left = `${best.left}px`;
+              bubble.style.top = `${best.top}px`;
+              const targetX = rect.left + (rect.width / 2) - best.left;
+              const targetY = rect.top + (rect.height / 2) - best.top;
+              bubble.style.setProperty("--callout-arrow-x", `${Math.max(14, Math.min(targetX, bubbleRect.width - 14))}px`);
+              bubble.style.setProperty("--callout-arrow-y", `${Math.max(14, Math.min(targetY, bubbleRect.height - 14))}px`);
+              occupied.push(best);
+            });
+          };
+          const revealHelpControls = function() {
+            panel.querySelectorAll("[data-desktop-help-tip][hidden]").forEach(function(target) {
+              target.dataset.desktopHelpWasHidden = "true";
+              target.hidden = false;
+              target.classList.add("is-help-preview");
+            });
+          };
+          const restoreHelpControls = function() {
+            panel.querySelectorAll("[data-desktop-help-was-hidden='true']").forEach(function(target) {
+              target.hidden = true;
+              target.classList.remove("is-help-preview");
+              delete target.dataset.desktopHelpWasHidden;
+            });
+          };
+          const removeCallouts = function() { callouts.forEach(function(item) { item.bubble.remove(); }); callouts = []; };
+          const showCallouts = function() {
+            removeCallouts();
+            spotlight?.remove();
+            spotlight = document.createElement("div");
+            spotlight.className = "desktop-help-spotlight";
+            spotlight.setAttribute("aria-hidden", "true");
+            spotlight.innerHTML = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><filter id="desktop-help-soft-edge" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter><mask id="desktop-help-cutout" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white"></rect><rect class="desktop-help-spotlight__hole" fill="black" filter="url(#desktop-help-soft-edge)"></rect></mask></defs><rect width="100%" height="100%" fill="rgba(2,6,23,.84)" mask="url(#desktop-help-cutout)"></rect></svg>';
+            document.body.appendChild(spotlight);
+            revealHelpControls();
+            let visibleIndex = 0;
+            panel.querySelectorAll("[data-desktop-help-tip]").forEach(function(target) {
+              if (target.hidden || target.offsetParent === null) return;
+              visibleIndex += 1;
+              const bubble = document.createElement("div");
+              const place = target.dataset.desktopHelpPlace || "top";
+              bubble.className = "desktop-help-callout";
+              bubble.dataset.place = place;
+              bubble.innerHTML = `<span>${visibleIndex}</span><p>${target.dataset.desktopHelpTip}</p>`;
+              document.body.appendChild(bubble);
+              callouts.push({ target: target, bubble: bubble, place: place });
+            });
+            requestAnimationFrame(function() { positionCallouts(); document.body.classList.add("desktop-help-callouts-visible"); });
+          };
+          const closeHelp = function() { panel.classList.remove("is-help-active"); document.body.classList.remove("desktop-help-callouts-visible"); removeCallouts(); restoreHelpControls(); spotlight?.remove(); spotlight = null; openButton.setAttribute("aria-pressed", "false"); };
+          openButton.setAttribute("aria-pressed", "false");
+          openButton.addEventListener("click", function(event) {
+            event.stopPropagation();
+            const active = panel.classList.toggle("is-help-active");
+            openButton.setAttribute("aria-pressed", String(active));
+            if (active) showCallouts(); else closeHelp();
+          });
+          panel.addEventListener("click", function(event) { event.stopPropagation(); });
+          document.addEventListener("click", closeHelp);
+          document.addEventListener("keydown", function(event) { if (event.key === "Escape") closeHelp(); });
+          window.addEventListener("resize", positionCallouts);
+          window.addEventListener("scroll", positionCallouts, true);
+          const requestedDesktopHelp = new URLSearchParams(window.location.search).get("help");
+          if ((requestedDesktopHelp === "desktop_all" || requestedDesktopHelp === "desktop_group") && document.body.dataset.requestedHelpOpened !== "true") {
+            document.body.dataset.requestedHelpOpened = "true";
+            window.setTimeout(function() {
+              const dots = panel.querySelectorAll("[data-desktop-group-dot]");
+              const targetDot = requestedDesktopHelp === "desktop_group" ? (dots[1] || dots[0]) : dots[0];
+              targetDot?.click();
+              panel.scrollIntoView({ behavior:"smooth", block:"center" });
+              window.setTimeout(function() { if (!panel.classList.contains("is-help-active")) openButton.click(); }, requestedDesktopHelp === "desktop_group" ? 950 : 420);
+            }, 180);
+          }
+        }
+        document.addEventListener("DOMContentLoaded", setupDesktopCardHelp);
+        document.addEventListener("turbo:load", setupDesktopCardHelp);
+        if (document.readyState !== "loading") setupDesktopCardHelp();
+      </script>
 
       <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -477,9 +946,14 @@
           const wallpaperAgentProgress = document.querySelector("[data-wallpaper-agent-progress]");
           const wallpaperAgentProgressFill = document.querySelector("[data-wallpaper-agent-progress-fill]");
           const wallpaperAgentProgressLabel = document.querySelector("[data-wallpaper-agent-progress-label]");
+          const groupInput = document.querySelector("[data-desktop-group-input]");
+          const groupName = document.querySelector("[data-desktop-group-name]");
+          const groupCount = document.querySelector("[data-desktop-group-count]");
+          const groupTargets = <%= raw wallpaper_targets.map.with_index { |target, index| { id: target[:id], name: target[:name], count: target[:count], index: index, total: wallpaper_targets.size, url: File.exist?(target[:path]) ? "#{target[:url]}?v=#{File.mtime(target[:path]).to_i}" : current_wallpaper_url } }.to_json %>;
+          let activeGroupIndex = 0;
           if (!wallpaperForm || !wallpaperInput || !wallpaperProgress || !wallpaperNewLayer || !wallpaperApply) return;
 
-          let pendingObjectUrl = null;
+          const wallpaperDrafts = window.desktopWallpaperDrafts ||= new Map();
           let agentProgressTimer = null;
           let agentProgressTimeout = null;
           let pendingPulseTimer = null;
@@ -606,16 +1080,19 @@
             if (wallpaperAgentProgress) wallpaperAgentProgress.hidden = true;
           }
 
-          function updateWallpaperLayers(url) {
-            if (!url) return;
-            [wallpaperOldLayer, wallpaperNewLayer].forEach(function(layer) {
+          function updateWallpaperLayers(oldUrl, newUrl) {
+            const urls = [oldUrl, newUrl === undefined ? oldUrl : newUrl];
+            [wallpaperOldLayer, wallpaperNewLayer].forEach(function(layer, index) {
               if (!layer) return;
+              const url = urls[index];
+              if (!url) return;
               let image = layer.querySelector("img");
               if (!image) {
                 image = document.createElement("img");
                 layer.innerHTML = "";
                 layer.appendChild(image);
               }
+              image.dataset[index === 0 ? "wallpaperOldImage" : "wallpaperNewImage"] = "true";
               image.src = url;
             });
           }
@@ -632,7 +1109,7 @@
             setAgentProgress(firstTotal > 0 ? firstPercent : 12, agentProgressLabel(firstApplied, firstTotal, firstOnline));
 
             const refresh = function() {
-              fetch(`${statusUrl}?version=${encodeURIComponent(version)}`, {
+              fetch(`${statusUrl}?version=${encodeURIComponent(version)}&desktop_group_id=${encodeURIComponent(groupInput?.value || "")}`, {
                 headers: { "Accept": "application/json" },
                 credentials: "same-origin"
               })
@@ -663,8 +1140,10 @@
           }
 
           function uploadWallpaperInBackground(file) {
+            const uploadGroupKey = String(groupInput?.value || "");
             const formData = new FormData(wallpaperForm);
             formData.set("wallpaper", file);
+            formData.set("desktop_group_id", uploadGroupKey);
 
             fetch(wallpaperForm.action, {
               method: "POST",
@@ -678,17 +1157,22 @@
               })
               .then(function(data) {
                 const wallpaper = data.wallpaper || {};
-                updateWallpaperLayers(wallpaper.url);
-                wallpaperInput.value = "";
-                wallpaperApply.hidden = true;
-                wallpaperApply.disabled = true;
+                if (String(groupInput?.value || "") === uploadGroupKey) updateWallpaperLayers(wallpaper.url);
+                const activeDot = Array.from(document.querySelectorAll("[data-desktop-group-dot]")).find(function(dot) {
+                  return String(dot.dataset.groupId || "") === uploadGroupKey;
+                });
+                if (activeDot && wallpaper.url) activeDot.dataset.groupWallpaperUrl = wallpaper.url;
+                const appliedDraft = wallpaperDrafts.get(uploadGroupKey);
+                if (appliedDraft?.objectUrl) URL.revokeObjectURL(appliedDraft.objectUrl);
+                wallpaperDrafts.delete(uploadGroupKey);
+                if (String(groupInput?.value || "") === uploadGroupKey) {
+                  wallpaperInput.value = "";
+                  wallpaperApply.hidden = true;
+                  wallpaperApply.disabled = true;
+                }
                 wallpaperProgress.classList.remove("broadcast-card-modern__wallpaper-progress--pending", "broadcast-card-modern__wallpaper-progress--applying");
                 stopPendingPulse();
                 setWallpaperProgress(100);
-                if (pendingObjectUrl) {
-                  URL.revokeObjectURL(pendingObjectUrl);
-                  pendingObjectUrl = null;
-                }
                 pollAgentProgress(wallpaper.version, data.progress);
               })
               .catch(function() {
@@ -706,8 +1190,11 @@
             const file = wallpaperInput.files && wallpaperInput.files[0];
             if (!file || !file.type || !file.type.startsWith("image/")) return;
 
-            if (pendingObjectUrl) URL.revokeObjectURL(pendingObjectUrl);
-            pendingObjectUrl = URL.createObjectURL(file);
+            const groupKey = String(groupInput?.value || "");
+            const previousDraft = wallpaperDrafts.get(groupKey);
+            if (previousDraft?.objectUrl) URL.revokeObjectURL(previousDraft.objectUrl);
+            const pendingObjectUrl = URL.createObjectURL(file);
+            wallpaperDrafts.set(groupKey, { file: file, objectUrl: pendingObjectUrl, fileName: file.name });
 
             let image = wallpaperNewLayer.querySelector("[data-wallpaper-new-image]");
             if (!image) {
@@ -738,6 +1225,34 @@
             if (wallpaperFileName) wallpaperFileName.textContent = file.name;
           });
 
+          document.addEventListener("desktop-group:changed", function(event) {
+            const groupKey = String(event.detail?.groupId || "");
+            const draft = wallpaperDrafts.get(groupKey);
+            stopPendingPulse();
+            clearWallpaperProgressAnimation();
+            clearApplyButtonTimer();
+            wallpaperProgress.classList.remove("broadcast-card-modern__wallpaper-progress--pending", "broadcast-card-modern__wallpaper-progress--applying", "broadcast-card-modern__wallpaper-progress--resetting", "broadcast-card-modern__wallpaper-progress--button-catching");
+            if (draft) {
+              const transfer = new DataTransfer();
+              transfer.items.add(draft.file);
+              wallpaperInput.files = transfer.files;
+              updateWallpaperLayers(event.detail?.wallpaperUrl || "", draft.objectUrl);
+              wallpaperProgress.classList.add("broadcast-card-modern__wallpaper-progress--has-image", "broadcast-card-modern__wallpaper-progress--pending");
+              setWallpaperProgress(75);
+              wallpaperApply.hidden = false;
+              wallpaperApply.disabled = false;
+              if (wallpaperFileName) wallpaperFileName.textContent = draft.fileName;
+              startPendingPulse();
+            } else {
+              wallpaperInput.value = "";
+              if (event.detail?.wallpaperUrl) updateWallpaperLayers(event.detail.wallpaperUrl);
+              setWallpaperProgress(event.detail?.wallpaperUrl ? 100 : 0);
+              wallpaperApply.hidden = true;
+              wallpaperApply.disabled = true;
+              if (wallpaperFileName) wallpaperFileName.textContent = "<%= j I18n.t("ChooseImage") %>";
+            }
+          });
+
           wallpaperForm.addEventListener("submit", function(event) {
             const file = wallpaperInput.files && wallpaperInput.files[0];
             if (!file) {
@@ -763,7 +1278,129 @@
               }, 3300);
             }
           });
+
+          function showDesktopGroup(index) {
+            if (!groupTargets.length) return;
+            activeGroupIndex = (index + groupTargets.length) % groupTargets.length;
+            const target = groupTargets[activeGroupIndex];
+            if (groupInput) groupInput.value = target.id || "";
+            if (groupName) groupName.textContent = target.name;
+            if (groupCount) groupCount.textContent = `${target.count} computadores · ${activeGroupIndex + 1} de ${target.total}`;
+            if (target.url) updateWallpaperLayers(target.url);
+            document.querySelectorAll("[data-desktop-group-dot]").forEach(function(dot, dotIndex) { dot.classList.toggle("is-active", dotIndex === activeGroupIndex); });
+          }
         });
+      </script>
+      <script>
+        (function setupDesktopGroupCarousel() {
+          const card = document.querySelector(".broadcast-card-modern--desktop");
+          if (!card || card.dataset.groupCarouselReady === "true") return;
+          const dots = Array.from(card.querySelectorAll("[data-desktop-group-dot]"));
+          if (!dots.length) return;
+          const name = card.querySelector("[data-desktop-group-name]");
+          const count = card.querySelector("[data-desktop-group-count]");
+          const input = card.querySelector("[data-desktop-group-input]");
+          let previousPeek = card.querySelector("[data-desktop-group-peek-prev]");
+          let nextPeek = card.querySelector("[data-desktop-group-peek-next]");
+          const carouselFrame = card.querySelector(".broadcast-card-modern__wallpaper-frame");
+          let current = 0;
+          let carouselInitialized = false;
+          let carouselAnimationTimer = null;
+          let groupLabelSwapTimer = null;
+          let carouselAnimating = false;
+          let wheelAccumulator = 0;
+          let wheelResetTimer = null;
+
+          function selectGroup(index) {
+            if (carouselAnimating) return;
+            const previousIndex = current;
+            const direction = index >= previousIndex ? "next" : "prev";
+            const targetIndex = (index + dots.length) % dots.length;
+            if (carouselInitialized && targetIndex !== previousIndex) {
+              animateCarousel(direction, targetIndex, function() { commitGroup(targetIndex); });
+              return;
+            }
+            commitGroup(targetIndex);
+            carouselInitialized = true;
+          }
+
+          function commitGroup(targetIndex) {
+            current = targetIndex;
+            const selected = dots[current];
+            dots.forEach(function(dot, dotIndex) { dot.classList.toggle("is-active", dotIndex === current); });
+            if (name) name.textContent = selected.dataset.groupName || "Todos";
+            if (count) count.textContent = `${selected.dataset.groupCount || 0} computadores · ${current + 1} de ${selected.dataset.groupTotal || dots.length}`;
+            if (input) input.value = selected.dataset.groupId || "";
+            const wallpaperUrl = selected.dataset.groupWallpaperUrl;
+            if (wallpaperUrl) card.querySelectorAll("[data-wallpaper-old] img, [data-wallpaper-new] img").forEach(function(image) { image.src = wallpaperUrl; });
+            updatePeek(previousPeek, dots[(current - 1 + dots.length) % dots.length]);
+            updatePeek(nextPeek, dots[(current + 1) % dots.length]);
+            document.dispatchEvent(new CustomEvent("desktop-group:changed", {
+              detail: { groupId: selected.dataset.groupId || "", wallpaperUrl: wallpaperUrl || "" }
+            }));
+          }
+
+          function animateCarousel(direction, targetIndex, onComplete) {
+            if (carouselAnimationTimer) window.clearTimeout(carouselAnimationTimer);
+            if (groupLabelSwapTimer) window.clearTimeout(groupLabelSwapTimer);
+            carouselAnimating = true;
+            card.classList.remove("is-sliding-next", "is-sliding-prev");
+            card.querySelector(".broadcast-card-modern__group-current")?.classList.remove("is-group-label-entering");
+            void card.offsetWidth;
+            card.classList.add(direction === "next" ? "is-sliding-next" : "is-sliding-prev");
+            groupLabelSwapTimer = window.setTimeout(function() {
+              const incoming = dots[targetIndex];
+              const label = card.querySelector(".broadcast-card-modern__group-current");
+              if (name) name.textContent = incoming.dataset.groupName || "Todos";
+              if (count) count.textContent = `${incoming.dataset.groupCount || 0} computadores · ${targetIndex + 1} de ${incoming.dataset.groupTotal || dots.length}`;
+              label?.classList.add("is-group-label-entering");
+            }, 300);
+            carouselAnimationTimer = window.setTimeout(function() {
+              rotatePeekRoles();
+              if (onComplete) onComplete();
+              card.classList.remove("is-sliding-next", "is-sliding-prev");
+              card.querySelector(".broadcast-card-modern__group-current")?.classList.remove("is-group-label-entering");
+              carouselAnimating = false;
+            }, 840);
+          }
+
+          function rotatePeekRoles() {
+            const oldPreviousPeek = previousPeek;
+            previousPeek = nextPeek;
+            nextPeek = oldPreviousPeek;
+            previousPeek.classList.remove("is-next");
+            previousPeek.classList.add("is-prev");
+            nextPeek.classList.remove("is-prev");
+            nextPeek.classList.add("is-next");
+          }
+
+          function updatePeek(peek, target) {
+            if (!peek || !target) return;
+            const image = peek.querySelector("img");
+            const url = target.dataset.groupWallpaperUrl;
+            peek.classList.toggle("has-image", Boolean(url));
+            if (image && url) image.src = url;
+            peek.title = target.dataset.groupName || "Grupo";
+          }
+
+          card.querySelector("[data-desktop-group-prev]")?.addEventListener("click", function(event) { event.preventDefault(); selectGroup(current - 1); });
+          card.querySelector("[data-desktop-group-next]")?.addEventListener("click", function(event) { event.preventDefault(); selectGroup(current + 1); });
+          dots.forEach(function(dot, index) { dot.addEventListener("click", function() { selectGroup(index); }); });
+          carouselFrame?.addEventListener("wheel", function(event) {
+            event.preventDefault();
+            if (carouselAnimating) return;
+            const movement = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+            wheelAccumulator += movement;
+            if (wheelResetTimer) window.clearTimeout(wheelResetTimer);
+            wheelResetTimer = window.setTimeout(function() { wheelAccumulator = 0; }, 180);
+            if (Math.abs(wheelAccumulator) < 28) return;
+            const direction = wheelAccumulator > 0 ? 1 : -1;
+            wheelAccumulator = 0;
+            selectGroup(current + direction);
+          }, { passive: false });
+          card.dataset.groupCarouselReady = "true";
+          selectGroup(0);
+        })();
       </script>
       </aside>
     </div>
@@ -771,7 +1408,6 @@
 
   <footer class="broadcasts-footer">
     <%= link_to releases_path, class: "broadcasts-footer__release", target: "_blank", rel: "noopener", title: "Ver releases do Aponti TV" do %>
-      <i class="fas fa-rocket" aria-hidden="true"></i>
       <span><%= I18n.t("Version") %> 1.0.9.0</span>
     <% end %>
   </footer>
@@ -788,12 +1424,13 @@
           <strong id="broadcast-publish-title"><%= I18n.t("PublishPlaylist") %></strong>
           <p><%= I18n.t("PublishPlaylistDescription") %></p>
         </div>
+        <button type="button" class="broadcast-publish-modal__help" data-publish-help-open aria-label="Ajuda para publicar playlist" title="Como publicar uma playlist"><i class="far fa-circle-question" aria-hidden="true"></i></button>
         <button type="button" class="broadcast-preview-modal__close" data-publish-close aria-label="<%= I18n.t("Close") %>"><%= I18n.t("Close") %></button>
       </div>
 
       <%= form_with url: publish_video_broadcasts_path, method: :post, local: true, multipart: true, class: "broadcast-publish-form" do %>
         <div class="broadcast-publish-modal__body">
-          <section class="broadcast-publish-section">
+          <section class="broadcast-publish-section" data-publish-help-tip="Escolha uma playlist existente. Você também pode criar uma nova ou editar seu conteúdo antes de publicar.">
             <div class="broadcast-publish-section__title">
               <h3>Playlists</h3>
               <button type="button" class="broadcast-publish-link" data-playlist-new><%= I18n.t("CreatePlaylist") %></button>
@@ -837,7 +1474,7 @@
             </div>
           </section>
 
-          <section class="broadcast-publish-section">
+          <section class="broadcast-publish-section" data-publish-help-tip="Marque uma ou várias TVs que receberão a playlist. Use Selecionar todas para publicar em todos os aparelhos.">
             <div class="broadcast-publish-section__title">
               <h3>TVs</h3>
               <button type="button" class="broadcast-publish-link" data-publish-select-all><%= I18n.t("SelectAll") %></button>
@@ -857,12 +1494,34 @@
         </div>
 
         <div class="broadcast-publish-modal__footer">
-          <button type="button" class="broadcast-preview-modal__close" data-publish-close><%= I18n.t("Cancel") %></button>
-          <%= submit_tag I18n.t("PublishPlaylistToTvs"), class: "broadcasts-toolbar__btn broadcasts-toolbar__btn--primary" %>
+          <span class="broadcast-publish-requirements" data-publish-requirements>Selecione uma playlist e pelo menos uma TV.</span>
+          <button type="button" class="broadcast-preview-modal__close" data-publish-close data-publish-help-tip="Cancela a operação e fecha o modal sem publicar nenhuma alteração."><%= I18n.t("Cancel") %></button>
+          <%= submit_tag I18n.t("PublishPlaylistToTvs"), class: "broadcasts-toolbar__btn broadcasts-toolbar__btn--primary", disabled: true, data: { publish_submit: true, publish_help_tip: "Confirme para enviar a playlist selecionada às TVs marcadas e atualizar a reprodução." } %>
         </div>
       <% end %>
     </div>
   </div>
+
+  <div class="publish-help-overlay" data-publish-help-overlay hidden>
+    <div class="publish-help-overlay__shade"></div>
+    <div data-publish-help-callouts></div>
+  </div>
+
+  <style>
+    .broadcast-publish-modal__help{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;padding:0;margin-left:auto;border:0;border-radius:50%;background:transparent;color:#d8b4fe;font-size:16px;cursor:pointer;filter:drop-shadow(0 0 5px rgba(168,85,247,.58));transition:.2s}.broadcast-publish-modal__help:hover,.broadcast-publish-modal__help:focus-visible,.broadcast-publish-modal__help[aria-pressed="true"]{color:#fff;outline:0;transform:scale(1.14);filter:drop-shadow(0 0 10px #c084fc)}.broadcast-publish-modal__dialog:has(.broadcast-publish-modal__help:hover),.broadcast-publish-modal__dialog:has(.broadcast-publish-modal__help:focus-visible){border-color:#c084fc;box-shadow:0 0 0 2px rgba(192,132,252,.45),0 0 38px rgba(168,85,247,.48),0 30px 80px rgba(2,6,23,.65)}html[data-theme="light"] .broadcast-publish-modal__help{color:#6d28d9}.publish-help-overlay{position:fixed;z-index:15000;inset:0}.publish-help-overlay[hidden]{display:none}.publish-help-overlay__shade{position:absolute;inset:0;background:rgba(2,6,23,.76);backdrop-filter:blur(1px)}.broadcast-publish-modal__dialog.is-publish-help-active{z-index:15002!important;border-color:#a855f7!important;box-shadow:0 0 0 2px rgba(168,85,247,.55),0 0 42px rgba(168,85,247,.72),0 30px 90px rgba(2,6,23,.72)!important}.publish-help-callout{position:fixed;z-index:15003;width:270px;display:grid;grid-template-columns:24px 1fr;gap:8px;padding:10px 11px;border:1px solid rgba(192,132,252,.78);border-radius:12px;background:#111429;color:#f8fafc;box-shadow:0 13px 34px rgba(2,6,23,.65),0 0 20px rgba(168,85,247,.25)}.publish-help-callout b{width:23px;height:23px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#7c3aed,#a855f7);font-size:10px}.publish-help-callout p{margin:1px 0 0;font-size:10px;line-height:1.4}.publish-help-callout:after{content:"";position:absolute;width:11px;height:11px;background:#111429;border-right:1px solid #c084fc;border-bottom:1px solid #c084fc}.publish-help-callout.is-top:after{bottom:-7px;left:var(--publish-arrow-x,50%);transform:translateX(-50%) rotate(45deg)}.publish-help-callout.is-bottom:after{top:-7px;left:var(--publish-arrow-x,50%);transform:translateX(-50%) rotate(225deg)}
+    .publish-help-overlay{pointer-events:none}.publish-help-overlay__shade{display:none}.broadcast-publish-modal__dialog.is-publish-help-active{z-index:2!important;box-shadow:0 0 0 2px rgba(168,85,247,.55),0 0 42px rgba(168,85,247,.72),0 30px 90px rgba(2,6,23,.72),0 0 0 100vmax rgba(2,6,23,.76)!important}
+    .broadcast-publish-modal__footer-help{margin-right:auto;margin-left:0}.broadcast-publish-modal__footer:has(.broadcast-publish-modal__footer-help:hover),.broadcast-publish-modal__footer:has(.broadcast-publish-modal__footer-help:focus-visible){border-color:#c084fc;box-shadow:inset 0 0 22px rgba(168,85,247,.2),0 -2px 18px rgba(168,85,247,.22)}
+    .playlist-editor-help-callout{width:170px}.playlist-editor-help-callout.is-side-left:after{right:-7px;left:auto;top:var(--playlist-help-arrow-y,17px);transform:rotate(-45deg)}.playlist-editor-help-callout.is-side-right:after{left:-7px;right:auto;top:var(--playlist-help-arrow-y,17px);transform:rotate(135deg)}
+  </style>
+
+  <script>
+    function setupPublishHelp(){const modal=document.querySelector('[data-publish-modal]'),dialog=modal?.querySelector('.broadcast-publish-modal__dialog'),open=modal?.querySelector('[data-publish-help-open]'),footerOpen=modal?.querySelector('[data-publish-footer-help-open]'),overlay=document.querySelector('[data-publish-help-overlay]'),host=overlay?.querySelector('[data-publish-help-callouts]');if(!modal||!dialog||!open||!overlay||!host||open.dataset.helpBound==='true')return;open.dataset.helpBound='true';let bubbles=[];
+      function position(){if(overlay.hidden)return;bubbles.forEach(item=>{const r=item.target.getBoundingClientRect(),b=item.bubble,above=r.top>b.offsetHeight+18,top=above?r.top-b.offsetHeight-12:r.bottom+12,left=Math.max(10,Math.min(r.left+r.width/2-b.offsetWidth/2,innerWidth-b.offsetWidth-10));b.classList.toggle('is-top',above);b.classList.toggle('is-bottom',!above);b.style.left=`${left}px`;b.style.top=`${Math.max(8,Math.min(top,innerHeight-b.offsetHeight-8))}px`;b.style.setProperty('--publish-arrow-x',`${Math.max(15,Math.min(r.left+r.width/2-left,b.offsetWidth-15))}px`)})}
+      function close(){overlay.hidden=true;dialog.classList.remove('is-publish-help-active');open.setAttribute('aria-pressed','false');footerOpen?.setAttribute('aria-pressed','false');host.replaceChildren();bubbles=[]}
+      function show(targets){overlay.hidden=false;dialog.classList.add('is-publish-help-active');host.replaceChildren();bubbles=[...targets].map((target,index)=>{const bubble=document.createElement('article');bubble.className='publish-help-callout';bubble.innerHTML=`<b>${index+1}</b><p>${target.dataset.publishHelpTip}</p>`;host.appendChild(bubble);return{target,bubble}});requestAnimationFrame(()=>requestAnimationFrame(position))}
+      open.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(overlay.hidden){open.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('[data-publish-help-tip]'))}else close()});footerOpen?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(overlay.hidden){footerOpen.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('.broadcast-publish-modal__footer [data-publish-help-tip]'))}else close()});overlay.querySelector('.publish-help-overlay__shade').addEventListener('click',close);modal.querySelectorAll('[data-publish-close]').forEach(button=>button.addEventListener('click',close));window.addEventListener('resize',position);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!overlay.hidden)close()});if(new URLSearchParams(location.search).get('help')==='publish_modal'){modal.hidden=false;open.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('[data-publish-help-tip]'))}}
+    document.addEventListener('DOMContentLoaded',setupPublishHelp);document.addEventListener('turbo:load',setupPublishHelp);if(document.readyState!=='loading')setupPublishHelp();
+  </script>
 
   <div class="broadcast-publish-modal broadcast-playlist-editor-modal" data-playlist-editor-modal hidden>
     <div class="broadcast-publish-modal__backdrop" data-playlist-editor-close></div>
@@ -875,6 +1534,7 @@
             <p><%= I18n.t("PlaylistEditorDescription") %></p>
           </div>
         </div>
+        <button type="button" class="broadcast-publish-modal__help" data-playlist-editor-help-open aria-label="Ajuda do editor de playlist" title="Como usar o editor de playlist"><i class="far fa-circle-question" aria-hidden="true"></i></button>
         <button type="button" class="broadcast-playlist-icon-btn" data-playlist-editor-close aria-label="<%= I18n.t("Close") %>" title="<%= I18n.t("Close") %>">
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
@@ -883,53 +1543,61 @@
       <form class="broadcast-playlist-editor" data-playlist-editor-form>
         <input type="hidden" name="id" data-playlist-editor-id>
         <div class="broadcast-publish-modal__body">
-          <section class="broadcast-publish-section broadcast-playlist-editor__settings">
+          <section class="broadcast-publish-section broadcast-playlist-editor__settings" data-playlist-editor-help-tip="Defina o nome, duração das imagens, comportamento dos vídeos, transição e sincronização entre TVs.">
             <h3><i class="fas fa-sliders-h" aria-hidden="true"></i> <%= I18n.t("PlaylistSettings") %></h3>
             <div class="broadcast-playlist-editor__settings-grid">
-              <label class="broadcast-playlist-field">
+              <label class="broadcast-playlist-field" data-playlist-settings-help-tip="Dê um nome claro para identificar esta playlist na hora de publicar.">
                 <span><%= I18n.t("PlaylistName") %></span>
                 <div class="broadcast-playlist-input-wrap">
                   <i class="far fa-file-video" aria-hidden="true"></i>
                   <input type="text" name="name" data-playlist-name value="<%= I18n.t("NewPlaylist") %>" required>
                 </div>
               </label>
-              <label class="broadcast-playlist-field" data-playlist-timing-settings>
+              <label class="broadcast-playlist-field" data-playlist-timing-settings data-playlist-settings-help-tip="Defina por quantos segundos cada imagem permanece na tela.">
                 <span><%= I18n.t("ImageDuration") %></span>
                 <div class="broadcast-playlist-input-wrap">
                   <input type="number" name="image_duration_seconds" data-playlist-image-duration value="10" min="3" max="3600" step="1">
                   <small>seg</small>
                 </div>
               </label>
-              <label class="broadcast-playlist-field" data-playlist-timing-settings>
+              <label class="broadcast-playlist-field" data-playlist-timing-settings data-playlist-settings-help-tip="Escolha se o vídeo respeita o tempo das imagens ou é reproduzido até o final.">
                 <span><%= I18n.t("WhenVideoStarts") %></span>
                 <select name="video_duration_mode" data-playlist-video-duration-mode>
                   <option value="image_duration"><%= I18n.t("ObeyImageDuration") %></option>
                   <option value="video_end"><%= I18n.t("WaitVideoEnd") %></option>
                 </select>
               </label>
-              <label class="broadcast-playlist-field" data-playlist-timing-settings>
+              <label class="broadcast-playlist-field" data-playlist-timing-settings data-playlist-settings-help-tip="Escolha o efeito visual usado na passagem entre dois itens.">
                 <span><%= I18n.t("TransitionEffect") %></span>
-                <select name="transition_style" data-playlist-transition-style>
-                  <option value="fade">Fade</option>
-                  <option value="slide">Slide</option>
-                  <option value="blur">Blur</option>
-                  <option value="zoom">Zoom</option>
-                  <option value="wipe">Wipe vertical</option>
-                  <option value="push">Push lateral</option>
-                <option value="flip">Flip</option>
-                <option value="cross_zoom">Cross zoom</option>
-                <option value="aponti_smooth">Aponti Smooth</option>
-                <option value="none">Sem efeito</option>
-              </select>
+                <div class="broadcast-transition-picker" data-transition-picker>
+                  <select name="transition_style" data-playlist-transition-style tabindex="-1" aria-hidden="true">
+                    <option value="fade">Fade</option><option value="slide">Slide</option><option value="blur">Blur</option>
+                    <option value="zoom">Zoom</option><option value="wipe">Wipe vertical</option><option value="push">Push lateral</option>
+                    <option value="flip">Flip</option><option value="cross_zoom">Cross zoom</option>
+                    <option value="aponti_smooth">Aponti Smooth</option><option value="none">Sem efeito</option>
+                  </select>
+                  <button type="button" class="broadcast-transition-picker__trigger" data-transition-trigger aria-haspopup="listbox" aria-expanded="false">
+                    <img src="<%= asset_path('effect_icons/fade.png') %>" alt="" data-transition-current-icon>
+                    <span data-transition-current-label>Fade</span>
+                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                  </button>
+                  <div class="broadcast-transition-picker__menu" data-transition-menu role="listbox" hidden>
+                    <% [["fade", "Fade", "fade.png"], ["slide", "Slide", "slide.png"], ["blur", "Blur", "blur.png"], ["zoom", "Zoom", "zoom.png"], ["wipe", "Wipe vertical", "wipe_vertical.png"], ["push", "Push lateral", "push_lateral.png"], ["flip", "Flip", "flip.png"], ["cross_zoom", "Cross zoom", "cross_zoom.png"], ["aponti_smooth", "Aponti Smooth", "aponti_smooth.png"], ["none", "Sem efeito", "sem_efeito.png"]].each do |value, label, icon| %>
+                      <button type="button" class="broadcast-transition-picker__option" data-transition-option="<%= value %>" data-transition-icon="<%= asset_path("effect_icons/#{icon}") %>" role="option">
+                        <img src="<%= asset_path("effect_icons/#{icon}") %>" alt=""><span><%= label %></span><i class="fas fa-check" aria-hidden="true"></i>
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
               </label>
-              <label class="broadcast-playlist-field" data-playlist-timing-settings>
+              <label class="broadcast-playlist-field" data-playlist-timing-settings data-playlist-settings-help-tip="Controle em milissegundos a velocidade do efeito de transição.">
                 <span><%= I18n.t("TransitionDuration") %></span>
                 <div class="broadcast-playlist-input-wrap">
                   <input type="number" name="transition_duration_ms" data-playlist-transition-duration value="600" min="0" max="10000" step="100">
                   <small>ms</small>
                 </div>
               </label>
-              <label class="broadcast-playlist-field broadcast-playlist-field--sync">
+              <label class="broadcast-playlist-field broadcast-playlist-field--sync" data-playlist-settings-help-tip="Ative para manter várias TVs com a mesma playlist exibindo o mesmo item ao mesmo tempo.">
                 <span><%= I18n.t("SyncPlaylistTvs") %></span>
                 <label class="broadcast-playlist-sync-toggle">
                   <input type="checkbox" name="sync_enabled" data-playlist-sync-enabled>
@@ -941,18 +1609,18 @@
             </div>
           </section>
 
-          <section class="broadcast-publish-section broadcast-playlist-editor__library-section">
+          <section class="broadcast-publish-section broadcast-playlist-editor__library-section" data-playlist-editor-help-tip="Escolha mídias da Biblioteca. Aqui também é possível criar vídeo, enviar arquivos, alternar entre disponíveis e selecionados ou limpar a seleção.">
             <div class="broadcast-publish-section__title">
               <h3><i class="fas fa-folder-open" aria-hidden="true"></i> <%= I18n.t("Library") %></h3>
               <div class="broadcast-publish-section__actions">
-                <%= link_to new_video_editor_path, class: "broadcast-playlist-icon-btn", title: I18n.t("CreateVideo"), aria: { label: I18n.t("CreateVideo") } do %>
+                <%= link_to new_video_editor_path, class: "broadcast-playlist-icon-btn", title: I18n.t("CreateVideo"), aria: { label: I18n.t("CreateVideo") }, data: { action_label: I18n.t("CreateVideo") } do %>
                   <i class="fas fa-video" aria-hidden="true"></i>
                 <% end %>
-                <label class="broadcast-playlist-icon-btn broadcast-publish-upload-control" title="<%= I18n.t("UploadMedia") %>" aria-label="<%= I18n.t("UploadMedia") %>">
+                <label class="broadcast-playlist-icon-btn broadcast-publish-upload-control" title="<%= I18n.t("UploadMedia") %>" aria-label="<%= I18n.t("UploadMedia") %>" data-action-label="<%= I18n.t("UploadMedia") %>">
                   <i class="fas fa-upload" aria-hidden="true"></i>
                   <%= file_field_tag "playlist_media_files[]", accept: "video/*,image/*", multiple: true, data: { playlist_upload: true } %>
                 </label>
-                <button type="button" class="broadcast-playlist-icon-btn" data-playlist-clear-items title="<%= I18n.t("ClearSelection") %>" aria-label="<%= I18n.t("ClearSelection") %>">
+                <button type="button" class="broadcast-playlist-icon-btn" data-playlist-clear-items data-action-label="<%= I18n.t("ClearSelection") %>" title="<%= I18n.t("ClearSelection") %>" aria-label="<%= I18n.t("ClearSelection") %>">
                   <i class="fas fa-trash-alt" aria-hidden="true"></i>
                 </button>
               </div>
@@ -995,7 +1663,7 @@
             <p class="broadcast-playlist-editor__count">Mostrando <%= @video_library_blobs.size %> item<%= @video_library_blobs.size == 1 ? "" : "s" %></p>
           </section>
 
-          <section class="broadcast-publish-section broadcast-playlist-editor__order-section">
+          <section class="broadcast-publish-section broadcast-playlist-editor__order-section" data-playlist-editor-help-tip="Organize a sequência de exibição arrastando os itens selecionados e remova o que não deve fazer parte da playlist.">
             <div class="broadcast-publish-section__title">
               <h3><i class="fas fa-list-ul" aria-hidden="true"></i> <%= I18n.t("PlaylistOrder") %></h3>
               <span class="broadcast-playlist-editor__pill" data-playlist-order-count><%= I18n.t("ItemsCount", count: 0) %></span>
@@ -1015,8 +1683,8 @@
         </div>
 
         <div class="broadcast-publish-modal__footer">
-          <button type="button" class="broadcast-preview-modal__close" data-playlist-editor-close><%= I18n.t("Cancel") %></button>
-          <button type="submit" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary">
+          <button type="button" class="broadcast-preview-modal__close" data-playlist-editor-close data-playlist-editor-help-tip="Fecha o editor e descarta as alterações que ainda não foram salvas."><%= I18n.t("Cancel") %></button>
+          <button type="submit" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary" data-playlist-editor-help-tip="Salva o nome, as configurações, as mídias selecionadas e a ordem da playlist.">
             <i class="fas fa-save" aria-hidden="true"></i>
             <span><%= I18n.t("SavePlaylist") %></span>
           </button>
@@ -1024,6 +1692,34 @@
       </form>
     </div>
   </div>
+  <div class="publish-help-overlay" data-playlist-editor-help-overlay hidden>
+    <div data-playlist-editor-help-callouts></div>
+  </div>
+  <script>
+    function setupPlaylistEditorHelp(){const modal=document.querySelector('[data-playlist-editor-modal]'),dialog=modal?.querySelector('.broadcast-playlist-editor-modal__dialog'),open=modal?.querySelector('[data-playlist-editor-help-open]'),overlay=document.querySelector('[data-playlist-editor-help-overlay]'),host=overlay?.querySelector('[data-playlist-editor-help-callouts]');if(!modal||!dialog||!open||!overlay||!host||open.dataset.helpBound==='true')return;open.dataset.helpBound='true';let bubbles=[];
+      function position(){
+        if(overlay.hidden)return;
+        const dialogRect=dialog.getBoundingClientRect();
+        bubbles.forEach((item,index)=>{
+          const r=item.target.getBoundingClientRect(),b=item.bubble,center=r.top+r.height/2;
+          b.classList.remove('is-side-left','is-side-right','is-top','is-bottom');
+          if(item.footerIndex===1){
+            const left=Math.min(innerWidth-b.offsetWidth-8,r.right+14),top=Math.max(8,Math.min(center-b.offsetHeight/2,innerHeight-b.offsetHeight-8));
+            b.classList.add('is-side-right');b.style.left=`${left}px`;b.style.top=`${top}px`;b.style.setProperty('--playlist-help-arrow-y',`${Math.max(12,Math.min(center-top-6,b.offsetHeight-18))}px`);return;
+          }
+          if(item.settingIndex!==null||item.footerIndex!==null){
+            const alternatingIndex=item.settingIndex!==null?item.settingIndex:item.footerIndex,above=alternatingIndex%2===0,left=Math.max(8,Math.min(r.left+r.width/2-b.offsetWidth/2,innerWidth-b.offsetWidth-8)),rawTop=above?r.top-b.offsetHeight-12:r.bottom+12,top=Math.max(8,Math.min(rawTop,innerHeight-b.offsetHeight-8));
+            b.classList.add(above?'is-top':'is-bottom');b.style.left=`${left}px`;b.style.top=`${top}px`;b.style.setProperty('--publish-arrow-x',`${Math.max(14,Math.min(r.left+r.width/2-left,b.offsetWidth-14))}px`);return;
+          }
+          const targetOnLeft=r.left+r.width/2<dialogRect.left+dialogRect.width/2,placeLeft=index===1?true:index===2?false:targetOnLeft,left=placeLeft?Math.max(8,r.left-b.offsetWidth-14):Math.min(innerWidth-b.offsetWidth-8,r.right+14),top=Math.max(8,Math.min(center-b.offsetHeight/2,innerHeight-b.offsetHeight-8));
+          b.classList.add(placeLeft?'is-side-left':'is-side-right');b.style.left=`${left}px`;b.style.top=`${top}px`;b.style.setProperty('--playlist-help-arrow-y',`${Math.max(12,Math.min(center-top-6,b.offsetHeight-18))}px`);
+        })
+      }
+      function close(){overlay.hidden=true;dialog.classList.remove('is-publish-help-active');open.setAttribute('aria-pressed','false');host.replaceChildren();bubbles=[]}
+      function show(){overlay.hidden=false;dialog.classList.add('is-publish-help-active');open.setAttribute('aria-pressed','true');const mainTargets=[dialog.querySelector('.broadcast-playlist-editor__settings[data-playlist-editor-help-tip]'),dialog.querySelector('.broadcast-playlist-editor__library-section[data-playlist-editor-help-tip]'),dialog.querySelector('.broadcast-playlist-editor__order-section[data-playlist-editor-help-tip]')].filter(Boolean),settingTargets=[...dialog.querySelectorAll('[data-playlist-settings-help-tip]')],footerTargets=[...dialog.querySelectorAll('.broadcast-publish-modal__footer [data-playlist-editor-help-tip]')],targets=[...mainTargets,...settingTargets,...footerTargets];bubbles=targets.map((target,index)=>{const bubble=document.createElement('article');bubble.className='publish-help-callout playlist-editor-help-callout';bubble.innerHTML=`<b>${index+1}</b><p>${target.dataset.playlistEditorHelpTip||target.dataset.playlistSettingsHelpTip}</p>`;host.appendChild(bubble);return{target,bubble,settingIndex:target.hasAttribute('data-playlist-settings-help-tip')?settingTargets.indexOf(target):null,footerIndex:footerTargets.includes(target)?footerTargets.indexOf(target):null}});requestAnimationFrame(()=>requestAnimationFrame(position))}
+      open.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();overlay.hidden?show():close()});modal.querySelectorAll('[data-playlist-editor-close]').forEach(button=>button.addEventListener('click',close));window.addEventListener('resize',position);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!overlay.hidden)close()})}
+    document.addEventListener('DOMContentLoaded',setupPlaylistEditorHelp);document.addEventListener('turbo:load',setupPlaylistEditorHelp);if(document.readyState!=='loading')setupPlaylistEditorHelp();
+  </script>
 <% end %>
 <div class="broadcast-preview-modal" data-preview-modal hidden>
   <div class="broadcast-preview-modal__backdrop" data-preview-close></div>
@@ -1039,6 +1735,11 @@
       <div class="broadcast-card-modern__video broadcast-preview-modal__video" data-preview-wrapper data-orientation="landscape">
         <video class="broadcast-video" data-preview-video autoplay muted playsinline preload="metadata"></video>
         <img class="broadcast-video broadcast-preview-modal__image" data-preview-image alt="" hidden>
+        <iframe class="broadcast-video broadcast-preview-modal__web"
+                data-preview-web
+                title="Preview da página web"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                hidden></iframe>
         <div class="broadcast-card-modern__video-fallback" data-preview-fallback hidden><%= I18n.t("PreviewUnavailable") %></div>
       </div>
     </div>
@@ -1094,43 +1795,18 @@
 </div>
 
 <div class="broadcast-volume-modal" data-volume-modal hidden>
-  <div class="broadcast-volume-modal__backdrop" data-volume-cancel></div>
-  <form class="broadcast-volume-modal__dialog" method="post" data-volume-form role="dialog" aria-modal="true" aria-labelledby="broadcast-volume-title">
+  <form class="broadcast-volume-modal__dialog" method="post" data-volume-form role="dialog" aria-label="<%= I18n.t("TvVolume") %>">
     <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-    <div class="broadcast-volume-modal__header">
-      <div>
-        <strong id="broadcast-volume-title"><%= I18n.t("TvVolume") %></strong>
-        <p data-volume-tv-label><%= I18n.t("TvVolumeDescription") %></p>
-      </div>
-      <button type="button" class="broadcast-playlist-icon-btn" data-volume-cancel aria-label="<%= I18n.t("Cancel") %>" title="<%= I18n.t("Cancel") %>">
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
-    <div class="broadcast-volume-modal__body">
-      <div class="broadcast-volume-modal__value">
-        <i class="fas fa-volume-up" aria-hidden="true"></i>
-        <strong><span data-volume-value>50</span>%</strong>
-      </div>
-      <input type="range" name="volume_percent" min="0" max="100" step="1" value="50" data-volume-range>
-      <div class="broadcast-volume-modal__ticks" aria-hidden="true">
-        <span>0</span>
-        <span>50</span>
-        <span>100</span>
-      </div>
-    </div>
-    <div class="broadcast-volume-modal__footer">
-      <button type="button" class="broadcast-preview-modal__close" data-volume-cancel><%= I18n.t("Cancel") %></button>
-      <div class="broadcast-volume-modal__footer-actions">
-        <button type="submit" class="broadcast-volume-modal__mute" data-volume-mute>
-          <i class="fas fa-volume-mute" aria-hidden="true"></i>
-          <span>Mute</span>
-        </button>
-        <button type="submit" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary">
-          <i class="fas fa-check" aria-hidden="true"></i>
-          <span><%= I18n.t("ApplyAndClose") %></span>
-        </button>
-      </div>
-    </div>
+    <button type="button" class="broadcast-volume-modal__speaker" data-volume-mute aria-label="Mute" title="Mute">
+      <i class="fas fa-volume-up" aria-hidden="true"></i>
+    </button>
+    <input type="range" name="volume_percent" min="0" max="100" step="1" value="50" data-volume-range aria-label="<%= I18n.t("TvVolume") %>">
+    <strong class="broadcast-volume-modal__value"><span data-volume-value>50</span>%</strong>
+    <span class="broadcast-volume-modal__divider" aria-hidden="true"></span>
+    <button type="submit" class="broadcast-volume-modal__apply">
+      <i class="fas fa-check" aria-hidden="true"></i>
+      <span><%= I18n.t("Apply", default: "Aplicar") %></span>
+    </button>
   </form>
 </div>
 
@@ -1146,6 +1822,7 @@
     const previewModal = document.querySelector("[data-preview-modal]");
     const previewVideo = document.querySelector("[data-preview-video]");
     const previewImage = document.querySelector("[data-preview-image]");
+    const previewWeb = document.querySelector("[data-preview-web]");
     const previewWrapper = document.querySelector("[data-preview-wrapper]");
     const previewFallback = document.querySelector("[data-preview-fallback]");
     const previewTitle = document.querySelector("[data-preview-title]");
@@ -1155,7 +1832,6 @@
     const volumeForm = document.querySelector("[data-volume-form]");
     const volumeRange = document.querySelector("[data-volume-range]");
     const volumeValue = document.querySelector("[data-volume-value]");
-    const volumeTvLabel = document.querySelector("[data-volume-tv-label]");
     const volumeMuteButton = document.querySelector("[data-volume-mute]");
     const powerScheduleModal = document.querySelector("[data-power-schedule-modal]");
     const powerScheduleForm = document.querySelector("[data-power-schedule-form]");
@@ -1182,6 +1858,8 @@
     let draggedPlaylistOrderElement = null;
     let playlistDragImage = null;
     let playlistRefreshFrame = null;
+    let volumeBeforeMute = 50;
+    let activeVolumeButton = null;
 
     function applyView(view) {
       panels.forEach((panel) => {
@@ -1303,8 +1981,71 @@
       });
     });
 
+    const publishForm = publishModal?.querySelector(".broadcast-publish-form");
+    const publishSubmit = publishForm?.querySelector("[data-publish-submit]");
+    const publishRequirements = publishForm?.querySelector("[data-publish-requirements]");
+
+    function updatePublishAvailability() {
+      if (!publishForm || !publishSubmit) return;
+      const hasPlaylist = Boolean(publishForm.querySelector("input[name='playlist_id']:checked"));
+      const hasTv = Boolean(publishForm.querySelector("input[name='broadcast_ids[]']:checked"));
+      const ready = hasPlaylist && hasTv;
+      publishSubmit.disabled = !ready;
+      publishSubmit.setAttribute("aria-disabled", String(!ready));
+      if (publishRequirements) {
+        publishRequirements.textContent = ready
+          ? "Tudo pronto para publicar."
+          : (!hasPlaylist && !hasTv ? "Selecione uma playlist e pelo menos uma TV." : (!hasPlaylist ? "Selecione uma playlist." : "Selecione pelo menos uma TV."));
+        publishRequirements.classList.toggle("is-ready", ready);
+      }
+    }
+
+    publishForm?.addEventListener("change", updatePublishAvailability);
+    publishForm?.addEventListener("submit", function(event) {
+      updatePublishAvailability();
+      if (publishSubmit?.disabled) {
+        event.preventDefault();
+        showNotification(publishRequirements?.textContent || "Selecione uma playlist e pelo menos uma TV.");
+      }
+    });
+    updatePublishAvailability();
+
     function updateVolumeDisplay() {
-      if (volumeValue && volumeRange) volumeValue.textContent = volumeRange.value;
+      if (!volumeRange) return;
+
+      const value = Math.max(0, Math.min(100, Number(volumeRange.value) || 0));
+      if (volumeValue) volumeValue.textContent = String(value);
+      volumeRange.style.setProperty("--volume-percent", value + "%");
+
+      if (volumeMuteButton) {
+        const muted = value === 0;
+        const icon = volumeMuteButton.querySelector("i");
+        if (icon) icon.className = muted ? "fas fa-volume-mute" : "fas fa-volume-up";
+        volumeMuteButton.classList.toggle("is-muted", muted);
+        volumeMuteButton.setAttribute("aria-label", muted ? "Restaurar volume" : "Mute");
+        volumeMuteButton.title = muted ? "Restaurar volume" : "Mute";
+      }
+    }
+
+    function positionVolumePopover(button) {
+      const dialog = volumeForm;
+      if (!dialog || !button) return;
+
+      const rect = button.getBoundingClientRect();
+      const dialogRect = dialog.getBoundingClientRect();
+      const viewportPadding = 12;
+      const desiredLeft = rect.left + (rect.width / 2) - (dialogRect.width / 2);
+      const left = Math.max(viewportPadding, Math.min(desiredLeft, window.innerWidth - dialogRect.width - viewportPadding));
+      let top = rect.top - dialogRect.height - 10;
+      if (top < viewportPadding) top = rect.bottom + 10;
+
+      dialog.style.left = left + "px";
+      dialog.style.top = top + "px";
+    }
+
+    function closeVolumePopover() {
+      if (volumeModal) volumeModal.hidden = true;
+      activeVolumeButton = null;
     }
 
     document.querySelectorAll("[data-volume-open]").forEach(function(button) {
@@ -1312,26 +2053,136 @@
         if (!volumeModal || !volumeForm || !volumeRange) return;
 
         volumeForm.action = button.dataset.volumeAction || "";
-        if (volumeMuteButton) volumeMuteButton.formAction = button.dataset.volumeMuteAction || "";
-        if (volumeTvLabel) {
-          volumeTvLabel.textContent = "Defina o volume de " + (button.dataset.volumeTvName || "TV") + ".";
-        }
         volumeRange.value = button.dataset.volumeCurrent || "50";
+        volumeBeforeMute = Number(volumeRange.value) > 0 ? Number(volumeRange.value) : 50;
+        activeVolumeButton = button;
         updateVolumeDisplay();
         volumeModal.hidden = false;
+        positionVolumePopover(button);
         window.setTimeout(function() { volumeRange.focus(); }, 40);
       });
     });
 
-    document.querySelectorAll("[data-volume-cancel]").forEach(function(button) {
-      button.addEventListener("click", function() {
-        if (volumeModal) volumeModal.hidden = true;
+    if (volumeRange) {
+      volumeRange.addEventListener("input", function() {
+        if (Number(volumeRange.value) > 0) volumeBeforeMute = Number(volumeRange.value);
+        updateVolumeDisplay();
+      });
+    }
+
+    if (volumeMuteButton && volumeRange) {
+      volumeMuteButton.addEventListener("click", function() {
+        if (Number(volumeRange.value) === 0) {
+          volumeRange.value = String(volumeBeforeMute || 50);
+        } else {
+          volumeBeforeMute = Number(volumeRange.value);
+          volumeRange.value = "0";
+        }
+        updateVolumeDisplay();
+      });
+    }
+
+    if (volumeForm) {
+      volumeForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        if (!activeVolumeButton || activeVolumeButton.disabled) return;
+
+        const sourceButton = activeVolumeButton;
+        const sourceIcon = sourceButton.querySelector("i");
+        const requestedVolume = Number(volumeRange?.value) || 0;
+        sourceButton.disabled = true;
+        sourceButton.classList.add("is-applying");
+        sourceButton.setAttribute("aria-busy", "true");
+        if (sourceIcon) sourceIcon.className = "fas fa-spinner";
+        closeVolumePopover();
+
+        try {
+          const response = await fetch(volumeForm.action, {
+            method: "POST",
+            headers: {
+              "Accept": "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: new FormData(volumeForm),
+            credentials: "same-origin"
+          });
+          const data = await response.json().catch(function() { return {}; });
+          if (!response.ok || data.ok === false) throw new Error(data.message || "Não foi possível aplicar o volume.");
+          sourceButton.dataset.volumeCurrent = String(data.volume_percent ?? requestedVolume);
+        } catch (error) {
+          window.alert(error.message || "Não foi possível aplicar o volume.");
+        } finally {
+          sourceButton.disabled = false;
+          sourceButton.classList.remove("is-applying");
+          sourceButton.removeAttribute("aria-busy");
+          if (sourceIcon) sourceIcon.className = requestedVolume === 0 ? "fas fa-volume-mute" : "fas fa-volume-up";
+        }
+      });
+    }
+
+    document.querySelectorAll("[data-power-control]").forEach(function(button) {
+      const form = button.form;
+      if (!form) return;
+
+      form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        if (button.disabled) return;
+
+        const previousState = button.dataset.powerState || "off";
+        const icon = button.querySelector("i");
+        button.disabled = true;
+        button.classList.add("is-applying");
+        button.setAttribute("aria-busy", "true");
+        if (icon) icon.className = "fas fa-spinner";
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              "Accept": "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: new FormData(form),
+            credentials: "same-origin"
+          });
+          const data = await response.json().catch(function() { return {}; });
+          if (!response.ok || data.ok === false) throw new Error(data.message || "Não foi possível alterar a energia da TV.");
+
+          const nextState = data.power_state || (previousState === "on" ? "off" : "on");
+          const nextIsOn = nextState === "on";
+          const nextLabel = nextIsOn ? button.dataset.powerOffLabel : button.dataset.powerOnLabel;
+          button.dataset.powerState = nextState;
+          button.classList.toggle("broadcasts-action--power-on", !nextIsOn);
+          button.classList.toggle("broadcasts-action--power-off", nextIsOn);
+          button.title = nextLabel;
+          button.setAttribute("aria-label", nextLabel);
+          const label = button.querySelector(".broadcast-action__label");
+          if (label) label.textContent = nextLabel;
+          form.action = nextIsOn ? button.dataset.powerOffAction : button.dataset.powerOnAction;
+        } catch (error) {
+          window.alert(error.message || "Não foi possível alterar a energia da TV.");
+        } finally {
+          button.disabled = false;
+          button.classList.remove("is-applying");
+          button.removeAttribute("aria-busy");
+          if (icon) icon.className = "fas fa-power-off";
+        }
       });
     });
 
-    if (volumeRange) {
-      volumeRange.addEventListener("input", updateVolumeDisplay);
-    }
+    document.addEventListener("pointerdown", function(event) {
+      if (!volumeModal || volumeModal.hidden) return;
+      if (volumeForm?.contains(event.target) || event.target.closest("[data-volume-open]")) return;
+      closeVolumePopover();
+    });
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape" && volumeModal && !volumeModal.hidden) closeVolumePopover();
+    });
+
+    window.addEventListener("resize", function() {
+      if (volumeModal && !volumeModal.hidden && activeVolumeButton) positionVolumePopover(activeVolumeButton);
+    });
 
     function openPowerScheduleModal(button) {
       if (!powerScheduleModal || !powerScheduleForm) return;
@@ -1396,6 +2247,60 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
+
+    function syncTransitionPicker(picker) {
+      if (!picker) return;
+      const select = picker.querySelector("[data-playlist-transition-style]");
+      const selected = picker.querySelector(`[data-transition-option="${select?.value || "fade"}"]`);
+      if (!select || !selected) return;
+
+      const currentIcon = picker.querySelector("[data-transition-current-icon]");
+      const currentLabel = picker.querySelector("[data-transition-current-label]");
+      if (currentIcon) currentIcon.src = selected.dataset.transitionIcon;
+      if (currentLabel) currentLabel.textContent = selected.querySelector("span")?.textContent || "";
+      picker.querySelectorAll("[data-transition-option]").forEach(function(option) {
+        const active = option === selected;
+        option.classList.toggle("is-selected", active);
+        option.setAttribute("aria-selected", active ? "true" : "false");
+      });
+    }
+
+    document.querySelectorAll("[data-transition-picker]").forEach(function(picker) {
+      const trigger = picker.querySelector("[data-transition-trigger]");
+      const menu = picker.querySelector("[data-transition-menu]");
+      const select = picker.querySelector("[data-playlist-transition-style]");
+      syncTransitionPicker(picker);
+
+      trigger?.addEventListener("click", function(event) {
+        event.preventDefault();
+        const opening = menu.hidden;
+        document.querySelectorAll("[data-transition-menu]").forEach(function(otherMenu) { otherMenu.hidden = true; });
+        menu.hidden = !opening;
+        trigger.setAttribute("aria-expanded", opening ? "true" : "false");
+      });
+
+      picker.querySelectorAll("[data-transition-option]").forEach(function(option) {
+        option.addEventListener("click", function(event) {
+          event.preventDefault();
+          select.value = option.dataset.transitionOption;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          syncTransitionPicker(picker);
+          menu.hidden = true;
+          trigger.setAttribute("aria-expanded", "false");
+          trigger.focus();
+        });
+      });
+    });
+
+    document.addEventListener("click", function(event) {
+      document.querySelectorAll("[data-transition-picker]").forEach(function(picker) {
+        if (picker.contains(event.target)) return;
+        const menu = picker.querySelector("[data-transition-menu]");
+        const trigger = picker.querySelector("[data-transition-trigger]");
+        if (menu) menu.hidden = true;
+        trigger?.setAttribute("aria-expanded", "false");
+      });
+    });
 
     function previewPlaceholder() {
       return "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
@@ -1616,6 +2521,7 @@
       playlistEditorForm.querySelector("[data-playlist-image-duration]").value = "10";
       playlistEditorForm.querySelector("[data-playlist-video-duration-mode]").value = "image_duration";
       playlistEditorForm.querySelector("[data-playlist-transition-style]").value = "fade";
+      syncTransitionPicker(playlistEditorForm.querySelector("[data-transition-picker]"));
       playlistEditorForm.querySelector("[data-playlist-transition-duration]").value = "600";
       const syncInput = playlistEditorForm.querySelector("[data-playlist-sync-enabled]");
       if (syncInput) syncInput.checked = false;
@@ -1839,7 +2745,7 @@
         return `
           <div class="broadcast-publish-video broadcast-publish-video--selected" data-selected-library-blob-id="${escapeHtml(input.value)}">
             <button type="button" class="broadcast-playlist-selected-remove" data-playlist-remove-selected="${escapeHtml(input.value)}" title="<%= j I18n.t("Remove", default: "Remover") %>" aria-label="<%= j I18n.t("Remove", default: "Remover") %>">
-              <i class="fas fa-times" aria-hidden="true"></i>
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
             </button>
             <span class="broadcast-playlist-thumb-preview" data-playlist-hover-preview>
               <img src="${escapeHtml(previewSrc)}" alt="" loading="lazy" decoding="async">
@@ -1873,6 +2779,7 @@
         playlistEditorForm.querySelector("[data-playlist-image-duration]").value = playlist.image_duration_seconds || 10;
         playlistEditorForm.querySelector("[data-playlist-video-duration-mode]").value = playlist.video_duration_mode || "image_duration";
         playlistEditorForm.querySelector("[data-playlist-transition-style]").value = playlist.transition_style || "fade";
+        syncTransitionPicker(playlistEditorForm.querySelector("[data-transition-picker]"));
         playlistEditorForm.querySelector("[data-playlist-transition-duration]").value = playlist.transition_duration_ms || 600;
         const syncInput = playlistEditorForm.querySelector("[data-playlist-sync-enabled]");
         if (syncInput) syncInput.checked = !!playlist.sync_enabled;
@@ -2103,6 +3010,7 @@
         const shouldCheck = Array.from(checkboxes).some((checkbox) => !checkbox.checked);
         checkboxes.forEach((checkbox) => { checkbox.checked = shouldCheck; });
         button.textContent = shouldCheck ? "<%= j I18n.t("ClearSelection") %>" : "<%= j I18n.t("SelectAll") %>";
+        updatePublishAvailability();
       });
     });
 
@@ -2206,6 +3114,10 @@
         previewImage.removeAttribute("src");
         previewImage.alt = "";
       }
+      if (previewWeb) {
+        previewWeb.hidden = true;
+        previewWeb.removeAttribute("src");
+      }
       previewVideo.hidden = false;
 
       if (previewVideo._hlsInstance) {
@@ -2238,13 +3150,27 @@
       previewModal.hidden = false;
       document.body.classList.add("broadcast-preview-open");
 
-      if (sourceType.indexOf("image/") === 0 && previewImage) {
+      if (sourceType === "text/html" && previewWeb) {
         if (previewVideo._hlsInstance) {
           previewVideo._hlsInstance.destroy();
           previewVideo._hlsInstance = null;
         }
         previewVideo.pause();
         previewVideo.hidden = true;
+        if (previewImage) previewImage.hidden = true;
+        previewWeb.hidden = false;
+        if (previewWeb.getAttribute("src") !== sourceUrl) previewWeb.src = sourceUrl;
+      } else if (sourceType.indexOf("image/") === 0 && previewImage) {
+        if (previewVideo._hlsInstance) {
+          previewVideo._hlsInstance.destroy();
+          previewVideo._hlsInstance = null;
+        }
+        previewVideo.pause();
+        previewVideo.hidden = true;
+        if (previewWeb) {
+          previewWeb.hidden = true;
+          previewWeb.removeAttribute("src");
+        }
         previewImage.hidden = false;
         previewImage.alt = options.name || "Preview";
         if (previewImage.getAttribute("src") !== sourceUrl) {
@@ -2254,6 +3180,10 @@
         if (previewImage) {
           previewImage.hidden = true;
           previewImage.removeAttribute("src");
+        }
+        if (previewWeb) {
+          previewWeb.hidden = true;
+          previewWeb.removeAttribute("src");
         }
         previewVideo.hidden = false;
         bindPreviewPlayer(previewVideo, previewWrapper, previewFallback, sourceUrl, sourceType);
@@ -2316,9 +3246,46 @@
 
       const preview = channel.dashboard_preview;
       const wrapper = document.querySelector("[data-dashboard-preview-card-id='" + channel.id + "']");
-      if (!wrapper || wrapper.dataset.dashboardPreviewKey === preview.key) return;
+      if (!wrapper) return;
+
+      const slideCount = Math.max(0, Number(preview.slide_count) || 0);
+      const slideIndex = Math.min(Math.max(0, Number(preview.slide_index) || 0), Math.max(0, slideCount - 1));
+      const card = wrapper.closest(".broadcast-card-modern");
+      let dots = card?.querySelector("[data-preview-slide-dots]");
+
+      if (slideCount > 0) {
+        if (!dots) {
+          dots = document.createElement("div");
+          dots.className = "broadcast-card-modern__slide-dots";
+          dots.dataset.previewSlideDots = "";
+          dots.setAttribute("role", "img");
+          const actions = card?.querySelector(".broadcasts-actions--card");
+          if (actions) card.insertBefore(dots, actions);
+        }
+
+        if (Number(dots.dataset.slideCount) !== slideCount) {
+          dots.replaceChildren(...Array.from({ length: slideCount }, function() {
+            const dot = document.createElement("span");
+            dot.setAttribute("aria-hidden", "true");
+            return dot;
+          }));
+        }
+
+        dots.dataset.slideCount = String(slideCount);
+        dots.dataset.slideIndex = String(slideIndex);
+        dots.setAttribute("aria-label", "Slide " + (slideIndex + 1) + " de " + slideCount);
+        dots.querySelectorAll("span").forEach(function(dot, index) {
+          dot.classList.toggle("is-active", index === slideIndex);
+        });
+        dots.hidden = false;
+      } else if (dots) {
+        dots.hidden = true;
+      }
+
+      if (wrapper.dataset.dashboardPreviewKey === preview.key) return;
 
       const image = wrapper.querySelector("[data-dashboard-preview]");
+      const webPreview = wrapper.querySelector("[data-dashboard-preview-web]");
       const loading = wrapper.querySelector("[data-dashboard-preview-loading]");
       const fallback = wrapper.querySelector(".broadcast-card-modern__video-fallback");
       const previewButtons = document.querySelectorAll("[data-preview-button-id='" + channel.id + "']");
@@ -2350,6 +3317,21 @@
           sourceType: preview.source_type
         });
       }
+
+      if (preview.source_type === "text/html" && preview.source_url && webPreview) {
+        if (image) image.hidden = true;
+        webPreview.hidden = false;
+        if (webPreview.getAttribute("src") !== preview.source_url) webPreview.src = preview.source_url;
+        if (loading) loading.hidden = true;
+        hideFallback(fallback);
+        return;
+      }
+
+      if (webPreview) {
+        webPreview.hidden = true;
+        webPreview.removeAttribute("src");
+      }
+      if (image) image.hidden = false;
 
       if (!image || !preview.thumb_url) {
         showFallback(fallback);
@@ -2395,6 +3377,10 @@
 
             document.querySelectorAll("[data-production-play-action-id='" + channel.id + "']").forEach(function(action) {
               action.hidden = broadcastOnline;
+            });
+
+            document.querySelectorAll("[data-production-stop-action-id='" + channel.id + "']").forEach(function(action) {
+              action.hidden = !broadcastOnline;
             });
 
             document.querySelectorAll("[data-player-status-id='" + channel.id + "']").forEach(function(badge) {
@@ -2495,13 +3481,6 @@
       });
     });
 
-    document.querySelectorAll(".broadcasts-dropdown").forEach((dropdown) => {
-      if (dropdown.dataset.broadcastMouseleaveBound === "true") return;
-      dropdown.dataset.broadcastMouseleaveBound = "true";
-      dropdown.addEventListener("mouseleave", function () {
-        dropdown.classList.remove("is-open");
-      });
-    });
   }
 
   if (window.broadcastDropdownGlobalCloseBound !== true) {
@@ -2961,19 +3940,70 @@
   }
 
   .broadcasts-toolbar {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: 18px;
     align-items: center;
     margin-bottom: 22px;
     flex-wrap: wrap;
+    border-radius: 18px;
+    transition: box-shadow .22s ease;
+  }
+
+  .broadcasts-toolbar__actions:has(> .broadcasts-toolbar__help:hover),
+  .broadcasts-toolbar__actions:has(> .broadcasts-toolbar__help:focus-visible),
+  .broadcasts-view-switch:has(> .broadcasts-toolbar__help:hover),
+  .broadcasts-view-switch:has(> .broadcasts-toolbar__help:focus-visible) {
+    box-shadow: 0 0 0 2px rgba(192, 132, 252, .72), 0 0 34px rgba(168, 85, 247, .48);
+  }
+
+  [data-toolbar-help-panel].is-toolbar-help-active {
+    z-index: 11002;
+    box-shadow: 0 0 0 2px rgba(192, 132, 252, .72), 0 0 34px rgba(168, 85, 247, .48);
+  }
+
+  .broadcasts-toolbar__help[aria-pressed="true"] {
+    color: #fff;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .toolbar-help-spotlight {
+    position: fixed;
+    z-index: 11000;
+    inset: 0;
+    pointer-events: none;
+    animation: desktop-help-pane-in .22s ease both;
+  }
+
+  .toolbar-help-spotlight svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .toolbar-help-callout {
+    transition-delay: var(--toolbar-help-delay, 0ms);
+  }
+
+  body.toolbar-help-callouts-visible .toolbar-help-callout {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 
   .broadcasts-toolbar__actions {
+    position: relative;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+    background: var(--app-banner-border);
+    padding: 6px;
+    border-radius: 14px;
+    transition: box-shadow .22s ease;
   }
 
   .broadcasts-toolbar__actions form {
@@ -3081,11 +4111,13 @@
   }
 
   .broadcasts-view-switch {
+    position: relative;
     display: inline-flex;
     padding: 6px;
     border-radius: 14px;
-    background: rgba(15, 23, 42, 0.08);
+    background: var(--app-banner-border);
     gap: 6px;
+    transition: box-shadow .22s ease;
   }
 
   .broadcasts-view-switch__btn {
@@ -3162,7 +4194,7 @@ body.theme-dark .broadcasts-panel--table {
 
   .broadcasts-table {
     width: 100%;
-    min-width: 1180px;
+    min-width: 820px;
     border-collapse: separate;
     border-spacing: 0 10px;
   }
@@ -3199,6 +4231,10 @@ body.theme-dark .broadcasts-panel--table {
     transform: translateY(-1px);
   }
 
+  .broadcasts-table tbody tr:has(.broadcasts-dropdown.is-open) {
+    z-index: 10001;
+  }
+
   .broadcasts-table tbody td {
     position: relative;
     max-width: 220px;
@@ -3217,7 +4253,7 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-table tbody td:first-child {
-    border-left: 1px solid var(--table-border);
+    border-left: 3px solid #a855f7;
     border-radius: 12px 0 0 12px;
   }
 
@@ -3229,7 +4265,34 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-table__name-cell {
-    min-width: 220px;
+    min-width: 190px;
+  }
+
+  .broadcasts-table__status-cell,
+  .broadcasts-table__player-cell {
+    min-width: 138px;
+  }
+
+  .broadcasts-table__status-cell .broadcasts-status + .broadcasts-status {
+    margin-top: 7px;
+  }
+
+  .broadcasts-table__device,
+  .broadcasts-table__energy {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+    min-width: 145px;
+  }
+
+  .broadcasts-table__energy strong {
+    color: var(--table-text);
+    font-size: 12px;
+  }
+
+  .broadcasts-table__energy .broadcasts-table__muted,
+  .broadcasts-table__stream .broadcasts-table__muted {
+    margin-top: 0;
   }
 
   .broadcasts-table__title {
@@ -3308,13 +4371,7 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-panel--table .broadcasts-status::before {
-    content: "";
-    flex: 0 0 7px;
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: currentColor;
-    box-shadow: 0 0 10px currentColor;
+    content: none;
   }
 
   .broadcasts-status--online {
@@ -3395,6 +4452,77 @@ body.theme-dark .broadcasts-panel--table {
     font-size: 11px;
     opacity: .9;
   }
+
+  /* Tabela visual em cartões */
+  .broadcasts-panel--table {
+    padding: 10px;
+    background: radial-gradient(circle at 0 50%, rgba(109,40,217,.2), transparent 34%), linear-gradient(145deg,#081229,#071022 70%);
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 15px;
+    box-shadow: 0 22px 65px rgba(2,6,23,.48), inset 0 1px rgba(255,255,255,.025);
+  }
+
+  .broadcasts-panel--table .broadcasts-table-wrap { padding: 0; overflow: visible; }
+  .broadcasts-panel--table .broadcasts-table { border-spacing: 0 9px; }
+  .broadcasts-panel--table .broadcasts-table thead { background: rgba(16,27,52,.72); }
+  .broadcasts-panel--table .broadcasts-table thead th {
+    position: static;
+    height: 58px;
+    padding: 0 20px;
+    color: #9ba8c2;
+    background: rgba(16,27,52,.72);
+    border: 0;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .broadcasts-panel--table .broadcasts-table thead th:first-child { border-radius: 11px 0 0 11px; }
+  .broadcasts-panel--table .broadcasts-table thead th:last-child { border-radius: 0 11px 11px 0; }
+  .broadcasts-panel--table .broadcasts-table tbody td {
+    height: 76px;
+    max-width: 260px;
+    padding: 11px 20px;
+    color: #f5f7ff;
+    background: transparent;
+    border-top: 1px solid rgba(79,96,137,.08);
+    border-bottom: 1px solid rgba(3,9,24,.35);
+  }
+  .broadcasts-panel--table .broadcasts-table tbody tr {
+    background: linear-gradient(90deg,#111d38 0%,#101a32 55%,#111b35 100%);
+    border-radius: 12px;
+  }
+  .broadcasts-panel--table .broadcasts-table tbody td:first-child { border-left: 0; border-radius: 12px 0 0 12px; }
+  .broadcasts-panel--table .broadcasts-table tbody td:last-child { border-right: 0; border-radius: 0 12px 12px 0; }
+  .broadcasts-panel--table .broadcasts-table tbody tr:hover td {
+    background: transparent;
+    border-color: rgba(168,85,247,.72);
+  }
+  .broadcasts-panel--table .broadcasts-table tbody tr:hover {
+    background: linear-gradient(90deg,#2d2050 0%,#242044 48%,#302052 100%);
+    box-shadow:0 0 24px rgba(139,47,242,.2);
+  }
+  .broadcasts-panel--table .broadcasts-table tbody tr:hover td:first-child { box-shadow: inset 1px 0 #a855f7; }
+  .broadcasts-panel--table .broadcasts-table tbody tr:hover td:last-child { box-shadow: inset -1px 0 #a855f7; }
+  .broadcasts-panel--table .broadcasts-table__avatar { width:48px;height:48px;flex-basis:48px;border-radius:11px;background:linear-gradient(145deg,#7c3aed,#a855f7);box-shadow:0 8px 22px rgba(124,58,237,.42),0 0 18px rgba(168,85,247,.22);font-size:18px; }
+  .broadcasts-panel--table .broadcasts-table__title { gap:16px; }
+  .broadcasts-panel--table .broadcasts-table__title strong { color:#f8f9ff;font-size:13px; }
+  .broadcasts-panel--table .broadcasts-table__title small { color:#9ca8c1;font-size:10px; }
+  .broadcasts-panel--table .broadcasts-table__title small i { color:#8b5cf6; }
+  .broadcasts-panel--table .broadcasts-table__status-cell { min-width:250px;white-space:nowrap; }
+  .broadcasts-panel--table .broadcasts-table__status-cell .broadcasts-status { min-height:29px;padding:5px 9px;border-radius:5px;font-size:10px; }
+  .broadcasts-panel--table .broadcasts-table__status-cell .broadcasts-status i { color:currentColor;font-size:10px;line-height:1; }
+  .broadcasts-panel--table .broadcasts-table__status-cell .broadcasts-status + .broadcasts-status { margin-top:0;margin-left:5px; }
+  .broadcasts-panel--table .broadcasts-status--player-online { color:#75efd0;background:rgba(16,185,129,.13);border-color:rgba(52,211,153,.38); }
+  .broadcasts-panel--table .broadcasts-status--online { color:#9bec8e;background:rgba(101,163,13,.15);border-color:rgba(132,204,22,.32); }
+  .broadcasts-panel--table .broadcasts-table__stream strong { color:#f8f9ff;font-size:12px; }
+  .broadcasts-panel--table .broadcasts-table__muted { color:#8f9bb4;font-size:10px; }
+  .broadcasts-panel--table .broadcasts-table__pill { min-height:30px;color:#eef2ff;background:rgba(61,73,106,.44);border-color:rgba(148,163,184,.1);font-size:10px;font-weight:500; }
+  .broadcasts-panel--table .broadcasts-action.icon { width:38px;height:38px;border-radius:9px;color:#edf1ff;background:rgba(38,49,78,.5);border:1px solid rgba(122,139,177,.18); }
+  .broadcasts-panel--table .broadcasts-action.icon:hover { color:#fff;background:rgba(124,58,237,.28);border-color:rgba(168,85,247,.65);box-shadow:0 0 18px rgba(168,85,247,.2); }
+  .broadcasts-table-footer { display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:5px 17px;color:#8793aa;font-size:10px; }
+  .broadcasts-table-pagination { display:flex;gap:9px; }
+  .broadcasts-table-pagination button { width:32px;height:32px;display:grid;place-items:center;padding:0;border:1px solid rgba(122,139,177,.18);border-radius:8px;background:rgba(25,37,65,.64);color:#cbd5e1;font-size:11px; }
+  .broadcasts-table-pagination button.is-current { border-color:#8b5cf6;background:linear-gradient(145deg,#7c3aed,#a855f7);color:#fff;box-shadow:0 7px 18px rgba(124,58,237,.35); }
+  .broadcasts-table-pagination button:disabled { opacity:.7;cursor:default; }
 
   .broadcasts-actions {
     display: flex;
@@ -3536,13 +4664,14 @@ body.theme-dark .broadcasts-panel--table {
 
   .broadcasts-cards-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 440px;
     gap: 22px;
     padding: 10px 0 20px;
     align-items: start;
   }
 
   .broadcasts-cards-main {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(3, minmax(220px, 1fr));
     gap: 22px;
@@ -3561,13 +4690,38 @@ body.theme-dark .broadcasts-panel--table {
     flex-direction: column;
     gap: 14px;
     padding: 18px;
-    border-radius: 8px;
+    border-radius: 16px;
     color: #f8fbff;
     background:
       radial-gradient(circle at 16% 0%, rgba(127, 56, 230, .13), transparent 190px),
       linear-gradient(180deg, #151b31 0%, #12182b 100%);
-    border: 1px solid rgba(169, 184, 220, .13);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 18px 40px rgba(2, 6, 23, .28);
+    border: 1px solid rgba(169, 184, 220, .16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .055),
+      0 2px 5px rgba(2, 6, 23, .24),
+      0 16px 38px rgba(2, 6, 23, .3);
+    isolation: isolate;
+    overflow: hidden;
+    transition: transform .22s cubic-bezier(.2, 0, 0, 1), border-color .22s ease, box-shadow .22s ease;
+  }
+
+  .broadcast-card-modern::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .045), transparent 38%);
+  }
+
+  .broadcast-card-modern:hover {
+    transform: translateY(-3px);
+    border-color: rgba(167, 139, 250, .3);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .07),
+      0 5px 10px rgba(2, 6, 23, .25),
+      0 24px 52px rgba(2, 6, 23, .38);
   }
 
   .broadcast-card-modern__top {
@@ -3592,6 +4746,38 @@ body.theme-dark .broadcasts-panel--table {
     color: #a8b4ce;
     font-size: 12px;
     line-height: 1.35;
+  }
+
+  .broadcast-presentation-toggle-form {
+    display: inline-flex;
+    margin: 0;
+  }
+
+  .broadcast-presentation-toggle {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca8c4;
+    background: rgba(148, 163, 184, .09);
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+  }
+
+  .broadcast-presentation-toggle:hover {
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .broadcast-presentation-toggle.is-active {
+    color: #e9d5ff;
+    border-color: rgba(168, 85, 247, .46);
+    background: rgba(126, 34, 206, .3);
+    box-shadow: 0 0 15px rgba(168, 85, 247, .24);
   }
 
   .broadcast-card-modern__video {
@@ -3629,6 +4815,16 @@ body.theme-dark .broadcasts-panel--table {
     object-fit: contain;
     object-position: center center;
     background: #050917;
+  }
+
+  .broadcast-preview-web,
+  .broadcast-preview-modal__web {
+    border: 0;
+  }
+
+  .broadcast-preview-web[hidden],
+  .broadcast-preview-modal__web[hidden] {
+    display: none !important;
   }
 
   .broadcast-preview-modal__image[hidden] {
@@ -3690,8 +4886,64 @@ body.theme-dark .broadcasts-panel--table {
     background: rgba(139, 47, 242, .78);
     box-shadow: 0 18px 36px rgba(88, 28, 135, .36);
     backdrop-filter: blur(12px);
-    transform: scale(.92);
+    transform: translateY(-50%) scale(.92);
     transition: transform .18s ease;
+  }
+
+  .broadcast-card-modern__slide-dots {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 4px 8px;
+    margin: 8px auto 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(3, 7, 18, .48);
+    pointer-events: none;
+  }
+
+  .broadcast-card-modern__slide-dots[hidden] {
+    display: none;
+  }
+
+  .broadcast-card-modern__slide-dots span {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .42);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
+    transition: width .22s ease, background .22s ease, box-shadow .22s ease;
+  }
+
+  .broadcast-card-modern__slide-dots span.is-active {
+    width: 18px;
+    flex-basis: 18px;
+    border-radius: 999px;
+    background: #a855f7;
+    box-shadow: 0 0 10px rgba(168, 85, 247, .82);
+    animation: broadcast-slide-dot-active .55s ease-out;
+  }
+
+  @keyframes broadcast-slide-dot-active {
+    0% {
+      opacity: .45;
+      transform: scale(.65);
+    }
+    55% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   .broadcast-card-modern__video:hover .broadcast-card-modern__preview-open,
@@ -3809,6 +5061,22 @@ body.theme-dark .broadcasts-panel--table {
     border-bottom: 1px solid rgba(172, 188, 230, .12);
   }
 
+  .broadcast-publish-requirements {
+    margin-right: auto;
+    color: #fbbf24;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .broadcast-publish-requirements.is-ready { color: #6ee7b7; }
+
+  [data-publish-submit]:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+    filter: grayscale(.35);
+    box-shadow: none;
+  }
+
   .broadcast-publish-modal__footer {
     border-top: 1px solid rgba(172, 188, 230, .12);
     border-bottom: 0;
@@ -3852,6 +5120,42 @@ body.theme-dark .broadcasts-panel--table {
     grid-row: span 2;
   }
 
+  [data-publish-modal] .broadcast-publish-modal__body {
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  [data-publish-modal] .broadcast-publish-section,
+  [data-publish-modal] .broadcast-publish-section:nth-child(2) {
+    grid-row: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  [data-publish-modal] .broadcast-playlist-list,
+  [data-publish-modal] .broadcast-publish-tvs {
+    max-height: none;
+    height: calc(100% - 34px);
+  }
+
+  [data-publish-modal] .broadcast-publish-tvs {
+    align-content: start;
+    grid-auto-rows: max-content;
+  }
+
+  [data-publish-modal] .broadcast-publish-tv {
+    height: auto;
+    min-height: 58px;
+    align-self: start;
+  }
+
+  @media (max-width: 900px) {
+    [data-publish-modal] .broadcast-publish-modal__body { grid-template-rows: auto; }
+    [data-publish-modal] .broadcast-publish-section { height: auto; min-height: 320px; }
+    [data-publish-modal] .broadcast-playlist-list,
+    [data-publish-modal] .broadcast-publish-tvs { height: auto; max-height: 390px; }
+  }
+
   .broadcast-publish-section h3,
   .broadcast-publish-section__title h3 {
     margin: 0 0 12px;
@@ -3872,6 +5176,43 @@ body.theme-dark .broadcasts-panel--table {
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 12px;
+  }
+
+  .broadcast-playlist-editor__library-section .broadcast-publish-section__actions [data-action-label] {
+    position: relative;
+  }
+
+  .broadcast-playlist-editor__library-section .broadcast-publish-section__actions [data-action-label]::after {
+    content: attr(data-action-label);
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 9px);
+    left: 50%;
+    width: max-content;
+    max-width: 180px;
+    padding: 6px 9px;
+    border: 1px solid rgba(192, 132, 252, .48);
+    border-radius: 7px;
+    color: #f8fafc;
+    background: #111429;
+    box-shadow: 0 9px 24px rgba(2, 6, 23, .5), 0 0 14px rgba(168, 85, 247, .2);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -4px);
+    transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+  }
+
+  .broadcast-playlist-editor__library-section .broadcast-publish-section__actions [data-action-label]:hover::after,
+  .broadcast-playlist-editor__library-section .broadcast-publish-section__actions [data-action-label]:focus-visible::after,
+  .broadcast-playlist-editor__library-section .broadcast-publish-section__actions [data-action-label]:focus-within::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
   }
 
   .broadcast-publish-file {
@@ -4061,7 +5402,7 @@ body.theme-dark .broadcasts-panel--table {
 
   .broadcast-preview-modal__video.broadcast-preview-modal__video--unrotate .broadcast-video {
     inset: auto;
-    top: 50%;
+    top: 0;
     left: 50%;
     width: 177.78%;
     height: 56.25%;
@@ -4146,24 +5487,33 @@ body.theme-dark .broadcasts-panel--table {
 
   .broadcasts-actions--card {
     margin-top: auto;
+    width: 100%;
+    min-width: 0;
     max-width: none;
-    justify-content: flex-start;
-
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: 4px;
+    align-items: flex-end;
+    padding: 10px 0 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .broadcasts-actions--card .broadcast-action-slot {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 64px;
+    min-height: 64px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 40px;
+    flex: none;
+    grid-column: 4;
   }
 
   .broadcasts-actions--card .broadcast-action-slot[hidden] {
@@ -4171,71 +5521,100 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-actions--card form {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 64px;
+    min-height: 64px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     margin: 0;
     padding: 0;
-    flex: 0 0 40px;
+    flex: none;
   }
 
   .broadcasts-actions--card .broadcasts-action {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    min-height: 40px;
-    height: 40px;
-    flex: 0 0 40px;
-    padding: 0;
-    border-radius: 4px;
-    border: 1px solid var(--broadcast-action-border);
-    color: var(--broadcast-action-color);
-    font-size: 12px;
-    font-weight: 800;
-    gap: 0;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 64px;
+    height: 64px;
+    flex: none;
+    padding: 4px 3px 2px;
+    border-radius: 8px;
+    border: 0;
+    color: #e7eaf4;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 6px;
+    flex-direction: column;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     appearance: none;
-    background: var(--broadcast-action-bg);
-    box-shadow: var(--broadcast-action-shadow);
+    background: transparent;
+    box-shadow: none;
   }
 
   .broadcasts-actions--card .broadcasts-action i {
-    width: 14px;
-    height: 14px;
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--broadcast-action-color);
+    color: #f2f4fa;
     line-height: 1;
-    font-size: 13px;
+    font-size: 17px;
     margin: 0;
     transform: none;
   }
 
   .broadcasts-actions--card .broadcast-action__label {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
+    left: 50%;
+    bottom: 0;
+    z-index: 3;
+    width: max-content;
+    max-width: 92px;
+    height: auto;
+    padding: 3px 6px;
+    margin: 0;
+    min-height: 0;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    clip: auto;
+    text-overflow: ellipsis;
     white-space: nowrap;
     border: 0;
+    border-radius: 5px;
+    color: currentColor;
+    background: rgba(7, 11, 25, .92);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, .24);
+    font-size: 9px;
+    line-height: 1.25;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, 5px);
+    transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+  }
+
+  .broadcasts-actions--card .broadcasts-action:hover .broadcast-action__label,
+  .broadcasts-actions--card .broadcasts-action:focus-visible .broadcast-action__label {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
   }
 
   .broadcasts-actions--card .broadcasts-action:hover {
     filter: none;
-    transform: translateY(-1px);
-    box-shadow: var(--broadcast-action-hover-shadow);
+    transform: translateY(-2px);
+    color: #ffffff;
+    background: rgba(255, 255, 255, .045);
+    box-shadow: none;
   }
 
   .broadcasts-actions--card .broadcasts-action:hover i {
@@ -4243,36 +5622,105 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-actions--card .broadcasts-action--play {
-    border-color: var(--broadcast-action-border);
+    color: #f7f9ff;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--play i {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    margin: 0;
+    border: 2px solid #4298f5;
+    border-radius: 50%;
+    background: #18223b;
+    box-shadow:
+      0 0 0 2px rgba(66, 152, 245, .14),
+      0 0 14px rgba(48, 134, 255, .32);
+  }
+
+  .broadcasts-actions--card .broadcasts-action--play i::before {
+    position: absolute;
+    top: 50%;
+    left: 46%;
+    width: auto;
+    line-height: 1;
+    margin: 0;
+    transform: translate(-43%, -50%);
   }
 
   .broadcasts-actions--card .broadcasts-action--play:hover {
-    background: var(--broadcast-action-play-hover-bg);
-    border-color: var(--broadcast-action-play-hover-border);
+    background: transparent;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--play:hover i {
+    border-color: #7cc0ff;
+    box-shadow: 0 0 0 3px rgba(36, 105, 205, .28), 0 0 22px rgba(48, 134, 255, .62);
   }
 
   .broadcasts-actions--card .broadcasts-action--stop {
-    border-color: var(--broadcast-action-border);
+    color: #fff5f5;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--stop i {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    margin: 0;
+    border: 2px solid #ef476f;
+    border-radius: 50%;
+    color: #ffffff;
+    background: #2b1927;
+    box-shadow:
+      0 0 0 2px rgba(239, 71, 111, .14),
+      0 0 14px rgba(239, 71, 111, .32);
+  }
+
+  .broadcasts-actions--card .broadcasts-action--stop i::before {
+    width: auto;
+    line-height: 1;
   }
 
   .broadcasts-actions--card .broadcasts-action--stop:hover {
-    background: var(--broadcast-action-stop-hover-bg);
-    border-color: var(--broadcast-action-stop-hover-border);
+    background: transparent;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--stop:hover i {
+    border-color: #ff7192;
+    box-shadow: 0 0 0 3px rgba(239, 71, 111, .2), 0 0 22px rgba(239, 71, 111, .5);
   }
 
   .broadcasts-actions--card .broadcasts-action--delete {
-    border-color: var(--broadcast-action-border);
+    grid-column: 7;
+    color: #ff3f72;
+  }
+
+  .broadcasts-actions--card > form:has(.broadcasts-action--delete) {
+    grid-column: 7;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--delete i {
+    color: currentColor;
   }
 
   .broadcasts-actions--card .broadcasts-action--delete:hover {
-    background: var(--broadcast-action-delete-hover-bg);
-    border-color: var(--broadcast-action-delete-hover-border);
+    color: #ff5f89;
+    background: rgba(255, 44, 103, .08);
   }
 
   .broadcasts-actions--card .broadcasts-action--power {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    grid-column: 2;
+  }
+
+  .broadcasts-actions--card > form:has(.broadcasts-action--power) {
+    grid-column: 2;
   }
 
   .broadcasts-actions--card .broadcasts-action--power-off {
@@ -4294,6 +5742,7 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-actions--card .broadcasts-action--edit {
+    grid-column: 6;
     border-color: var(--broadcast-action-border);
   }
 
@@ -4303,6 +5752,7 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcasts-actions--card .broadcasts-action--volume {
+    grid-column: 3;
     border-color: var(--broadcast-action-border);
   }
 
@@ -4311,7 +5761,29 @@ body.theme-dark .broadcasts-panel--table {
     border-color: var(--broadcast-action-volume-hover-border);
   }
 
+  .broadcasts-actions--card .broadcasts-action--volume:disabled {
+    cursor: wait;
+    opacity: .58;
+    transform: none;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--volume.is-applying i,
+  .broadcasts-actions--card .broadcasts-action--power.is-applying i {
+    animation: broadcast-volume-applying .8s linear infinite;
+  }
+
+  .broadcasts-actions--card .broadcasts-action--power:disabled {
+    cursor: wait;
+    opacity: .58;
+    transform: none;
+  }
+
+  @keyframes broadcast-volume-applying {
+    to { transform: rotate(360deg); }
+  }
+
   .broadcasts-actions--card .broadcasts-action--schedule {
+    grid-column: 5;
     border-color: var(--broadcast-action-border);
   }
 
@@ -4483,144 +5955,347 @@ body.theme-dark .broadcasts-panel--table {
   .broadcast-volume-modal {
     position: fixed;
     inset: 0;
-    z-index: 1100;
-    display: grid;
-    place-items: center;
-    padding: 22px;
-  }
-
-  .broadcast-volume-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(2, 6, 23, .72);
-    backdrop-filter: blur(8px);
+    z-index: 1200;
+    pointer-events: none;
   }
 
   .broadcast-volume-modal__dialog {
-    position: relative;
-    width: min(440px, 100%);
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 16px;
-    background: linear-gradient(180deg, #111827, #070b16);
-    color: #fff;
-    box-shadow: 0 28px 70px rgba(0, 0, 0, .42);
-    overflow: hidden;
-  }
-
-  .broadcast-volume-modal__header,
-  .broadcast-volume-modal__footer {
-    display: flex;
+    position: fixed;
+    width: min(420px, calc(100vw - 24px));
+    min-height: 72px;
+    display: grid;
+    grid-template-columns: 48px minmax(110px, 1fr) 54px 1px auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 18px 20px;
-    border-color: rgba(148, 163, 184, .18);
-  }
-
-  .broadcast-volume-modal__header {
-    border-bottom: 1px solid rgba(148, 163, 184, .18);
-  }
-
-  .broadcast-volume-modal__footer {
-    border-top: 1px solid rgba(148, 163, 184, .18);
-  }
-
-  .broadcast-volume-modal__header strong {
-    display: block;
-    font-size: 18px;
-    line-height: 1.2;
-  }
-
-  .broadcast-volume-modal__header p {
-    margin: 5px 0 0;
-    color: #aeb9d6;
-    font-size: 13px;
-  }
-
-  .broadcast-volume-modal__body {
-    padding: 24px 22px 26px;
-  }
-
-  .broadcast-volume-modal__value {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 12px;
-    margin-bottom: 22px;
-    color: #c4b5fd;
+    padding: 12px 14px;
+    border: 1px solid rgba(202, 196, 208, .16);
+    border-radius: 20px;
+    background: #211f26;
+    color: #e9e1ec;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, .28), 0 10px 28px rgba(0, 0, 0, .32);
+    pointer-events: auto;
+    animation: broadcast-volume-popover-in .18s ease-out;
   }
 
-  .broadcast-volume-modal__value i {
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
+  @keyframes broadcast-volume-popover-in {
+    from { opacity: 0; transform: translateY(7px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .broadcast-volume-modal__speaker {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(139, 47, 242, .18);
-    border: 1px solid rgba(168, 85, 247, .32);
+    color: #d0bcff;
+    background: #36303f;
+    font-size: 19px;
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, transform .18s ease;
   }
 
-  .broadcast-volume-modal__value strong {
-    color: #fff;
-    font-size: 34px;
-    line-height: 1;
+  .broadcast-volume-modal__speaker:hover {
+    color: #eaddff;
+    background: #443b50;
+    transform: scale(1.04);
+  }
+
+  .broadcast-volume-modal__speaker.is-muted {
+    color: #ffb4ab;
+    background: #492b2d;
   }
 
   .broadcast-volume-modal input[type="range"] {
     width: 100%;
-    accent-color: #a855f7;
+    height: 18px;
+    margin: 0;
+    appearance: none;
+    background: transparent;
     cursor: pointer;
   }
 
-  .broadcast-volume-modal__ticks {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    color: #8793b1;
-    font-size: 12px;
-    font-weight: 700;
+  .broadcast-volume-modal input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #d0bcff 0%, #d0bcff var(--volume-percent, 50%), #49454f var(--volume-percent, 50%), #49454f 100%);
   }
 
-  .broadcast-volume-modal__footer-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+  .broadcast-volume-modal input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+    appearance: none;
+    border: 0;
+    border-radius: 50%;
+    background: #d0bcff;
+    box-shadow: 0 0 0 6px rgba(208, 188, 255, 0);
+    transition: box-shadow .16s ease, transform .16s ease;
   }
 
-  .broadcast-volume-modal__mute {
-    min-height: 42px;
-    padding: 0 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(248, 113, 113, .28);
+  .broadcast-volume-modal input[type="range"]:hover::-webkit-slider-thumb,
+  .broadcast-volume-modal input[type="range"]:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 7px rgba(208, 188, 255, .14);
+  }
+
+  .broadcast-volume-modal input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: #49454f;
+  }
+
+  .broadcast-volume-modal input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: #d0bcff;
+  }
+
+  .broadcast-volume-modal input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 50%;
+    background: #d0bcff;
+    box-shadow: none;
+  }
+
+  .broadcast-volume-modal__value {
+    color: #d0bcff;
+    font-size: 16px;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .broadcast-volume-modal__divider {
+    width: 1px;
+    height: 30px;
+    background: #49454f;
+  }
+
+  .broadcast-volume-modal__apply {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    color: #fecaca;
-    background: rgba(127, 29, 29, .22);
+    gap: 7px;
+    color: #381e72;
+    background: #d0bcff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    font-size: 13px;
     font-weight: 800;
+    letter-spacing: .01em;
     cursor: pointer;
+    transition: transform .18s ease, filter .18s ease;
   }
 
-  .broadcast-volume-modal__mute:hover {
-    color: #ffffff;
-    background: linear-gradient(180deg, #a73340, #7f2230);
-    border-color: rgba(248, 113, 113, .36);
+  .broadcast-volume-modal__apply:hover {
+    color: #381e72;
+    background: #dac8ff;
+    filter: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .3);
+    transform: none;
+  }
+
+  @media (max-width: 620px) {
+    .broadcast-volume-modal__dialog {
+      grid-template-columns: 36px minmax(90px, 1fr) 48px;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .broadcast-volume-modal__divider {
+      display: none;
+    }
+
+    .broadcast-volume-modal__apply {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
   }
 
   .broadcast-card-modern--desktop {
+    position: relative;
+    padding: 26px;
+    border: 1px solid rgba(148, 163, 184, .3);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 18% 5%, rgba(124, 58, 237, .18), transparent 32%),
+      linear-gradient(145deg, rgba(18, 27, 49, .98), rgba(7, 17, 34, .98));
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .34), inset 0 1px rgba(255,255,255,.04);
     justify-content: flex-start;
     gap: 18px;
     min-height: 0;
+    transition: border-color .25s ease, box-shadow .25s ease;
+  }
+
+  .broadcasts-side-panel { position:relative; }
+  .broadcast-card-modern__tv-help { position:absolute; z-index:35; top:0; right:0; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:transparent; color:#d8b4fe; font-size:15px; cursor:pointer; filter:drop-shadow(0 0 6px rgba(168,85,247,.72)); box-shadow:none; transform:translate(50%, -50%); transition:transform .2s ease, color .2s ease, filter .2s ease; }
+  .broadcast-card-modern__tv-help:hover, .broadcast-card-modern__tv-help:focus-visible, .broadcast-card-modern__tv-help[aria-pressed="true"] { color:#fff; border-color:transparent; background:transparent; outline:0; filter:drop-shadow(0 0 10px rgba(192,132,252,1)); transform:translate(50%, -50%) scale(1.14); box-shadow:none; }
+  html[data-theme="light"] .broadcast-card-modern__tv-help { color:#6d28d9; filter:drop-shadow(0 0 4px rgba(109,40,217,.32)); }
+  html[data-theme="light"] .broadcast-card-modern__tv-help:hover,
+  html[data-theme="light"] .broadcast-card-modern__tv-help:focus-visible,
+  html[data-theme="light"] .broadcast-card-modern__tv-help[aria-pressed="true"] { color:#4c1d95; filter:drop-shadow(0 0 7px rgba(109,40,217,.55)); }
+  html[data-theme="dark"] .broadcast-card-modern__tv-help,
+  body.theme-dark .broadcast-card-modern__tv-help { color:#d8b4fe; }
+  .broadcasts-cards-main:has([data-tv-help-open]:hover) [data-tv-help-card],
+  .broadcasts-cards-main:has([data-tv-help-open]:focus-visible) [data-tv-help-card] { border-color:#c084fc; box-shadow:0 0 0 2px rgba(192,132,252,.58), 0 0 34px rgba(168,85,247,.5), 0 24px 60px rgba(2,6,23,.34); }
+  .tv-help-spotlight { position:fixed; z-index:11000; inset:0; pointer-events:none; animation:desktop-help-pane-in .22s ease both; }
+  .tv-help-spotlight svg { display:block; width:100%; height:100%; overflow:visible; }
+  .broadcast-card-modern.is-tv-help-active { z-index:11002; border-color:#a855f7; box-shadow:0 0 0 2px rgba(168,85,247,.55), 0 0 38px rgba(168,85,247,.72), 0 24px 65px rgba(2,6,23,.55), inset 0 1px rgba(255,255,255,.08); }
+  .broadcasts-cards-main.is-tv-help-active .broadcast-card-modern__tv-help { z-index:12001; }
+  .broadcast-card-modern.is-tv-help-active .broadcasts-actions--card .broadcast-action__label { opacity:1; visibility:visible; transform:translate(-50%, 0); }
+  body.tv-help-callouts-visible .tv-help-callout { opacity:1; transform:translateY(0) scale(1); }
+  .broadcast-card-modern__help { position:absolute; z-index:30; top:0; right:0; width:30px; height:30px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:transparent; color:#d8b4fe; font-size:16px; cursor:pointer; filter:drop-shadow(0 0 6px rgba(168,85,247,.72)); box-shadow:none; transform:translate(50%, -50%); transition:transform .22s ease, color .22s ease, filter .22s ease; }
+  .broadcast-card-modern__help:hover, .broadcast-card-modern__help:focus-visible { color:#fff; border-color:transparent; background:transparent; outline:0; filter:drop-shadow(0 0 10px rgba(192,132,252,1)); transform:translate(50%, -50%) scale(1.14); box-shadow:none; }
+  html[data-theme="light"] .broadcast-card-modern__help { color:#6d28d9; filter:drop-shadow(0 0 4px rgba(109,40,217,.32)); }
+  html[data-theme="light"] .broadcast-card-modern__help:hover,
+  html[data-theme="light"] .broadcast-card-modern__help:focus-visible { color:#4c1d95; filter:drop-shadow(0 0 7px rgba(109,40,217,.55)); }
+  html[data-theme="dark"] .broadcast-card-modern__help,
+  body.theme-dark .broadcast-card-modern__help { color:#d8b4fe; }
+  .broadcasts-side-panel:has(.broadcast-card-modern__help:hover) .broadcast-card-modern--desktop, .broadcasts-side-panel:has(.broadcast-card-modern__help:focus-visible) .broadcast-card-modern--desktop { border-color:#c084fc; box-shadow:0 24px 60px rgba(2,6,23,.34), 0 0 0 2px rgba(192,132,252,.58), 0 0 34px rgba(168,85,247,.5), inset 0 1px rgba(255,255,255,.04); }
+
+  .desktop-help-spotlight { position:fixed; z-index:11000; inset:0; pointer-events:none; animation:desktop-help-pane-in .22s ease both; }
+  .desktop-help-spotlight svg { display:block; width:100%; height:100%; overflow:visible; }
+  .broadcasts-side-panel.is-help-active { z-index:11001; }
+  .broadcasts-side-panel.is-help-active .broadcast-card-modern--desktop { z-index:11002; border-color:#a855f7; box-shadow:0 0 0 2px rgba(168,85,247,.55), 0 0 38px rgba(168,85,247,.72), 0 24px 65px rgba(2,6,23,.55), inset 0 1px rgba(255,255,255,.08); }
+  .broadcasts-side-panel.is-help-active .broadcast-card-modern__help { z-index:12001; }
+  @keyframes desktop-help-pane-in { from { opacity:0; } to { opacity:1; } }
+  .broadcasts-side-panel.is-help-active .broadcast-card-modern__help { color:#fff; border-color:transparent; background:transparent; box-shadow:none; }
+  .broadcasts-side-panel.is-help-active .broadcast-card-modern__wallpaper-actions { opacity:1 !important; transform:none !important; pointer-events:auto; }
+  .broadcasts-side-panel.is-help-active .is-help-preview { display:grid !important; visibility:visible !important; opacity:.82; pointer-events:none; }
+  .desktop-help-callout { position:fixed; z-index:12000; display:flex; align-items:flex-start; gap:7px; width:176px; padding:9px 10px; border:1px solid rgba(192,132,252,.78); border-radius:11px; background:#111429; color:#f8fafc; pointer-events:none; opacity:0; transform:translateY(7px) scale(.96); box-shadow:0 13px 36px rgba(2,6,23,.62), 0 0 20px rgba(168,85,247,.34); transition:opacity .22s ease, transform .22s ease; }
+  .desktop-help-callout span { flex:0 0 21px; height:21px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#7c3aed,#a855f7); color:#fff; font:800 10px/1 system-ui,sans-serif; }
+  .desktop-help-callout p { margin:1px 0 0; font:600 10px/1.38 system-ui,sans-serif; }
+  .desktop-help-callout::after { content:""; position:absolute; width:11px; height:11px; background:#111429; border-right:1px solid rgba(192,132,252,.78); border-bottom:1px solid rgba(192,132,252,.78); }
+  .desktop-help-callout[data-place="top"]::after { left:var(--callout-arrow-x, 50%); bottom:-7px; transform:translateX(-50%) rotate(45deg); }
+  .desktop-help-callout[data-place="bottom"]::after { left:var(--callout-arrow-x, 50%); top:-7px; transform:translateX(-50%) rotate(225deg); }
+  .desktop-help-callout[data-place="bottom-left"]::after { left:var(--callout-arrow-x, 82%); top:-7px; transform:translateX(-50%) rotate(225deg); }
+  .desktop-help-callout[data-place="top-left"]::after { left:var(--callout-arrow-x, 82%); bottom:-7px; transform:translateX(-50%) rotate(45deg); }
+  .desktop-help-callout[data-place="left"]::after { right:-7px; top:var(--callout-arrow-y, 50%); transform:translateY(-50%) rotate(-45deg); }
+  .desktop-help-callout[data-place="right"]::after { left:-7px; top:var(--callout-arrow-y, 50%); transform:translateY(-50%) rotate(135deg); }
+  body.desktop-help-callouts-visible .desktop-help-callout { opacity:1; transform:translateY(0) scale(1); }
+
+  .broadcast-card-modern__top--desktop { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:18px; }
+  .broadcast-card-modern__top--desktop > i { color:#b794f6; font-size:30px; }
+  .broadcast-card-modern__groups-link { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:7px; width:auto; min-width:0; min-height:0; padding:9px 12px; border:1px solid rgba(167,139,250,.28); border-radius:12px; background:rgba(30,41,70,.68); color:#c4b5fd; font-size:12px; line-height:1; text-decoration:none; white-space:nowrap; transition:.2s ease; }
+  .broadcast-card-modern__groups-link:hover { transform:translateY(-2px); border-color:#a78bfa; box-shadow:0 12px 28px rgba(76,29,149,.28); }
+  .broadcast-card-modern__groups-link i { font-size:14px; }
+  .broadcast-card-modern__wallpaper-frame { position:relative; aspect-ratio:16 / 8.28; margin-inline:42px; }
+  .broadcast-card-modern__wallpaper-frame .broadcast-card-modern__wallpaper-progress {
+    z-index: 4;
+    width: 92%;
+    margin-inline: auto;
+    box-shadow: 0 18px 42px rgba(2, 6, 23, .48), 0 0 0 1px rgba(255,255,255,.06);
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+  }
+  .broadcast-card-modern__group-peek {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    width: 46%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid rgba(196,181,253,.4);
+    border-radius: 9px;
+    background: linear-gradient(145deg, #111a31, #080f20);
+    opacity: .9;
+    filter: saturate(.96) brightness(.9);
+    transform: translateY(-50%) scale(.92);
+    box-shadow: 0 14px 30px rgba(2,6,23,.38);
+    transition: opacity .25s ease, filter .25s ease, transform .3s ease;
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+  }
+  .broadcast-card-modern__group-peek.is-prev { left: -46px; transform-origin: right center; }
+  .broadcast-card-modern__group-peek.is-next { right: -46px; transform-origin: left center; }
+  .broadcast-card-modern__group-peek img { width:100%; height:100%; display:block; object-fit:cover; opacity:0; transition:opacity .25s ease; }
+  .broadcast-card-modern__group-peek.has-image img { opacity:1; }
+  .broadcast-card-modern__wallpaper-frame:hover .broadcast-card-modern__group-peek { opacity:1; filter:saturate(1) brightness(.98); }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__wallpaper-progress { animation: desktop-carousel-center-to-left .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__wallpaper-progress { animation: desktop-carousel-center-to-right .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-peek.is-prev { animation: desktop-carousel-left-wrap-right .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-peek.is-next { z-index:6; animation: desktop-carousel-right-to-center .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-peek.is-prev { z-index:6; animation: desktop-carousel-left-to-center .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-peek.is-next { animation: desktop-carousel-right-wrap-left .82s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-current,
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-current { animation: desktop-group-label-in .42s ease both; }
+  @keyframes desktop-carousel-center-to-left {
+    from { width:92%; margin-left:4%; opacity:1; transform:translateY(0) scale(1); filter:brightness(1); }
+    to { width:46%; margin-left:-46px; opacity:.9; transform:translateY(50%) scale(.92); filter:brightness(.82); }
+  }
+  @keyframes desktop-carousel-center-to-right {
+    from { width:92%; margin-left:4%; opacity:1; transform:translateY(0) scale(1); filter:brightness(1); }
+    to { width:46%; margin-left:calc(54% + 46px); opacity:.9; transform:translateY(50%) scale(.92); filter:brightness(.82); }
+  }
+  @keyframes desktop-carousel-right-to-center {
+    from { right:-46px; width:46%; opacity:.9; transform:translateY(-50%) scale(.92); filter:brightness(.9); }
+    to { right:4%; width:92%; opacity:1; transform:translateY(-50%) scale(1); filter:brightness(1); border-radius:8px; box-shadow:0 18px 42px rgba(2,6,23,.48); }
+  }
+  @keyframes desktop-carousel-left-to-center {
+    from { left:-46px; width:46%; opacity:.9; transform:translateY(-50%) scale(.92); filter:brightness(.9); }
+    to { left:4%; width:92%; opacity:1; transform:translateY(-50%) scale(1); filter:brightness(1); border-radius:8px; box-shadow:0 18px 42px rgba(2,6,23,.48); }
+  }
+  @keyframes desktop-carousel-left-wrap-right {
+    0% { z-index:0; left:-46px; opacity:.9; transform:translateY(-50%) scale(.92); }
+    50% { z-index:0; left:50%; opacity:.28; transform:translate(-50%, -50%) scale(.7); }
+    100% { z-index:1; left:calc(54% + 46px); opacity:.9; transform:translateY(-50%) scale(.92); }
+  }
+  @keyframes desktop-carousel-right-wrap-left {
+    0% { z-index:0; right:-46px; opacity:.9; transform:translateY(-50%) scale(.92); }
+    50% { z-index:0; right:50%; opacity:.28; transform:translate(50%, -50%) scale(.7); }
+    100% { z-index:1; right:calc(54% + 46px); opacity:.9; transform:translateY(-50%) scale(.92); }
+  }
+  @keyframes desktop-group-label-in { from { opacity:0; transform:translateY(9px); } to { opacity:1; transform:translateY(0); } }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-current:not(.is-group-label-entering) { animation:desktop-group-label-out-left .3s cubic-bezier(.4,0,1,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-current:not(.is-group-label-entering) { animation:desktop-group-label-out-right .3s cubic-bezier(.4,0,1,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-current.is-group-label-entering { animation:desktop-group-label-in-right .54s cubic-bezier(.16,1,.3,1) both; }
+  .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-current.is-group-label-entering { animation:desktop-group-label-in-left .54s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes desktop-group-label-out-left { to { opacity:0; transform:translateX(-34px) scale(.96); filter:blur(4px); } }
+  @keyframes desktop-group-label-out-right { to { opacity:0; transform:translateX(34px) scale(.96); filter:blur(4px); } }
+  @keyframes desktop-group-label-in-right { from { opacity:0; transform:translateX(34px) scale(.96); filter:blur(4px); } to { opacity:1; transform:none; filter:blur(0); } }
+  @keyframes desktop-group-label-in-left { from { opacity:0; transform:translateX(-34px) scale(.96); filter:blur(4px); } to { opacity:1; transform:none; filter:blur(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__wallpaper-progress,
+    .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__wallpaper-progress,
+    .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-peek,
+    .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-peek,
+    .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-current,
+    .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-current { animation:none; }
+    .broadcast-card-modern--desktop.is-sliding-next .broadcast-card-modern__group-current,
+    .broadcast-card-modern--desktop.is-sliding-prev .broadcast-card-modern__group-current { animation:none!important; opacity:1; transform:none; filter:none; }
+  }
+  .broadcast-card-modern__desktop-arrow { position:absolute; top:50%; z-index:20; width:34px; height:44px; display:grid; place-items:center; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; color:#c4b5fd; font-size:22px; cursor:pointer; pointer-events:auto; transform:translateY(-50%); transition:color .2s ease, transform .2s ease; }
+  .broadcast-card-modern__desktop-arrow:hover { border:0; background:transparent; box-shadow:none; color:#a855f7; transform:translateY(-50%) scale(1.16); }
+  .broadcast-card-modern__desktop-arrow.is-prev { left:-70px; }
+  .broadcast-card-modern__desktop-arrow.is-next { right:-70px; }
+  .broadcast-card-modern__group-dots { display:flex; justify-content:center; gap:7px; margin-top:15px; }
+  .broadcast-card-modern__group-dots button { width:9px; height:9px; padding:0; border:0; border-radius:50%; background:#475569; cursor:pointer; transition:.25s ease; }
+  .broadcast-card-modern__group-dots button.is-active { width:22px; border-radius:999px; background:#a855f7; box-shadow:0 0 14px rgba(168,85,247,.7); }
+  .broadcast-card-modern__group-current { display:flex; flex-direction:column; align-items:center; gap:2px; margin-top:9px; color:#94a3b8; }
+  .broadcast-card-modern__group-current strong { color:#f8fafc; font-size:20px; }
+  .broadcast-card-modern__group-current small { font-size:12px; }
+  @media (max-width: 720px) {
+    .broadcast-card-modern--desktop { padding:18px; border-radius:22px; }
+    .broadcast-card-modern__top--desktop { grid-template-columns:auto 1fr; }
+    .broadcast-card-modern__groups-link { grid-column:1 / -1; width:100%; min-height:54px; flex-direction:row; }
+    .broadcast-card-modern__wallpaper-frame { margin-inline:30px; }
+    .broadcast-card-modern__wallpaper-frame .broadcast-card-modern__wallpaper-progress { width:94%; }
+    .broadcast-card-modern__group-peek { width:42%; }
+    .broadcast-card-modern__desktop-arrow.is-prev { left:-48px; }
+    .broadcast-card-modern__desktop-arrow.is-next { right:-48px; }
   }
 
   .broadcast-card-modern__top--desktop {
     display: grid;
-    grid-template-columns: 36px minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
     padding-right: 0;
   }
 
@@ -5134,7 +6809,7 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   .broadcast-card-modern__agent-progress {
-    margin-top: -6px;
+    margin-top: 16px;
     display: grid;
     gap: 6px;
   }
@@ -5626,7 +7301,73 @@ body.theme-dark .broadcasts-panel--table {
     background: #e2e8f0;
   }
 
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action {
+    color: #475569;
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action i {
+    color: #334155;
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action:hover {
+    color: #5b21b6;
+    background: rgba(124, 58, 237, .07);
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcast-action__label {
+    color: #1e293b;
+    background: rgba(255, 255, 255, .97);
+    border: 1px solid rgba(15, 23, 42, .1);
+    box-shadow: 0 7px 18px rgba(15, 23, 42, .15);
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action--play i {
+    color: #2563eb;
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .1), 0 5px 14px rgba(37, 99, 235, .2);
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action--stop i {
+    color: #e11d48;
+    background: #fff1f2;
+    border-color: #f43f5e;
+    box-shadow: 0 0 0 2px rgba(244, 63, 94, .08), 0 5px 14px rgba(225, 29, 72, .18);
+  }
+
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action--delete,
+  html[data-theme="light"] .broadcasts-actions--card .broadcasts-action--delete i {
+    color: #e11d48;
+  }
+
   @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action { color: #475569; }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action i { color: #334155; }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action:hover {
+      color: #5b21b6;
+      background: rgba(124, 58, 237, .07);
+    }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcast-action__label {
+      color: #1e293b;
+      background: rgba(255, 255, 255, .97);
+      border: 1px solid rgba(15, 23, 42, .1);
+      box-shadow: 0 7px 18px rgba(15, 23, 42, .15);
+    }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action--play i {
+      color: #2563eb;
+      background: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, .1), 0 5px 14px rgba(37, 99, 235, .2);
+    }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action--stop i {
+      color: #e11d48;
+      background: #fff1f2;
+      border-color: #f43f5e;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, .08), 0 5px 14px rgba(225, 29, 72, .18);
+    }
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action--delete,
+    :root:not([data-theme="dark"]) .broadcasts-actions--card .broadcasts-action--delete i { color: #e11d48; }
+
     :root:not([data-theme="dark"]) .broadcast-system-summary {
       color: #172033;
       background:
@@ -5746,35 +7487,31 @@ body.theme-dark .broadcasts-panel--table {
 }
 
 .broadcasts-footer__release {
-    min-height: 34px;
-    padding: 0 12px;
-    border: 1px solid rgba(139, 47, 242, .18);
-    border-radius: 999px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     color: inherit;
-    background: rgba(255, 255, 255, .62);
+    background: transparent;
     text-decoration: none;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
-    backdrop-filter: blur(10px);
-    transition: transform .18s ease, color .18s ease, border-color .18s ease, background .18s ease;
-}
-
-.broadcasts-footer__release i {
-    color: #8b2ff2;
+    box-shadow: none;
+    backdrop-filter: none;
+    transition: color .18s ease;
 }
 
 .broadcasts-footer__release:hover {
-    transform: translateY(-1px);
+    transform: none;
     color: #8b2ff2;
-    border-color: rgba(139, 47, 242, .42);
-    background: rgba(255, 255, 255, .88);
+    border-color: transparent;
+    background: transparent;
 }
 
 html[data-theme="dark"] .broadcasts-footer__release,
 body.theme-dark .broadcasts-footer__release {
-    background: rgba(15, 23, 42, .72);
+    background: transparent;
     color: #a8b4ce;
     border-color: rgba(168, 85, 247, .22);
 }
@@ -5782,7 +7519,7 @@ body.theme-dark .broadcasts-footer__release {
 html[data-theme="dark"] .broadcasts-footer__release:hover,
 body.theme-dark .broadcasts-footer__release:hover {
     color: #f8f7ff;
-    background: rgba(30, 41, 59, .84);
+    background: transparent;
 }
 
   .notification-container {
@@ -5927,6 +7664,24 @@ body.theme-dark .broadcasts-footer__release:hover {
   border-color: rgba(248, 113, 113, .7);
 }
 
+.broadcasts-panel--table .broadcasts-action.icon {
+  width:38px;
+  height:38px;
+  color:#edf1ff;
+  background:rgba(38,49,78,.5);
+  border-color:rgba(122,139,177,.18);
+  border-radius:9px;
+}
+
+.broadcasts-panel--table .broadcasts-action.icon:hover,
+.broadcasts-panel--table .broadcasts-action.icon.play:hover,
+.broadcasts-panel--table .broadcasts-action.icon.more:hover {
+  color:#fff;
+  background:rgba(124,58,237,.28);
+  border-color:rgba(168,85,247,.65);
+  box-shadow:0 0 18px rgba(168,85,247,.2);
+}
+
 /* dropdown */
 .broadcasts-dropdown {
   position: relative;
@@ -5938,6 +7693,7 @@ body.theme-dark .broadcasts-footer__release:hover {
 }
 
 .broadcasts-dropdown__menu {
+  box-sizing: border-box;
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -5956,6 +7712,7 @@ body.theme-dark .broadcasts-footer__release:hover {
 }
 .broadcasts-dropdown__menu a,
 .broadcasts-dropdown__menu form {
+  box-sizing: border-box;
   display: block;
   width: 100%;
   height: auto;
@@ -5964,6 +7721,7 @@ body.theme-dark .broadcasts-footer__release:hover {
 
 .broadcasts-dropdown__menu a,
 .broadcasts-dropdown__menu button {
+  box-sizing: border-box;
   width: 100%;
   min-height: 38px;
   display: flex;
@@ -5998,6 +7756,7 @@ body.theme-dark .broadcasts-footer__release:hover {
 }
 
 .dropdown-item {
+  box-sizing: border-box;
   width: 100%;
   min-height: 38px;
   display: flex;
@@ -6150,6 +7909,129 @@ body.theme-dark .broadcasts-footer__release:hover {
 .broadcast-playlist-field small {
   color: #a8b4ce;
   font-size: 11px;
+}
+
+.broadcast-transition-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.broadcast-transition-picker > select {
+  display: none !important;
+}
+
+.broadcast-transition-picker__trigger {
+  width: 100%;
+  min-height: 38px;
+  padding: 4px 9px 4px 6px;
+  border: 1px solid rgba(172, 188, 230, .16);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  background: #111827;
+  color: #f8fbff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.broadcast-transition-picker__trigger:hover,
+.broadcast-transition-picker__trigger[aria-expanded="true"] {
+  border-color: rgba(168, 85, 247, .72);
+  box-shadow: 0 0 0 3px rgba(139, 53, 238, .12);
+}
+
+.broadcast-transition-picker__trigger img,
+.broadcast-transition-picker__option img {
+  width: 51px;
+  height: 51px;
+  border-radius: 9px;
+  object-fit: cover;
+  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(76, 29, 149, .95)) drop-shadow(0 0 5px rgba(139, 92, 246, .75));
+}
+
+.broadcast-transition-picker__trigger img {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.broadcast-transition-picker__trigger > span,
+.broadcast-transition-picker__option > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broadcast-transition-picker__trigger > i {
+  color: #a78bfa;
+  font-size: 10px;
+  transition: transform .18s ease;
+}
+
+.broadcast-transition-picker__trigger[aria-expanded="true"] > i {
+  transform: rotate(180deg);
+}
+
+.broadcast-transition-picker__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max(100%, 210px);
+  max-height: 286px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid rgba(168, 85, 247, .38);
+  border-radius: 10px;
+  background: rgba(10, 16, 32, .98);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .42), 0 0 24px rgba(126, 34, 206, .13);
+}
+
+.broadcast-transition-picker__menu[hidden] {
+  display: none !important;
+}
+
+.broadcast-transition-picker__option {
+  width: 100%;
+  min-height: 61px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: 51px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #dce5f7;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.broadcast-transition-picker__option:hover {
+  background: rgba(139, 53, 238, .17);
+  color: #fff;
+}
+
+.broadcast-transition-picker__option > i {
+  color: #a855f7;
+  font-size: 11px;
+  opacity: 0;
+}
+
+.broadcast-transition-picker__option.is-selected {
+  background: rgba(139, 53, 238, .25);
+  color: #fff;
+}
+
+.broadcast-transition-picker__option.is-selected > i {
+  opacity: 1;
 }
 
 .broadcast-playlist-field--sync {
@@ -6607,7 +8489,16 @@ body.theme-dark .broadcasts-footer__release:hover {
 }
 
 .broadcast-playlist-editor-modal .broadcast-publish-upload-control {
-  overflow: hidden;
+  overflow: visible;
+}
+
+.broadcast-playlist-editor-modal .broadcast-publish-upload-control input[type="file"] {
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.broadcast-playlist-editor-modal .broadcast-publish-upload-control::after {
+  z-index: 50;
 }
 
 .broadcast-playlist-editor-modal__dialog {
@@ -6959,29 +8850,40 @@ body.theme-dark .broadcasts-footer__release:hover {
 }
 
 .broadcast-playlist-selected-remove {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(248, 113, 113, .2);
-  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 1px solid rgba(248, 113, 113, .38);
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, .58);
-  color: #fca5a5;
+  background: linear-gradient(145deg, rgba(127, 29, 29, .24), rgba(69, 10, 10, .14));
+  color: #fb7185;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
-  transition: transform .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 4px 12px rgba(0, 0, 0, .12);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
 }
 
 .broadcast-playlist-selected-remove:hover {
-  transform: scale(1.06);
-  border-color: rgba(248, 113, 113, .62);
-  background: rgba(220, 38, 38, .88);
+  transform: translateY(-2px) scale(1.04);
+  border-color: rgba(251, 113, 133, .9);
+  background: linear-gradient(145deg, #ef4444, #be123c);
   color: #ffffff;
+  box-shadow: 0 8px 20px rgba(225, 29, 72, .32), 0 0 0 3px rgba(244, 63, 94, .1);
+}
+
+.broadcast-playlist-selected-remove:active {
+  transform: translateY(0) scale(.97);
+}
+
+.broadcast-playlist-selected-remove:focus-visible {
+  outline: 2px solid #fda4af;
+  outline-offset: 3px;
 }
 
 .broadcast-playlist-selected-remove i {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 

@@ -19,9 +19,11 @@ Rails.application.routes.draw do
   resources :notifications, only: [:index] do
     post :mark_all_read, on: :collection
   end
-  resources :desktop_agents, only: [:index, :create, :destroy] do
+  post "onboarding/complete", to: "onboarding#complete", as: :onboarding_complete
+  resources :desktop_agents, only: [:index, :create, :update, :destroy] do
     post :approve, on: :member
   end
+  resources :desktop_groups, only: [:create, :destroy]
 
   namespace :agent do
     resources :pairings, only: [:create, :show], controller: "/agent_pairings"
@@ -65,9 +67,12 @@ Rails.application.routes.draw do
       post 'set_android_launcher'
       post 'remove_android_launcher'
       post 'open_official_app'
+      post 'toggle_presentation_mode'
+      post 'presentation_command'
       post 'mobile_presence'
       post 'mobile_player_status'
       get 'mobile_status'
+      get 'presentation_status'
       get 'mobile_thumbnail'
       get 'mobile_video'
       get 'mobile_prepared_video'

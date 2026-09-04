@@ -1,10 +1,16 @@
 class DesktopAgentsController < ApplicationController
   before_action :require_admin!
-  before_action :set_desktop_agent, only: [:destroy, :approve]
+  before_action :set_desktop_agent, only: [:update, :destroy, :approve]
 
   def index
     @desktop_agents = DesktopAgent.enabled.order(Arel.sql("last_seen_at IS NULL"), last_seen_at: :desc, name: :asc)
     @desktop_agent = DesktopAgent.new
+    @desktop_groups = DesktopGroup.order(:name)
+  end
+
+  def update
+    @desktop_agent.update!(desktop_agent_params)
+    redirect_back fallback_location: desktop_agents_path, notice: "Grupo do computador atualizado."
   end
 
   def create
@@ -14,6 +20,7 @@ class DesktopAgentsController < ApplicationController
       redirect_to desktop_agents_path, notice: "Agente criado. Token: #{@desktop_agent.plain_token}"
     else
       @desktop_agents = DesktopAgent.enabled.order(Arel.sql("last_seen_at IS NULL"), last_seen_at: :desc, name: :asc)
+      @desktop_groups = DesktopGroup.order(:name)
       render :index, status: :unprocessable_entity
     end
   end
@@ -41,6 +48,6 @@ class DesktopAgentsController < ApplicationController
   end
 
   def desktop_agent_params
-    params.require(:desktop_agent).permit(:name)
+    params.require(:desktop_agent).permit(:name, :desktop_group_id)
   end
 end

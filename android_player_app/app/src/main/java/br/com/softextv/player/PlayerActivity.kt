@@ -114,6 +114,13 @@ class PlayerActivity : AppCompatActivity() {
     private var playlistVideoReadyResyncedItemId: Long? = null
     private var playlistResyncToken = 0L
     private var currentPlaylistIndex = 0
+    private var presentationModeEnabled = false
+    private var presentationPaused = false
+    private var presentationPausedRemainingMs: Long? = null
+    private var presentationCommandVersion = 0
+    @Volatile private var statusPollInFlight = false
+    @Volatile private var presentationPollInFlight = false
+    private val presentationHandler = Handler(Looper.getMainLooper())
     private var currentPlaylistItemStartedRealtimeMs = 0L
     private var playlistPlaybackActive = false
     private var retryCount = 0
@@ -153,6 +160,13 @@ class PlayerActivity : AppCompatActivity() {
         override fun run() {
             pollBroadcastStatus()
             statusHandler.postDelayed(this, STATUS_POLL_INTERVAL_MS)
+        }
+    }
+
+    private val checkPresentationStatusRunnable = object : Runnable {
+        override fun run() {
+            if (presentationModeEnabled) pollPresentationStatus()
+            presentationHandler.postDelayed(this, PRESENTATION_POLL_INTERVAL_MS)
         }
     }
 
@@ -359,6 +373,12 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun initializePlayer(overrideUrl: String? = null) {
+        if (isOfficialAppWebOnly() && isOfficialAppWebDisplayEnabled()) {
+            playerReady = true
+            startOfficialAppRotationIfNeeded()
+            return
+        }
+
         if (overrideUrl.isNullOrBlank() && playlistItems.isNotEmpty()) {
             playlistPlaybackActive = true
             maybePlayPlaylistNotification()
@@ -546,6 +566,7 @@ class PlayerActivity : AppCompatActivity() {
                             retryHandler.postDelayed({
                                 binding.playlistImageView.visibility = View.GONE
                             }, playlistVideoItem.transitionDurationMs.coerceIn(0, 10_000).toLong().coerceAtLeast(120L))
+                            if (presentationModeEnabled && presentationPaused) exoPlayer.pause()
                         } else if (keepCurrentSurface) {
                             binding.playerView.visibility = View.VISIBLE
                             binding.playlistImageView.visibility = View.GONE
@@ -728,7 +749,7 @@ class PlayerActivity : AppCompatActivity() {
     )
 
     private fun synchronizedPlaylistPosition(): PlaylistSyncPosition? {
-        if (!playlistSyncEnabled || playlistSyncStartedAtMs <= 0L || playlistItems.isEmpty()) return null
+        if (presentationModeEnabled || !playlistSyncEnabled || playlistSyncStartedAtMs <= 0L || playlistItems.isEmpty()) return null
 
         val durations = playlistItems.map(::playlistItemDurationMs)
         val totalDurationMs = durations.sum()
@@ -1092,7 +1113,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun retryPlayback() {
         val channelId = intent.getLongExtra(EXTRA_CHANNEL_ID, -1L)
-        if (channelId <= 0L || awaitingSelectionReturn) return
+        if (channelId <= 0L || awaitingSelectionReturn || statusPollInFlight) return
+        statusPollInFlight = true
 
         thread {
             runCatching { apiClient.fetchChannelStatus(channelId) }
@@ -1101,12 +1123,19 @@ class PlayerActivity : AppCompatActivity() {
                         if (awaitingSelectionReturn) return@runOnUiThread
                         val freshUrl = status.playbackUrl?.ifBlank { null } ?: status.streamUrl
                         val freshPlaylist = parsePlaylistItems(status.playlistItemsJson.orEmpty())
+                        applyOfficialAppConfigExtras(status.officialAppBrowserRotation)
                         applyPlaylistNotificationExtras(status.playlistNotificationSound)
-                        if (status.status == "running" && (!freshUrl.isNullOrBlank() || freshPlaylist.isNotEmpty())) {
+                        val hasWebOnly = status.officialAppBrowserRotation?.let {
+                            it.enabled && it.webOnly && !it.pageUrl.isNullOrBlank()
+                        } ?: false
+                        if (status.status == "running" && (!freshUrl.isNullOrBlank() || freshPlaylist.isNotEmpty() || hasWebOnly)) {
                             playlistItems = freshPlaylist
+                            stopOfficialAppRotation()
                             releasePlayer()
                             releasePreloadedPlaylistPlayer()
-                            if (freshPlaylist.isNotEmpty()) {
+                            if (hasWebOnly) {
+                                initializePlayer()
+                            } else if (freshPlaylist.isNotEmpty()) {
                                 playlistPlaybackActive = true
                                 maybePlayPlaylistNotification()
                                 startPlaylistItem(currentPlaylistIndex + 1)
@@ -1128,6 +1157,7 @@ class PlayerActivity : AppCompatActivity() {
                         }
                     }
                 }
+            statusPollInFlight = false
         }
     }
 
@@ -1227,12 +1257,22 @@ class PlayerActivity : AppCompatActivity() {
                     reloadBrowserMediaIfMissing()
                     postDelayed({ reloadBrowserMediaIfMissing() }, 800)
                     postDelayed({ resumeBrowserMedia() }, 1200)
-                    prepareBrowserViewInBackground {
+                    if (isOfficialAppWebOnly() && showingBrowser) {
                         browserPageLoaded = true
                         browserPreparedForDisplay = true
-                        if (pendingBrowserSwitch && browserRotationEnabled && !showingBrowser) {
-                            pendingBrowserSwitch = false
-                            showBrowserOverlay()
+                        prepareBrowserViewForDisplay {
+                            binding.browserView.alpha = 1f
+                            binding.browserView.bringToFront()
+                            bringPlayerOverlaysToFront()
+                        }
+                    } else {
+                        prepareBrowserViewInBackground {
+                            browserPageLoaded = true
+                            browserPreparedForDisplay = true
+                            if (pendingBrowserSwitch && browserRotationEnabled && !showingBrowser) {
+                                pendingBrowserSwitch = false
+                                showBrowserOverlay()
+                            }
                         }
                     }
                 }
@@ -1305,7 +1345,9 @@ class PlayerActivity : AppCompatActivity() {
                 browserPreparedForDisplay = true
             }
         }
-        if (!useVideoEndTrigger) {
+        if (isOfficialAppWebOnly()) {
+            showBrowserOverlay()
+        } else if (!useVideoEndTrigger) {
             scheduleBrowserSwitch()
         }
     }
@@ -1322,10 +1364,24 @@ class PlayerActivity : AppCompatActivity() {
     private fun startStatusPolling() {
         statusHandler.removeCallbacks(checkBroadcastStatusRunnable)
         statusHandler.postDelayed(checkBroadcastStatusRunnable, STATUS_POLL_INTERVAL_MS)
+        presentationHandler.removeCallbacks(checkPresentationStatusRunnable)
+        presentationHandler.post(checkPresentationStatusRunnable)
     }
 
     private fun stopStatusPolling() {
         statusHandler.removeCallbacks(checkBroadcastStatusRunnable)
+        presentationHandler.removeCallbacks(checkPresentationStatusRunnable)
+    }
+
+    private fun pollPresentationStatus() {
+        val channelId = intent.getLongExtra(EXTRA_CHANNEL_ID, -1L)
+        if (channelId <= 0L || awaitingSelectionReturn || presentationPollInFlight) return
+        presentationPollInFlight = true
+        thread {
+            runCatching { apiClient.fetchPresentationControl(channelId) }
+                .onSuccess { control -> runOnUiThread { applyPresentationControl(control) } }
+            presentationPollInFlight = false
+        }
     }
 
     private fun pollBroadcastStatus() {
@@ -1357,7 +1413,10 @@ class PlayerActivity : AppCompatActivity() {
                         ?: status.streamUrl?.ifBlank { null }
                         ?: intent.getStringExtra(EXTRA_DIRECT_VIDEO_URL)?.ifBlank { null }
                     val freshPlaylist = parsePlaylistItems(status.playlistItemsJson.orEmpty())
-                    if (playableUrl.isNullOrBlank() && freshPlaylist.isEmpty()) {
+                    val hasWebOnly = status.officialAppBrowserRotation?.let {
+                        it.enabled && it.webOnly && !it.pageUrl.isNullOrBlank()
+                    } ?: false
+                    if (playableUrl.isNullOrBlank() && freshPlaylist.isEmpty() && !hasWebOnly) {
                         runOnUiThread {
                             if (!awaitingSelectionReturn) {
                             returnToSelection(suppressCurrentPlayback = false)
@@ -1372,8 +1431,19 @@ class PlayerActivity : AppCompatActivity() {
                     val freshPlaylistJson = status.playlistItemsJson.orEmpty()
                     val playlistChanged = freshPlaylistJson.isNotBlank() &&
                         freshPlaylistJson != currentPlaylistItemsJson
+                    val browserConfigChanged = status.officialAppBrowserRotation?.let { browser ->
+                        val currentEnabled = intent.getBooleanExtra(EXTRA_OFFICIAL_APP_ROTATION_ENABLED, false)
+                        browser.enabled != currentEnabled ||
+                            (browser.enabled && (
+                                browser.webOnly != intent.getBooleanExtra(EXTRA_OFFICIAL_APP_WEB_ONLY, false) ||
+                                    browser.pageUrl.orEmpty() != intent.getStringExtra(EXTRA_OFFICIAL_APP_PAGE_URL).orEmpty() ||
+                                    (browser.rotationTrigger ?: "time_interval") != intent.getStringExtra(EXTRA_OFFICIAL_APP_ROTATION_TRIGGER).orEmpty().ifBlank { "time_interval" } ||
+                                    browser.switchIntervalSeconds != intent.getIntExtra(EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS, 300) ||
+                                    browser.pageDurationSeconds != intent.getIntExtra(EXTRA_OFFICIAL_APP_PAGE_DURATION_SECONDS, 15)
+                            ))
+                    } ?: false
 
-                    if (configChanged || urlChanged || playlistChanged) {
+                    if (configChanged || urlChanged || playlistChanged || browserConfigChanged) {
                         runOnUiThread {
                             if (!awaitingSelectionReturn) {
                                 restartPlaybackFromStatus(
@@ -1389,8 +1459,13 @@ class PlayerActivity : AppCompatActivity() {
                                 )
                             }
                         }
-                    } else if (playerReady) {
+                    } else {
                         runOnUiThread {
+                            // Presentation commands must be consumed even while a video is
+                            // preparing. Apply them before sync so Previous/Next use the slide
+                            // currently shown instead of the server clock position.
+                            status.presentationControl?.let(::applyPresentationControl)
+                            if (!playerReady) return@runOnUiThread
                             status.officialAppWidgetBar?.let { widgetBar ->
                                 val signature = widgetBar.signature()
                                 if (signature != widgetBarConfigSignature) {
@@ -1409,7 +1484,7 @@ class PlayerActivity : AppCompatActivity() {
                                 }
                             }
                         }
-                        reportPlayerPresence("playing")
+                        if (playerReady) reportPlayerPresence("playing")
                     }
                 }
                 .onFailure {
@@ -1532,11 +1607,17 @@ class PlayerActivity : AppCompatActivity() {
         directLocalRetryAttempted = false
         retryCount = 0
         playerReady = false
-        showDownloadOverlay(getString(R.string.player_downloading_video))
+        if (isOfficialAppWebOnly()) {
+            hideDownloadOverlay()
+        } else {
+            showDownloadOverlay(getString(R.string.player_downloading_video))
+        }
         retryHandler.postDelayed({
             restartPlaybackPending = false
             if (!awaitingSelectionReturn) {
-                if (playlistItems.isNotEmpty()) {
+                if (isOfficialAppWebOnly()) {
+                    initializePlayer()
+                } else if (playlistItems.isNotEmpty()) {
                     playlistPlaybackActive = true
                     maybePlayPlaylistNotification()
                     val syncPosition = synchronizedPlaylistPosition()
@@ -1637,7 +1718,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun showBrowserOverlay() {
         if (showingBrowser || !browserRotationEnabled) return
         if (!playerReady) return
-        if (!browserPageLoaded || !browserPreparedForDisplay) {
+        if (!isOfficialAppWebOnly() && (!browserPageLoaded || !browserPreparedForDisplay)) {
             pendingBrowserSwitch = true
             if (browserPageUrl.isNotBlank() && binding.browserView.url.isNullOrBlank()) {
                 prepareBrowserViewInBackground()
@@ -1657,6 +1738,23 @@ class PlayerActivity : AppCompatActivity() {
         rotationHandler.removeCallbacks(showVideoRunnable)
         hideHud()
         showingBrowser = true
+        if (isOfficialAppWebOnly()) {
+            // The page may contain video. Free the hardware decoder held by the
+            // playlist so Android WebView can render that media reliably.
+            hideDownloadOverlay()
+            retryHandler.removeCallbacks(nextPlaylistItemRunnable)
+            retryHandler.removeCallbacks(playbackReadyTimeoutRunnable)
+            retryHandler.removeCallbacks(directVideoTimeoutRunnable)
+            releasePreloadedPlaylistPlayer()
+            releasePlayer()
+            binding.playerView.visibility = View.INVISIBLE
+            binding.playlistImageView.visibility = View.INVISIBLE
+            binding.previousPlaylistImageView.visibility = View.INVISIBLE
+            playerSplashDismissed = true
+            releasePlayerSplashVideo()
+            binding.playerSplashVideo.visibility = View.INVISIBLE
+            binding.playerSplashOverlay.visibility = View.GONE
+        }
         val resetJs = "window.scrollTo(0,0); document.querySelectorAll('*').forEach(function(el){el.scrollTop=0;el.scrollLeft=0;}); if(document.activeElement && document.activeElement !== document.body) document.activeElement.blur();"
         binding.browserView.evaluateJavascript(resetJs, null)
         reloadBrowserMediaIfMissing()
@@ -1665,8 +1763,21 @@ class PlayerActivity : AppCompatActivity() {
         binding.browserView.postDelayed({ resumeBrowserMedia() }, 450)
         prepareBrowserViewForDisplay {
             if (showingBrowser) {
-                applyTransition(showBrowser = true)
-                scheduleVideoReturn()
+                if (isOfficialAppWebOnly()) {
+                    // There is no outgoing media surface after Stop -> Play.
+                    // Showing directly avoids a transition ending on a black surface.
+                    binding.playerView.visibility = View.INVISIBLE
+                    binding.playlistImageView.visibility = View.INVISIBLE
+                    binding.previousPlaylistImageView.visibility = View.INVISIBLE
+                    binding.browserView.visibility = View.VISIBLE
+                    binding.browserView.alpha = 1f
+                    binding.browserView.bringToFront()
+                    bringPlayerOverlaysToFront()
+                    finishTransition(showBrowser = true)
+                } else {
+                    applyTransition(showBrowser = true)
+                    scheduleVideoReturn()
+                }
             }
         }
     }
@@ -1719,6 +1830,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun shouldUseDirectVideoPlayback(): Boolean {
         return isOfficialAppPlayback() &&
             isOfficialAppWebDisplayEnabled() &&
+            !isOfficialAppWebOnly() &&
             intent.getStringExtra(EXTRA_OFFICIAL_APP_ROTATION_TRIGGER).orEmpty() == "video_end"
     }
 
@@ -1753,6 +1865,7 @@ class PlayerActivity : AppCompatActivity() {
 
         intent.putExtra(EXTRA_OFFICIAL_APP_PAGE_URL, config.pageUrl)
         intent.putExtra(EXTRA_OFFICIAL_APP_ROTATION_ENABLED, config.enabled)
+        intent.putExtra(EXTRA_OFFICIAL_APP_WEB_ONLY, config.webOnly)
         intent.putExtra(EXTRA_OFFICIAL_APP_ROTATION_TRIGGER, config.rotationTrigger ?: "time_interval")
         intent.putExtra(EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS, config.switchIntervalSeconds)
         intent.putExtra(EXTRA_OFFICIAL_APP_PAGE_DURATION_SECONDS, config.pageDurationSeconds)
@@ -1770,6 +1883,81 @@ class PlayerActivity : AppCompatActivity() {
         intent.putExtra(EXTRA_PLAYLIST_SYNC_ENABLED, playlistSyncEnabled)
         intent.putExtra(EXTRA_PLAYLIST_SYNC_STARTED_AT_MS, playlistSyncStartedAtMs)
         intent.putExtra(EXTRA_PLAYLIST_SYNC_SERVER_TIME_MS, sync.serverTimeMs)
+    }
+
+    private fun applyPresentationControl(control: PresentationControl) {
+        presentationModeEnabled = control.enabled
+        if (!control.enabled) {
+            presentationPaused = false
+            presentationCommandVersion = control.commandVersion
+            return
+        }
+        if (!playlistPlaybackActive || control.commandVersion <= presentationCommandVersion) return
+
+        presentationCommandVersion = control.commandVersion
+        when (control.command) {
+            "pause" -> pausePresentation()
+            "play" -> resumePresentation()
+            "next" -> {
+                presentationPaused = control.paused
+                startPlaylistItem(currentPlaylistIndex + 1)
+                if (presentationPaused) pausePresentation()
+            }
+            "previous" -> {
+                presentationPaused = control.paused
+                startPlaylistItem(currentPlaylistIndex - 1)
+                if (presentationPaused) pausePresentation()
+            }
+            "pointer_hide" -> binding.presentationPointer.visibility = View.GONE
+            else -> applyExtendedPresentationCommand(control.command, control.paused)
+        }
+    }
+
+    private fun applyExtendedPresentationCommand(command: String?, paused: Boolean) {
+        if (command.isNullOrBlank()) return
+        if (command.startsWith("show:")) {
+            val itemId = command.substringAfter(':').toLongOrNull() ?: return
+            val targetIndex = playlistItems.indexOfFirst { it.id == itemId }
+            if (targetIndex >= 0) {
+                presentationPaused = paused
+                startPlaylistItem(targetIndex)
+                if (presentationPaused) pausePresentation()
+            }
+            return
+        }
+        if (command.startsWith("pointer:")) {
+            val values = command.split(':')
+            val x = values.getOrNull(1)?.toFloatOrNull() ?: return
+            val y = values.getOrNull(2)?.toFloatOrNull() ?: return
+            binding.presentationPointer.moveTo(x, y)
+            binding.presentationPointer.bringToFront()
+        }
+    }
+
+    private fun pausePresentation() {
+        presentationPaused = true
+        retryHandler.removeCallbacks(nextPlaylistItemRunnable)
+        currentPlaylistItem()?.let { item ->
+            val durationMs = playlistItemDurationMs(item)
+            val elapsedMs = (SystemClock.elapsedRealtime() - currentPlaylistItemStartedRealtimeMs).coerceIn(0L, durationMs)
+            presentationPausedRemainingMs = (durationMs - elapsedMs).coerceAtLeast(500L)
+        }
+        player?.pause()
+    }
+
+    private fun resumePresentation() {
+        if (!playlistPlaybackActive || playlistItems.isEmpty()) return
+        presentationPaused = false
+        val item = currentPlaylistItem() ?: return
+        val durationMs = playlistItemDurationMs(item)
+        val elapsedMs = (SystemClock.elapsedRealtime() - currentPlaylistItemStartedRealtimeMs).coerceIn(0L, durationMs)
+        val remainingMs = presentationPausedRemainingMs ?: (durationMs - elapsedMs).coerceAtLeast(500L)
+        presentationPausedRemainingMs = null
+        if (item.type == "video") player?.play()
+        if (playlistItems.size > 1) {
+            retryHandler.removeCallbacks(nextPlaylistItemRunnable)
+            retryHandler.postDelayed(nextPlaylistItemRunnable, remainingMs)
+        }
     }
 
     private fun applyPlaylistResyncRequest(sync: PlaylistSync): Boolean {
@@ -2590,6 +2778,10 @@ class PlayerActivity : AppCompatActivity() {
             !intent.getStringExtra(EXTRA_OFFICIAL_APP_PAGE_URL).isNullOrBlank()
     }
 
+    private fun isOfficialAppWebOnly(): Boolean {
+        return intent.getBooleanExtra(EXTRA_OFFICIAL_APP_WEB_ONLY, false)
+    }
+
     private fun configureBrowserViewport(isPortrait: Boolean) {
         binding.browserView.settings.apply {
             useWideViewPort = !isPortrait
@@ -3402,6 +3594,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_PLAYBACK_APP_TYPE = "playback_app_type"
         const val EXTRA_CONFIG_VERSION = "config_version"
         const val EXTRA_OFFICIAL_APP_ROTATION_ENABLED = "official_app_rotation_enabled"
+        const val EXTRA_OFFICIAL_APP_WEB_ONLY = "official_app_web_only"
         const val EXTRA_OFFICIAL_APP_PAGE_URL = "official_app_page_url"
         const val EXTRA_OFFICIAL_APP_ROTATION_TRIGGER = "official_app_rotation_trigger"
         const val EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS = "official_app_switch_interval_seconds"
@@ -3434,6 +3627,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_WIDGET_BAR_WEATHER_ASSETS_JSON = "widget_bar_weather_assets_json"
         const val EXTRA_KEEP_APP_FOREGROUND_ENABLED = "keep_app_foreground_enabled"
         private const val STATUS_POLL_INTERVAL_MS = 2_000L
+        private const val PRESENTATION_POLL_INTERVAL_MS = 250L
         private const val CLOCK_WIDGET_INTERVAL_MS = 30_000L
         private const val WEATHER_WIDGET_INTERVAL_MS = 10 * 60 * 1000L
         private const val WEATHER_CONTRAST_INTERVAL_MS = 350L

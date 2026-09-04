@@ -1,5 +1,9 @@
 package br.com.softextv.player
 
+import android.app.UiModeManager
+import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -22,6 +26,13 @@ class ServerSettingsActivity : AppCompatActivity() {
         val externalInput = findViewById<EditText>(R.id.externalServerInput)
         val cancelButton = findViewById<MaterialButton>(R.id.serverSettingsCancelButton)
         val saveButton = findViewById<MaterialButton>(R.id.serverSettingsSaveButton)
+        val presentationRemoteButton = findViewById<MaterialButton>(R.id.presentationRemoteButton)
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+        val isTelevision = uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+        presentationRemoteButton.visibility = if (isTelevision) View.GONE else View.VISIBLE
+        presentationRemoteButton.setOnClickListener {
+            startActivity(Intent(this, PresentationRemoteActivity::class.java))
+        }
 
         localInput.setText(endpointSettings.localUrl())
         externalInput.setText(endpointSettings.externalUrl())

@@ -8,7 +8,7 @@ class AgentWallpapersController < ActionController::API
       agent_version: request.headers["X-Aponti-Agent-Version"]
     )
 
-    render json: DesktopWallpaperPayload.new(request: request).as_json
+    render json: DesktopWallpaperPayload.new(request: request, group: @agent.desktop_group).as_json
   end
 
   def applied

@@ -1,7 +1,9 @@
 require "test_helper"
 
 class BroadcastsControllerTest < ActionDispatch::IntegrationTest
-  # test "the truth" do
-  #   assert true
-  # end
+  test "mobile index renders dashboard preview data" do
+    get mobile_index_broadcasts_url(format: :json, locale: :pt)
+
+    assert_response :success
+  end
 end

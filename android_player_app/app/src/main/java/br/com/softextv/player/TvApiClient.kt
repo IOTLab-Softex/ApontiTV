@@ -36,6 +36,7 @@ class TvApiClient(
         val configVersion: String?,
         val playlistItemsJson: String?,
         val playlistSync: PlaylistSync?,
+        val presentationControl: PresentationControl?,
         val playlistNotificationSound: PlaylistNotificationSound?,
         val officialAppBrowserRotation: OfficialAppBrowserRotation?,
         val officialAppWidgetBar: OfficialAppWidgetBar?,
@@ -95,6 +96,23 @@ class TvApiClient(
         throw IOException("Nao foi possivel consultar o status da TV $channelId.", lastError)
     }
 
+    fun fetchPresentationControl(channelId: Long): PresentationControl {
+        var lastError: IOException? = null
+        for (candidateBaseUrl in orderedBaseUrls()) {
+            val connection = buildConnection(URL("$candidateBaseUrl/broadcasts/$channelId/presentation_status.json"))
+            try {
+                val body = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+                rememberBaseUrl(candidateBaseUrl)
+                return JSONObject(body).getJSONObject("presentation_control").toPresentationControl()
+            } catch (e: IOException) {
+                lastError = e
+            } finally {
+                connection.disconnect()
+            }
+        }
+        throw IOException("Nao foi possivel consultar o controle da apresentacao.", lastError)
+    }
+
     fun reportPlayerStatus(
         channelId: Long,
         playerStatus: String,
@@ -137,6 +155,33 @@ class TvApiClient(
         }
 
         if (lastError != null) throw lastError
+    }
+
+    fun sendPresentationCommand(channelId: Long, command: String): PresentationControl {
+        var lastError: IOException? = null
+        for (candidateBaseUrl in orderedBaseUrls()) {
+            val endpoint = URL("$candidateBaseUrl/broadcasts/$channelId/presentation_command.json")
+            val connection = buildConnection(endpoint, requestMethod = "POST").apply {
+                doOutput = true
+                setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            }
+            try {
+                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
+                    writer.write("command=${URLEncoder.encode(command, Charsets.UTF_8.name())}")
+                }
+                val responseCode = connection.responseCode
+                val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                val body = stream.bufferedReader().use(BufferedReader::readText)
+                if (responseCode !in 200..299) throw IOException(JSONObject(body).optString("error", "Falha no controle remoto"))
+                rememberBaseUrl(candidateBaseUrl)
+                return JSONObject(body).getJSONObject("presentation_control").toPresentationControl()
+            } catch (e: IOException) {
+                lastError = e
+            } finally {
+                connection.disconnect()
+            }
+        }
+        throw IOException("Não foi possível enviar o comando de apresentação.", lastError)
     }
 
     fun requestAdbAuthorization(channelId: Long) {
@@ -260,6 +305,7 @@ class TvApiClient(
             val officialConfig = item.optJSONObject("official_app_browser_rotation")
             val notificationSound = item.optJSONObject("playlist_notification_sound")
             val playlistSync = item.optJSONObject("playlist_sync")
+            val presentationControl = item.optJSONObject("presentation_control")
             val widgetBar = item.optJSONObject("official_app_widget_bar")
             val powerSchedule = item.optJSONObject("power_schedule")
             val playlistItems = item.optJSONArray("playlist_items")
@@ -299,11 +345,13 @@ class TvApiClient(
                     configVersion = item.optCleanString("config_version"),
                     playlistItemsJson = playlistItems?.toString(),
                     playlistSync = playlistSync?.toPlaylistSync(),
+                    presentationControl = presentationControl?.toPresentationControl(),
                     playlistNotificationSound = notificationSound?.toPlaylistNotificationSound(),
                     officialAppWidgetBar = widgetBar?.toOfficialAppWidgetBar(),
                     officialAppBrowserRotation = officialConfig?.let { config ->
                         OfficialAppBrowserRotation(
                             enabled = config.optBoolean("enabled"),
+                            webOnly = config.optBoolean("web_only"),
                             pageUrl = config.optCleanString("page_url"),
                             rotationTrigger = config.optCleanString("rotation_trigger"),
                             switchIntervalSeconds = config.optInt("switch_interval_seconds", 300),
@@ -325,6 +373,7 @@ class TvApiClient(
         val officialConfig = item.optJSONObject("official_app_browser_rotation")
         val notificationSound = item.optJSONObject("playlist_notification_sound")
         val playlistSync = item.optJSONObject("playlist_sync")
+        val presentationControl = item.optJSONObject("presentation_control")
         val widgetBar = item.optJSONObject("official_app_widget_bar")
         val powerSchedule = item.optJSONObject("power_schedule")
         val directVideoUrl = officialConfig?.optCleanString("direct_video_url")
@@ -338,12 +387,14 @@ class TvApiClient(
             configVersion = item.optCleanString("config_version"),
             playlistItemsJson = item.optJSONArray("playlist_items")?.toString(),
             playlistSync = playlistSync?.toPlaylistSync(),
+            presentationControl = presentationControl?.toPresentationControl(),
             playlistNotificationSound = notificationSound?.toPlaylistNotificationSound(),
             officialAppWidgetBar = widgetBar?.toOfficialAppWidgetBar(),
             powerSchedule = powerSchedule?.toTvPowerSchedule(),
             officialAppBrowserRotation = officialConfig?.let { config ->
                 OfficialAppBrowserRotation(
                     enabled = config.optBoolean("enabled"),
+                    webOnly = config.optBoolean("web_only"),
                     pageUrl = config.optCleanString("page_url"),
                     rotationTrigger = config.optCleanString("rotation_trigger"),
                     switchIntervalSeconds = config.optInt("switch_interval_seconds", 300),
@@ -400,6 +451,18 @@ class TvApiClient(
             expectedElapsedMs = optLong("expected_elapsed_ms", 0L).coerceAtLeast(0L),
             resyncToken = optLong("resync_token", 0L).coerceAtLeast(0L),
             resyncReason = optCleanString("resync_reason")
+        )
+    }
+
+    private fun JSONObject.toPresentationControl(): PresentationControl {
+        return PresentationControl(
+            enabled = optBoolean("enabled", false),
+            paused = optBoolean("paused", false),
+            command = optCleanString("command"),
+            commandVersion = optInt("command_version", 0).coerceAtLeast(0),
+            commandUrl = optCleanString("command_url"),
+            playlistItemCount = optInt("playlist_item_count", 0).coerceAtLeast(0),
+            currentItemId = optLong("current_item_id", 0L).takeIf { it > 0L }
         )
     }
 

@@ -2,6 +2,7 @@ require "digest"
 require "securerandom"
 
 class DesktopAgent < ApplicationRecord
+  belongs_to :desktop_group, optional: true
   ONLINE_WINDOW = 5.minutes
 
   attr_reader :plain_token
