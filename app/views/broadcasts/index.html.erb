@@ -46,8 +46,8 @@
               title="Ajuda da visualização">
         <i class="far fa-circle-question" aria-hidden="true"></i>
       </button>
-      <button type="button" class="broadcasts-view-switch__btn" data-view-target="table" data-toolbar-help-tip="Mostra as TVs em uma tabela compacta, com os principais dados em colunas."><%= I18n.t("Table") %></button>
-      <button type="button" class="broadcasts-view-switch__btn is-active" data-view-target="cards" data-toolbar-help-tip="Mostra cada TV em um card visual com prévia, estado e controles.">Cards</button>
+      <button type="button" class="broadcasts-view-switch__btn" data-view-target="table" data-toolbar-help-tip="Mostra as TVs em uma tabela compacta, com os principais dados em colunas."><span class="material-symbols-rounded" aria-hidden="true">table_rows</span><span><%= I18n.t("Table") %></span></button>
+      <button type="button" class="broadcasts-view-switch__btn is-active" data-view-target="cards" data-toolbar-help-tip="Mostra cada TV em um card visual com prévia, estado e controles."><span class="material-symbols-rounded" aria-hidden="true">grid_view</span><span>Cards</span></button>
     </div>
   </section>
 
@@ -278,6 +278,12 @@
                 <div class="broadcasts-table__device">
                   <span class="broadcasts-table__pill"><%= broadcast.tv_device_type_label %></span>
                   <span class="broadcasts-table__muted"><%= broadcast.playback_app_type_official_app? ? I18n.t("Official") : I18n.t("Generic") %></span>
+                  <% if broadcast.playback_app_type_official_app? %>
+                    <span class="broadcast-app-version broadcast-app-version--<%= broadcast.official_app_version_known? ? (broadcast.official_app_outdated? ? 'outdated' : 'current') : 'unknown' %>">
+                      <i class="fas <%= broadcast.official_app_version_known? ? (broadcast.official_app_outdated? ? 'fa-exclamation-circle' : 'fa-check-circle') : 'fa-question-circle' %>" aria-hidden="true"></i>
+                      <%= broadcast.app_version_name.present? ? "v#{broadcast.app_version_name}" : "Versão não informada" %>
+                    </span>
+                  <% end %>
                 </div>
               </td>
               <td>
@@ -428,6 +434,7 @@
             "empty-#{broadcast.id}-#{broadcast.updated_at.to_i}"
           end %>
         <% production_running = broadcast.effective_production_status == "running" %>
+        <% app_is_current = broadcast.official_app_version_known? && !broadcast.official_app_outdated? %>
         <article class="broadcast-card-modern" data-tv-help-card>
           <div class="broadcast-card-modern__top">
             <div>
@@ -460,9 +467,21 @@
                 <span class="broadcast-status-icon__label" data-status-label><%= tv_power_status_label %></span>
               </span>
               <% if current_user.admin? %>
-                <%= button_to toggle_presentation_mode_broadcast_path(broadcast), method: :post, form: { class: "broadcast-presentation-toggle-form" }, class: "broadcast-presentation-toggle #{'is-active' if broadcast.presentation_mode_enabled?}", title: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação"), aria: { label: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação") } do %>
-                  <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
-                <% end %>
+                <div class="broadcast-card-modern__top-actions">
+                  <% if broadcast.playback_app_type_official_app? && broadcast.adb_device? %>
+                    <% update_app_label = if broadcast.official_app_outdated?
+                                            "Atualizar app para v#{Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME}"
+                                          elsif app_is_current
+                                            "App atualizado · v#{Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME}"
+                                          else
+                                            "Instalar/atualizar app para v#{Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME}"
+                                          end %>
+                    <%= button_to safe_join([tag.i("", class: "fas fa-cloud-download-alt", aria: { hidden: true })]), update_official_app_broadcast_path(broadcast), method: :post, disabled: app_is_current, form: { class: "broadcast-app-update-top-form", data: { turbo_confirm: "Atualizar o Aponti TV em #{broadcast.name}? A TV precisa estar ligada e com o ADB autorizado." } }, class: "broadcast-app-update-top #{app_is_current ? 'is-current' : 'is-needed'}", title: update_app_label, aria: { label: update_app_label } %>
+                  <% end %>
+                  <%= button_to toggle_presentation_mode_broadcast_path(broadcast), method: :post, form: { class: "broadcast-presentation-toggle-form" }, class: "broadcast-presentation-toggle #{'is-active' if broadcast.presentation_mode_enabled?}", title: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação"), aria: { label: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação") } do %>
+                    <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                  <% end %>
+                </div>
               <% end %>
             </div>
           </div>
@@ -513,6 +532,21 @@
 
           <dl class="broadcast-card-modern__meta">
             <div><dt>App</dt><dd><%= broadcast.playback_app_type_official_app? ? I18n.t("Official") : I18n.t("Generic") %></dd></div>
+            <% if broadcast.playback_app_type_official_app? %>
+              <div class="broadcast-card-modern__version">
+                <dt>Versão instalada</dt>
+                <dd>
+                  <span class="broadcast-app-version broadcast-app-version--<%= broadcast.official_app_version_known? ? (broadcast.official_app_outdated? ? 'outdated' : 'current') : 'unknown' %>" title="Versão atual disponível: <%= Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME %>">
+                    <i class="fas <%= broadcast.official_app_version_known? ? (broadcast.official_app_outdated? ? 'fa-exclamation-circle' : 'fa-check-circle') : 'fa-question-circle' %>" aria-hidden="true"></i>
+                    <% if broadcast.official_app_version_known? %>
+                      v<%= broadcast.app_version_name.presence || broadcast.app_version_code %> · <%= broadcast.official_app_outdated? ? "Desatualizada" : "Atualizada" %>
+                    <% else %>
+                      Não informada
+                    <% end %>
+                  </span>
+                </dd>
+              </div>
+            <% end %>
             <div><dt>TV</dt><dd><%= broadcast.tv_device_type_label %></dd></div>
             <div><dt>IP</dt><dd><%= broadcast.tv_ip.presence || "-" %></dd></div>
             <div><dt><%= I18n.t("Power") %></dt><dd><%= broadcast.control_method_summary %></dd></div>
@@ -1425,7 +1459,9 @@
           <p><%= I18n.t("PublishPlaylistDescription") %></p>
         </div>
         <button type="button" class="broadcast-publish-modal__help" data-publish-help-open aria-label="Ajuda para publicar playlist" title="Como publicar uma playlist"><i class="far fa-circle-question" aria-hidden="true"></i></button>
-        <button type="button" class="broadcast-preview-modal__close" data-publish-close aria-label="<%= I18n.t("Close") %>"><%= I18n.t("Close") %></button>
+        <button type="button" class="broadcast-material-icon-button broadcast-publish-modal__close" data-publish-close title="<%= I18n.t("Close") %>" aria-label="<%= I18n.t("Close") %>">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
       </div>
 
       <%= form_with url: publish_video_broadcasts_path, method: :post, local: true, multipart: true, class: "broadcast-publish-form" do %>
@@ -1433,13 +1469,16 @@
           <section class="broadcast-publish-section" data-publish-help-tip="Escolha uma playlist existente. Você também pode criar uma nova ou editar seu conteúdo antes de publicar.">
             <div class="broadcast-publish-section__title">
               <h3>Playlists</h3>
-              <button type="button" class="broadcast-publish-link" data-playlist-new><%= I18n.t("CreatePlaylist") %></button>
+              <button type="button" class="broadcast-material-icon-button" data-playlist-new title="<%= I18n.t("CreatePlaylist") %>" aria-label="<%= I18n.t("CreatePlaylist") %>">
+                <span class="material-symbols-rounded" aria-hidden="true">playlist_add</span>
+              </button>
             </div>
             <div class="broadcast-playlist-list" data-playlist-list>
               <% if @saved_playlists.any? %>
                 <% @saved_playlists.each do |playlist| %>
                   <label class="broadcast-playlist-option" data-playlist-option-id="<%= playlist.id %>">
                     <%= radio_button_tag :playlist_id, playlist.id, false, data: { playlist_choice: true } %>
+                    <span class="broadcast-material-radio" aria-hidden="true"><span></span></span>
                     <span class="broadcast-playlist-option__thumbs" aria-hidden="true">
                       <% playlist.items.first(4).each do |item| %>
                         <% blob = item.media_blob %>
@@ -1465,7 +1504,16 @@
                       <strong><%= playlist.name %></strong>
                       <small><%= I18n.t("MediaCount", count: playlist.item_count) %> - <%= playlist.transition_style %><%= playlist.sync_enabled? ? " - #{I18n.t("Synced", default: "Sincronizada")}" : "" %> - <%= playlist.updated_at.strftime("%d/%m/%Y %H:%M") %></small>
                     </span>
-                    <button type="button" class="broadcast-publish-link" data-playlist-edit="<%= playlist.id %>"><%= I18n.t("Edit") %></button>
+                    <span class="broadcast-playlist-option__actions">
+                      <button type="button" class="broadcast-playlist-material-action" data-playlist-edit="<%= playlist.id %>" title="<%= I18n.t("EditPlaylist") %>" aria-label="<%= I18n.t("EditPlaylist") %>">
+                        <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                      </button>
+                      <% unless playlist.in_production? %>
+                        <button type="button" class="broadcast-playlist-material-action broadcast-playlist-material-action--danger" data-playlist-delete="<%= playlist.id %>" data-playlist-name="<%= playlist.name %>" title="<%= I18n.t("DeletePlaylist") %>" aria-label="<%= I18n.t("DeletePlaylist") %>">
+                          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                        </button>
+                      <% end %>
+                    </span>
                   </label>
                 <% end %>
               <% else %>
@@ -1477,16 +1525,23 @@
           <section class="broadcast-publish-section" data-publish-help-tip="Marque uma ou várias TVs que receberão a playlist. Use Selecionar todas para publicar em todos os aparelhos.">
             <div class="broadcast-publish-section__title">
               <h3>TVs</h3>
-              <button type="button" class="broadcast-publish-link" data-publish-select-all><%= I18n.t("SelectAll") %></button>
+              <button type="button" class="broadcast-material-icon-button" data-publish-select-all title="<%= I18n.t("SelectAll") %>" aria-label="<%= I18n.t("SelectAll") %>">
+                <span class="material-symbols-rounded" data-select-all-icon aria-hidden="true">select_all</span>
+              </button>
             </div>
             <div class="broadcast-publish-tvs">
               <% @broadcasts.each do |broadcast| %>
                 <label class="broadcast-publish-tv">
                   <%= check_box_tag "broadcast_ids[]", broadcast.id, false %>
-                  <span>
-                    <strong><%= broadcast.name %></strong>
-                    <small><%= broadcast.status == "running" ? "Online" : "Offline" %> - <%= broadcast.playback_app_type_official_app? ? "App oficial" : "App generico" %></small>
+                  <span class="broadcast-material-checkbox" aria-hidden="true"><span class="material-symbols-rounded">check</span></span>
+                  <span class="broadcast-publish-tv__device" aria-hidden="true">
+                    <span class="material-symbols-rounded">tv</span>
                   </span>
+                  <span class="broadcast-publish-tv__copy">
+                    <strong><%= broadcast.name %></strong>
+                    <small><span class="broadcast-publish-tv__status broadcast-publish-tv__status--<%= broadcast.status == "running" ? "online" : "offline" %>"></span><%= broadcast.status == "running" ? "Online" : "Offline" %> · <%= broadcast.playback_app_type_official_app? ? "App oficial" : "App genérico" %></small>
+                  </span>
+                  <span class="material-symbols-rounded broadcast-publish-tv__arrow" aria-hidden="true">chevron_right</span>
                 </label>
               <% end %>
             </div>
@@ -1495,8 +1550,14 @@
 
         <div class="broadcast-publish-modal__footer">
           <span class="broadcast-publish-requirements" data-publish-requirements>Selecione uma playlist e pelo menos uma TV.</span>
-          <button type="button" class="broadcast-preview-modal__close" data-publish-close data-publish-help-tip="Cancela a operação e fecha o modal sem publicar nenhuma alteração."><%= I18n.t("Cancel") %></button>
-          <%= submit_tag I18n.t("PublishPlaylistToTvs"), class: "broadcasts-toolbar__btn broadcasts-toolbar__btn--primary", disabled: true, data: { publish_submit: true, publish_help_tip: "Confirme para enviar a playlist selecionada às TVs marcadas e atualizar a reprodução." } %>
+          <button type="button" class="broadcast-material-footer-button" data-publish-close data-publish-help-tip="Cancela a operação e fecha o modal sem publicar nenhuma alteração.">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            <span><%= I18n.t("Cancel") %></span>
+          </button>
+          <button type="submit" class="broadcast-material-footer-button broadcast-material-footer-button--primary" disabled data-publish-submit data-publish-help-tip="Confirme para enviar a playlist selecionada às TVs marcadas e atualizar a reprodução.">
+            <span class="material-symbols-rounded" aria-hidden="true">cast</span>
+            <span><%= I18n.t("PublishPlaylistToTvs") %></span>
+          </button>
         </div>
       <% end %>
     </div>
@@ -1521,22 +1582,24 @@
       function show(targets){overlay.hidden=false;dialog.classList.add('is-publish-help-active');host.replaceChildren();bubbles=[...targets].map((target,index)=>{const bubble=document.createElement('article');bubble.className='publish-help-callout';bubble.innerHTML=`<b>${index+1}</b><p>${target.dataset.publishHelpTip}</p>`;host.appendChild(bubble);return{target,bubble}});requestAnimationFrame(()=>requestAnimationFrame(position))}
       open.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(overlay.hidden){open.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('[data-publish-help-tip]'))}else close()});footerOpen?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(overlay.hidden){footerOpen.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('.broadcast-publish-modal__footer [data-publish-help-tip]'))}else close()});overlay.querySelector('.publish-help-overlay__shade').addEventListener('click',close);modal.querySelectorAll('[data-publish-close]').forEach(button=>button.addEventListener('click',close));window.addEventListener('resize',position);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!overlay.hidden)close()});if(new URLSearchParams(location.search).get('help')==='publish_modal'){modal.hidden=false;open.setAttribute('aria-pressed','true');show(dialog.querySelectorAll('[data-publish-help-tip]'))}}
     document.addEventListener('DOMContentLoaded',setupPublishHelp);document.addEventListener('turbo:load',setupPublishHelp);if(document.readyState!=='loading')setupPublishHelp();
+    function setupPublishDialogWheel(){const dialog=document.querySelector('[data-publish-modal] .broadcast-publish-modal__dialog'),body=dialog?.querySelector('.broadcast-publish-modal__body');if(!dialog||!body||dialog.dataset.wheelBound==='true')return;dialog.dataset.wheelBound='true';dialog.addEventListener('wheel',function(event){if(body.contains(event.target))return;event.preventDefault();body.scrollBy({top:event.deltaY,left:0,behavior:'auto'})},{passive:false})}
+    document.addEventListener('DOMContentLoaded',setupPublishDialogWheel);document.addEventListener('turbo:load',setupPublishDialogWheel);if(document.readyState!=='loading')setupPublishDialogWheel();
   </script>
 
-  <div class="broadcast-publish-modal broadcast-playlist-editor-modal" data-playlist-editor-modal hidden>
+  <div class="broadcast-publish-modal broadcast-playlist-editor-modal" data-playlist-editor-modal data-playlist-editor-owner="broadcast-index" hidden>
     <div class="broadcast-publish-modal__backdrop" data-playlist-editor-close></div>
     <div class="broadcast-publish-modal__dialog broadcast-playlist-editor-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="playlist-editor-title">
       <div class="broadcast-publish-modal__header broadcast-playlist-editor__header">
         <div class="broadcast-playlist-editor__title">
-          <span class="broadcast-playlist-editor__mark"><i class="fas fa-film" aria-hidden="true"></i></span>
+          <span class="broadcast-playlist-editor__mark"><span class="material-symbols-rounded" aria-hidden="true">video_library</span></span>
           <div>
             <strong id="playlist-editor-title" data-playlist-editor-title><%= I18n.t("CreatePlaylist") %></strong>
             <p><%= I18n.t("PlaylistEditorDescription") %></p>
           </div>
         </div>
         <button type="button" class="broadcast-publish-modal__help" data-playlist-editor-help-open aria-label="Ajuda do editor de playlist" title="Como usar o editor de playlist"><i class="far fa-circle-question" aria-hidden="true"></i></button>
-        <button type="button" class="broadcast-playlist-icon-btn" data-playlist-editor-close aria-label="<%= I18n.t("Close") %>" title="<%= I18n.t("Close") %>">
-          <i class="fas fa-times" aria-hidden="true"></i>
+        <button type="button" class="broadcast-material-icon-button broadcast-publish-modal__close" data-playlist-editor-close aria-label="<%= I18n.t("Close") %>" title="<%= I18n.t("Close") %>">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
         </button>
       </div>
 
@@ -1544,12 +1607,12 @@
         <input type="hidden" name="id" data-playlist-editor-id>
         <div class="broadcast-publish-modal__body">
           <section class="broadcast-publish-section broadcast-playlist-editor__settings" data-playlist-editor-help-tip="Defina o nome, duração das imagens, comportamento dos vídeos, transição e sincronização entre TVs.">
-            <h3><i class="fas fa-sliders-h" aria-hidden="true"></i> <%= I18n.t("PlaylistSettings") %></h3>
+            <h3><span class="material-symbols-rounded" aria-hidden="true">tune</span> <%= I18n.t("PlaylistSettings") %></h3>
             <div class="broadcast-playlist-editor__settings-grid">
               <label class="broadcast-playlist-field" data-playlist-settings-help-tip="Dê um nome claro para identificar esta playlist na hora de publicar.">
                 <span><%= I18n.t("PlaylistName") %></span>
                 <div class="broadcast-playlist-input-wrap">
-                  <i class="far fa-file-video" aria-hidden="true"></i>
+                  <span class="material-symbols-rounded" aria-hidden="true">video_file</span>
                   <input type="text" name="name" data-playlist-name value="<%= I18n.t("NewPlaylist") %>" required>
                 </div>
               </label>
@@ -1579,12 +1642,12 @@
                   <button type="button" class="broadcast-transition-picker__trigger" data-transition-trigger aria-haspopup="listbox" aria-expanded="false">
                     <img src="<%= asset_path('effect_icons/fade.png') %>" alt="" data-transition-current-icon>
                     <span data-transition-current-label>Fade</span>
-                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                    <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
                   </button>
                   <div class="broadcast-transition-picker__menu" data-transition-menu role="listbox" hidden>
                     <% [["fade", "Fade", "fade.png"], ["slide", "Slide", "slide.png"], ["blur", "Blur", "blur.png"], ["zoom", "Zoom", "zoom.png"], ["wipe", "Wipe vertical", "wipe_vertical.png"], ["push", "Push lateral", "push_lateral.png"], ["flip", "Flip", "flip.png"], ["cross_zoom", "Cross zoom", "cross_zoom.png"], ["aponti_smooth", "Aponti Smooth", "aponti_smooth.png"], ["none", "Sem efeito", "sem_efeito.png"]].each do |value, label, icon| %>
                       <button type="button" class="broadcast-transition-picker__option" data-transition-option="<%= value %>" data-transition-icon="<%= asset_path("effect_icons/#{icon}") %>" role="option">
-                        <img src="<%= asset_path("effect_icons/#{icon}") %>" alt=""><span><%= label %></span><i class="fas fa-check" aria-hidden="true"></i>
+                        <img src="<%= asset_path("effect_icons/#{icon}") %>" alt=""><span><%= label %></span><span class="material-symbols-rounded" aria-hidden="true">check</span>
                       </button>
                     <% end %>
                   </div>
@@ -1601,7 +1664,7 @@
                 <span><%= I18n.t("SyncPlaylistTvs") %></span>
                 <label class="broadcast-playlist-sync-toggle">
                   <input type="checkbox" name="sync_enabled" data-playlist-sync-enabled>
-                  <span><i class="fas fa-sync-alt" aria-hidden="true"></i></span>
+                  <span><span class="material-symbols-rounded" aria-hidden="true">sync</span></span>
                   <strong><%= I18n.t("SamePlaylistSameScreen") %></strong>
                 </label>
                 <small><%= I18n.t("SyncPlaylistHelp") %></small>
@@ -1611,34 +1674,34 @@
 
           <section class="broadcast-publish-section broadcast-playlist-editor__library-section" data-playlist-editor-help-tip="Escolha mídias da Biblioteca. Aqui também é possível criar vídeo, enviar arquivos, alternar entre disponíveis e selecionados ou limpar a seleção.">
             <div class="broadcast-publish-section__title">
-              <h3><i class="fas fa-folder-open" aria-hidden="true"></i> <%= I18n.t("Library") %></h3>
+              <h3><span class="material-symbols-rounded" aria-hidden="true">folder_open</span> <%= I18n.t("Library") %></h3>
               <div class="broadcast-publish-section__actions">
                 <%= link_to new_video_editor_path, class: "broadcast-playlist-icon-btn", title: I18n.t("CreateVideo"), aria: { label: I18n.t("CreateVideo") }, data: { action_label: I18n.t("CreateVideo") } do %>
-                  <i class="fas fa-video" aria-hidden="true"></i>
+                  <span class="material-symbols-rounded" aria-hidden="true">videocam</span>
                 <% end %>
                 <label class="broadcast-playlist-icon-btn broadcast-publish-upload-control" title="<%= I18n.t("UploadMedia") %>" aria-label="<%= I18n.t("UploadMedia") %>" data-action-label="<%= I18n.t("UploadMedia") %>">
-                  <i class="fas fa-upload" aria-hidden="true"></i>
+                  <span class="material-symbols-rounded" aria-hidden="true">upload</span>
                   <%= file_field_tag "playlist_media_files[]", accept: "video/*,image/*", multiple: true, data: { playlist_upload: true } %>
                 </label>
                 <button type="button" class="broadcast-playlist-icon-btn" data-playlist-clear-items data-action-label="<%= I18n.t("ClearSelection") %>" title="<%= I18n.t("ClearSelection") %>" aria-label="<%= I18n.t("ClearSelection") %>">
-                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
                 </button>
               </div>
             </div>
             <div class="broadcast-playlist-editor__tabs" role="tablist" aria-label="<%= I18n.t("PlaylistItems") %>">
               <button type="button" class="broadcast-playlist-editor__tab is-active" data-playlist-library-tab="library" role="tab" aria-selected="true">
-                <i class="fas fa-folder-open" aria-hidden="true"></i>
+                <span class="material-symbols-rounded" aria-hidden="true">folder_open</span>
                 <span><%= I18n.t("Library") %></span>
               </button>
               <button type="button" class="broadcast-playlist-editor__tab" data-playlist-library-tab="selected" role="tab" aria-selected="false">
-                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
                 <span><%= I18n.t("SelectedItems") %></span>
                 <small data-playlist-selected-count>0</small>
               </button>
             </div>
             <div class="broadcast-publish-library broadcast-publish-library--selected" data-playlist-library-panel="selected" data-playlist-selected-library hidden>
               <div class="broadcast-playlist-order__empty">
-                <i class="far fa-file-video" aria-hidden="true"></i>
+                <span class="material-symbols-rounded" aria-hidden="true">video_file</span>
                 <strong><%= I18n.t("PlaylistEmpty") %></strong>
                 <span><%= I18n.t("SelectLibraryItemsToStart") %></span>
               </div>
@@ -1665,31 +1728,42 @@
 
           <section class="broadcast-publish-section broadcast-playlist-editor__order-section" data-playlist-editor-help-tip="Organize a sequência de exibição arrastando os itens selecionados e remova o que não deve fazer parte da playlist.">
             <div class="broadcast-publish-section__title">
-              <h3><i class="fas fa-list-ul" aria-hidden="true"></i> <%= I18n.t("PlaylistOrder") %></h3>
+              <h3><span class="material-symbols-rounded" aria-hidden="true">format_list_numbered</span> <%= I18n.t("PlaylistOrder") %></h3>
               <span class="broadcast-playlist-editor__pill" data-playlist-order-count><%= I18n.t("ItemsCount", count: 0) %></span>
             </div>
             <div class="broadcast-playlist-order" data-playlist-order>
               <div class="broadcast-playlist-order__empty" data-playlist-order-empty>
-                <i class="far fa-file-video" aria-hidden="true"></i>
+                <span class="material-symbols-rounded" aria-hidden="true">video_file</span>
                 <strong><%= I18n.t("PlaylistEmpty") %></strong>
                 <span><%= I18n.t("SelectLibraryItemsToStart") %></span>
               </div>
             </div>
             <button type="button" class="broadcast-playlist-clear-order" data-playlist-clear-items title="<%= I18n.t("ClearOrder") %>">
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
               <span><%= I18n.t("ClearOrder") %></span>
             </button>
           </section>
         </div>
 
         <div class="broadcast-publish-modal__footer">
-          <button type="button" class="broadcast-preview-modal__close" data-playlist-editor-close data-playlist-editor-help-tip="Fecha o editor e descarta as alterações que ainda não foram salvas."><%= I18n.t("Cancel") %></button>
-          <button type="submit" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary" data-playlist-editor-help-tip="Salva o nome, as configurações, as mídias selecionadas e a ordem da playlist.">
-            <i class="fas fa-save" aria-hidden="true"></i>
+          <button type="button" class="broadcast-material-footer-button" data-playlist-editor-close data-playlist-editor-help-tip="Fecha o editor e descarta as alterações que ainda não foram salvas."><span class="material-symbols-rounded" aria-hidden="true">close</span><span><%= I18n.t("Cancel") %></span></button>
+          <button type="submit" class="broadcast-material-footer-button broadcast-material-footer-button--primary" data-playlist-editor-help-tip="Salva o nome, as configurações, as mídias selecionadas e a ordem da playlist.">
+            <span class="material-symbols-rounded" aria-hidden="true">save</span>
             <span><%= I18n.t("SavePlaylist") %></span>
           </button>
         </div>
       </form>
+      <div class="broadcast-media-upload-loading" data-playlist-upload-loading hidden role="status" aria-live="polite" aria-busy="true">
+        <div class="broadcast-media-upload-loading__panel">
+          <span class="broadcast-media-upload-loading__spinner" aria-hidden="true"></span>
+          <strong>Enviando vídeo...</strong>
+          <span data-playlist-upload-filename>Preparando arquivo</span>
+          <div class="broadcast-media-upload-loading__track" aria-hidden="true">
+            <span data-playlist-upload-progress></span>
+          </div>
+          <small data-playlist-upload-percent>0%</small>
+        </div>
+      </div>
     </div>
   </div>
   <div class="publish-help-overlay" data-playlist-editor-help-overlay hidden>
@@ -1755,8 +1829,8 @@
         <strong id="broadcast-power-schedule-title" data-power-schedule-title><%= I18n.t("PowerSchedule", default: "Agendamento de energia da TV") %></strong>
         <p data-power-schedule-subtitle><%= I18n.t("SetPowerSchedule", default: "Defina os horarios e dias de energia.") %></p>
       </div>
-      <button type="button" class="broadcast-playlist-icon-btn" data-power-schedule-close aria-label="<%= I18n.t("Cancel") %>" title="<%= I18n.t("Cancel") %>">
-        <i class="fas fa-times" aria-hidden="true"></i>
+      <button type="button" class="broadcast-material-icon-button broadcast-power-schedule-modal__close" data-power-schedule-close aria-label="<%= I18n.t("Close") %>" title="<%= I18n.t("Close") %>">
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
       </button>
     </div>
 
@@ -1782,12 +1856,51 @@
           </label>
         <% end %>
       </fieldset>
+
+      <section class="broadcast-power-schedule-modal__current" data-power-schedule-current hidden>
+        <div class="broadcast-power-schedule-modal__current-heading">
+          <span class="material-symbols-rounded" aria-hidden="true">event_note</span>
+          <div>
+            <strong>Agendamentos atuais</strong>
+            <small>Configuração de energia registrada em cada TV</small>
+          </div>
+        </div>
+
+        <% scheduled_broadcasts = @broadcasts.select(&:tv_power_schedule_configured?) %>
+        <% if scheduled_broadcasts.any? %>
+          <div class="broadcast-power-schedule-modal__current-list">
+            <% scheduled_broadcasts.each do |broadcast| %>
+              <% disabled_days = broadcast.send(:normalized_tv_disabled_weekdays) %>
+              <% weekday_labels = { "0" => "Dom", "1" => "Seg", "2" => "Ter", "3" => "Qua", "4" => "Qui", "5" => "Sex", "6" => "Sáb" } %>
+              <article class="broadcast-power-schedule-modal__current-item">
+                <div class="broadcast-power-schedule-modal__current-name">
+                  <span class="material-symbols-rounded" aria-hidden="true">tv</span>
+                  <strong><%= broadcast.name %></strong>
+                </div>
+                <div class="broadcast-power-schedule-modal__current-values">
+                  <span><span class="material-symbols-rounded" aria-hidden="true">power_settings_new</span> Liga <strong><%= broadcast.tv_power_on_time_input_value.presence || "--:--" %></strong></span>
+                  <span><span class="material-symbols-rounded" aria-hidden="true">mode_off_on</span> Desliga <strong><%= broadcast.tv_power_off_time_input_value.presence || "--:--" %></strong></span>
+                  <span><span class="material-symbols-rounded" aria-hidden="true">event_busy</span> Desligada: <strong><%= disabled_days.any? ? disabled_days.map { |day| weekday_labels[day] }.compact.join(", ") : "Nenhum dia" %></strong></span>
+                </div>
+              </article>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="broadcast-power-schedule-modal__current-empty">
+            <span class="material-symbols-rounded" aria-hidden="true">event_available</span>
+            <span>Nenhuma TV possui agendamento configurado.</span>
+          </div>
+        <% end %>
+      </section>
     </div>
 
     <div class="broadcast-power-schedule-modal__footer">
-      <button type="button" class="broadcast-preview-modal__close" data-power-schedule-close><%= I18n.t("Cancel") %></button>
-      <button type="submit" class="broadcasts-toolbar__btn broadcasts-toolbar__btn--primary">
-        <i class="fas fa-check" aria-hidden="true"></i>
+      <button type="button" class="broadcast-material-footer-button" data-power-schedule-close>
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        <span><%= I18n.t("Cancel") %></span>
+      </button>
+      <button type="submit" class="broadcast-material-footer-button broadcast-material-footer-button--primary">
+        <span class="material-symbols-rounded" aria-hidden="true">save</span>
         <span><%= I18n.t("Save", default: "Salvar") %></span>
       </button>
     </div>
@@ -1840,11 +1953,16 @@
     const powerScheduleOn = document.querySelector("[data-power-schedule-on-input]");
     const powerScheduleOff = document.querySelector("[data-power-schedule-off-input]");
     const powerScheduleDays = Array.from(document.querySelectorAll("[data-power-schedule-day]"));
+    const powerScheduleCurrent = document.querySelector("[data-power-schedule-current]");
     const playlistEditorModal = document.querySelector("[data-playlist-editor-modal]");
     const playlistEditorForm = document.querySelector("[data-playlist-editor-form]");
     const playlistList = document.querySelector("[data-playlist-list]");
     const playlistLibrary = document.querySelector("[data-playlist-library]");
     const playlistUpload = document.querySelector("[data-playlist-upload]");
+    const playlistUploadLoading = document.querySelector("[data-playlist-upload-loading]");
+    const playlistUploadFilename = document.querySelector("[data-playlist-upload-filename]");
+    const playlistUploadProgress = document.querySelector("[data-playlist-upload-progress]");
+    const playlistUploadPercent = document.querySelector("[data-playlist-upload-percent]");
     const playlistOrder = document.querySelector("[data-playlist-order]");
     const playlistOrderCount = document.querySelector("[data-playlist-order-count]");
     const playlistLibraryTabs = Array.from(document.querySelectorAll("[data-playlist-library-tab]"));
@@ -2209,6 +2327,8 @@
           : "Ajustar horario de ligar, desligar e dias para " + (button.dataset.powerScheduleName || "TV") + ".";
       }
 
+      if (powerScheduleCurrent) powerScheduleCurrent.hidden = scope !== "all";
+
       powerScheduleModal.hidden = false;
       window.setTimeout(function() {
         if (powerScheduleOn) powerScheduleOn.focus();
@@ -2451,15 +2571,26 @@
     }
 
     function renderPlaylistOption(playlist, checked) {
+      const deleteButton = playlist.deletable ? `
+        <button type="button" class="broadcast-playlist-material-action broadcast-playlist-material-action--danger" data-playlist-delete="${playlist.id}" data-playlist-name="${escapeHtml(playlist.name)}" title="<%= j I18n.t("DeletePlaylist") %>" aria-label="<%= j I18n.t("DeletePlaylist") %>">
+          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+        </button>
+      ` : "";
       return `
         <label class="broadcast-playlist-option" data-playlist-option-id="${playlist.id}">
           <input type="radio" name="playlist_id" value="${playlist.id}" data-playlist-choice ${checked ? "checked" : ""}>
+          <span class="broadcast-material-radio" aria-hidden="true"><span></span></span>
           ${renderPlaylistThumbnails(playlist)}
           <span>
             <strong>${escapeHtml(playlist.name)}</strong>
             <small>${playlist.item_count || 0} ${playlist.item_count === 1 ? "<%= j I18n.t("MediaSingular") %>" : "<%= j I18n.t("MediaPlural") %>"} - ${playlist.video_duration_mode === "video_end" ? "<%= j I18n.t("VideoUntilEnd") %>" : "<%= j I18n.t("TimedVideo") %>"}${playlist.sync_enabled ? " - <%= j I18n.t("Synced", default: "Sincronizada") %>" : ""} - ${escapeHtml(playlist.updated_at_label)}</small>
           </span>
-          <button type="button" class="broadcast-publish-link" data-playlist-edit="${playlist.id}"><%= j I18n.t("Edit") %></button>
+          <span class="broadcast-playlist-option__actions">
+            <button type="button" class="broadcast-playlist-material-action" data-playlist-edit="${playlist.id}" title="<%= j I18n.t("EditPlaylist") %>" aria-label="<%= j I18n.t("EditPlaylist") %>">
+              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+            </button>
+            ${deleteButton}
+          </span>
         </label>
       `;
     }
@@ -2908,6 +3039,35 @@
     });
 
     document.addEventListener("click", function(event) {
+      const deleteButton = event.target.closest("[data-playlist-delete]");
+      if (deleteButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const playlistId = deleteButton.dataset.playlistDelete;
+        const playlistName = deleteButton.dataset.playlistName || "";
+        const confirmation = <%= raw I18n.t("ConfirmDeletePlaylist", name: "__PLAYLIST_NAME__").to_json %>.replace("__PLAYLIST_NAME__", playlistName);
+        if (!window.confirm(confirmation)) return;
+
+        deleteButton.disabled = true;
+        fetch(`/broadcast_playlists/${playlistId}.json`, {
+          method: "DELETE",
+          headers: { "Accept": "application/json", "X-CSRF-Token": csrfToken },
+          credentials: "same-origin"
+        }).then(async function(response) {
+          if (response.ok) {
+            await refreshPlaylistList(null);
+            return;
+          }
+
+          const payload = await response.json().catch(function() { return {}; });
+          throw new Error(payload.error || "<%= j I18n.t("PlaylistDeleteFailed") %>");
+        }).catch(function(error) {
+          deleteButton.disabled = false;
+          window.alert(error.message);
+        });
+        return;
+      }
+
       const editButton = event.target.closest("[data-playlist-edit]");
       if (!editButton) return;
 
@@ -2944,24 +3104,53 @@
       playlistUpload.addEventListener("change", function() {
         if (playlistUpload.files.length === 0) return;
 
+        const files = Array.from(playlistUpload.files);
         const formData = new FormData();
-        Array.from(playlistUpload.files).forEach(function(file) {
+        files.forEach(function(file) {
           formData.append("media_files[]", file);
         });
 
-        fetch("/broadcast_playlists/upload_media.json", {
-          method: "POST",
-          headers: { "X-CSRF-Token": csrfToken },
-          body: formData
+        if (playlistUploadFilename) {
+          playlistUploadFilename.textContent = files.length === 1 ? files[0].name : `${files.length} arquivos selecionados`;
+        }
+        if (playlistUploadProgress) playlistUploadProgress.style.width = "0%";
+        if (playlistUploadPercent) playlistUploadPercent.textContent = "0%";
+        if (playlistUploadLoading) playlistUploadLoading.hidden = false;
+        if (playlistEditorModal) playlistEditorModal.classList.add("is-uploading");
+
+        new Promise(function(resolve, reject) {
+          const request = new XMLHttpRequest();
+          request.open("POST", "/broadcast_playlists/upload_media.json");
+          request.setRequestHeader("X-CSRF-Token", csrfToken);
+          request.responseType = "json";
+          request.upload.addEventListener("progress", function(event) {
+            if (!event.lengthComputable) return;
+            const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+            if (playlistUploadProgress) playlistUploadProgress.style.width = `${percent}%`;
+            if (playlistUploadPercent) playlistUploadPercent.textContent = `${percent}%`;
+          });
+          request.addEventListener("load", function() {
+            const data = request.response || {};
+            if (request.status >= 200 && request.status < 300) resolve(data);
+            else reject(data);
+          });
+          request.addEventListener("error", function() { reject({ error: "Falha de conexão durante o envio." }); });
+          request.send(formData);
         })
-          .then(function(response) { return response.ok ? response.json() : response.json().then(function(data) { throw data; }); })
           .then(function(mediaItems) {
+            if (playlistUploadProgress) playlistUploadProgress.style.width = "100%";
+            if (playlistUploadPercent) playlistUploadPercent.textContent = "100%";
             appendUploadedMediaToLibrary(mediaItems);
             playlistUpload.value = "";
             showNotification("<%= j I18n.t("MediaAddedToLibrary") %>");
           })
           .catch(function(error) {
             showNotification(error.error || "<%= j I18n.t("MediaUploadFailed") %>");
+          })
+          .finally(function() {
+            if (playlistUploadLoading) playlistUploadLoading.hidden = true;
+            if (playlistEditorModal) playlistEditorModal.classList.remove("is-uploading");
+            playlistUpload.value = "";
           });
       });
     }
@@ -3009,7 +3198,13 @@
         const checkboxes = document.querySelectorAll(".broadcast-publish-tv input[type='checkbox']");
         const shouldCheck = Array.from(checkboxes).some((checkbox) => !checkbox.checked);
         checkboxes.forEach((checkbox) => { checkbox.checked = shouldCheck; });
-        button.textContent = shouldCheck ? "<%= j I18n.t("ClearSelection") %>" : "<%= j I18n.t("SelectAll") %>";
+        const label = button.querySelector("[data-select-all-label]");
+        const icon = button.querySelector("[data-select-all-icon]");
+        const actionLabel = shouldCheck ? "<%= j I18n.t("ClearSelection") %>" : "<%= j I18n.t("SelectAll") %>";
+        if (label) label.textContent = actionLabel;
+        if (icon) icon.textContent = shouldCheck ? "deselect" : "select_all";
+        button.title = actionLabel;
+        button.setAttribute("aria-label", actionLabel);
         updatePublishAvailability();
       });
     });
@@ -5121,21 +5316,25 @@ body.theme-dark .broadcasts-panel--table {
   }
 
   [data-publish-modal] .broadcast-publish-modal__body {
-    grid-template-rows: minmax(0, 1fr);
-    align-items: stretch;
+    grid-template-rows: auto;
+    align-items: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 
   [data-publish-modal] .broadcast-publish-section,
   [data-publish-modal] .broadcast-publish-section:nth-child(2) {
     grid-row: auto;
-    height: 100%;
+    height: auto;
     min-height: 0;
   }
 
   [data-publish-modal] .broadcast-playlist-list,
   [data-publish-modal] .broadcast-publish-tvs {
     max-height: none;
-    height: calc(100% - 34px);
+    height: auto;
+    overflow: visible;
   }
 
   [data-publish-modal] .broadcast-publish-tvs {
@@ -5168,6 +5367,135 @@ body.theme-dark .broadcasts-panel--table {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+  }
+
+  .material-symbols-rounded {
+    font-family: "Material Symbols Rounded";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "liga";
+  }
+
+  .broadcast-material-button {
+    min-height: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 20px;
+    color: #171717;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .42);
+    transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+
+  .broadcast-material-button--filled {
+    background: #f1f1f1;
+  }
+
+  .broadcast-material-button--tonal {
+    color: #f2f2f2;
+    background: rgba(255, 255, 255, .11);
+    border: 1px solid rgba(255, 255, 255, .14);
+  }
+
+  .broadcast-material-button:hover,
+  .broadcast-material-button:focus-visible {
+    color: #111;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .65);
+    transform: translateY(-1px);
+    outline: 0;
+  }
+
+  .broadcast-material-icon-button {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, .09);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .08);
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+
+  .broadcast-material-icon-button:hover,
+  .broadcast-material-icon-button:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, .18);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 255, 255, .12);
+    transform: translateY(-1px);
+    outline: 0;
+  }
+
+  .broadcast-material-icon-button:active {
+    background: rgba(255, 255, 255, .13);
+    transform: translateY(0) scale(.96);
+  }
+
+  .broadcast-publish-modal__close {
+    margin-left: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .broadcast-material-footer-button {
+    min-height: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 10px;
+    color: #f1f1f1;
+    background: rgba(255, 255, 255, .09);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .09);
+    transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+
+  .broadcast-material-footer-button .material-symbols-rounded {
+    font-size: 19px;
+  }
+
+  .broadcast-material-footer-button--primary {
+    color: #171717;
+    background: #f1f1f1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .7);
+  }
+
+  .broadcast-material-footer-button:hover,
+  .broadcast-material-footer-button:focus-visible {
+    background: rgba(255, 255, 255, .17);
+    transform: translateY(-1px);
+    outline: 0;
+  }
+
+  .broadcast-material-footer-button--primary:hover,
+  .broadcast-material-footer-button--primary:focus-visible {
+    background: #fff;
   }
 
   .broadcast-publish-section__actions {
@@ -5270,6 +5598,147 @@ body.theme-dark .broadcasts-panel--table {
     cursor: pointer;
   }
 
+  .broadcast-publish-tv {
+    position: relative;
+    grid-template-columns: 24px 44px minmax(0, 1fr) 24px;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+
+  .broadcast-publish-tv:hover {
+    border-color: rgba(192, 132, 252, .42);
+    background: rgba(139, 47, 242, .1);
+    transform: translateY(-1px);
+  }
+
+  .broadcast-publish-tv:has(input:checked) {
+    border-color: #a855f7;
+    background: linear-gradient(135deg, rgba(139, 47, 242, .22), rgba(88, 28, 135, .12));
+    box-shadow: inset 0 0 0 1px rgba(192, 132, 252, .15), 0 6px 18px rgba(88, 28, 135, .18);
+  }
+
+  .broadcast-publish-tv > input[type="checkbox"],
+  .broadcast-playlist-option > input[type="radio"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .broadcast-material-checkbox,
+  .broadcast-material-radio {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #7d88a5;
+    background: rgba(8, 12, 26, .58);
+    transition: border-color .18s ease, background .18s ease, transform .18s ease;
+  }
+
+  .broadcast-material-checkbox {
+    border-radius: 6px;
+  }
+
+  .broadcast-material-checkbox .material-symbols-rounded {
+    color: #fff;
+    font-size: 17px;
+    font-variation-settings: "FILL" 1;
+    opacity: 0;
+    transform: scale(.55);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+
+  .broadcast-publish-tv input:checked + .broadcast-material-checkbox {
+    border-color: #f1f1f1;
+    background: #f1f1f1;
+  }
+
+  .broadcast-publish-tv input:checked + .broadcast-material-checkbox .material-symbols-rounded {
+    color: #171717;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .broadcast-material-radio {
+    border-radius: 50%;
+  }
+
+  .broadcast-material-radio > span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transform: scale(.45);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+
+  .broadcast-playlist-option input:checked + .broadcast-material-radio {
+    border-color: #f1f1f1;
+    background: #f1f1f1;
+  }
+
+  .broadcast-playlist-option input:checked + .broadcast-material-radio > span {
+    background: #171717;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .broadcast-publish-tv__device {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #cdb4ff;
+    background: rgba(139, 47, 242, .18);
+  }
+
+  .broadcast-publish-tv:has(input:checked) .broadcast-publish-tv__device {
+    color: #fff;
+    background: #8b2ff2;
+  }
+
+  .broadcast-publish-tv__copy {
+    min-width: 0;
+  }
+
+  .broadcast-publish-tv__copy small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .broadcast-publish-tv__status {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+  }
+
+  .broadcast-publish-tv__status--online {
+    background: #34d399;
+    box-shadow: 0 0 8px rgba(52, 211, 153, .72);
+  }
+
+  .broadcast-publish-tv__status--offline {
+    background: #94a3b8;
+  }
+
+  .broadcast-publish-tv__arrow {
+    color: #7d88a5;
+    font-size: 20px;
+  }
+
+  .broadcast-publish-tv:has(input:checked) .broadcast-publish-tv__arrow {
+    color: #c084fc;
+    font-variation-settings: "FILL" 1;
+  }
+
   .broadcast-publish-video {
     grid-template-columns: auto 92px minmax(0, 1fr);
     contain: layout paint style;
@@ -5319,6 +5788,56 @@ body.theme-dark .broadcasts-panel--table {
     font-weight: 800;
     cursor: pointer;
     text-decoration: none;
+  }
+
+  .broadcast-playlist-material-action {
+    width: 38px;
+    height: 38px;
+    padding: 8px;
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+    color: #e5e7eb;
+    cursor: pointer;
+    transition: transform .18s ease, color .18s ease, border-color .18s ease, background .18s ease;
+  }
+
+  .broadcast-playlist-material-action .material-symbols-rounded {
+    font-size: 21px;
+  }
+
+  .broadcast-playlist-material-action:hover,
+  .broadcast-playlist-material-action:focus-visible {
+    color: #fff;
+    border-color: rgba(255, 255, 255, .34);
+    background: rgba(255, 255, 255, .18);
+    transform: translateY(-1px);
+    outline: 0;
+  }
+
+  .broadcast-playlist-material-action--danger {
+    color: #d4d4d4;
+    background: rgba(255, 255, 255, .06);
+  }
+
+  .broadcast-playlist-material-action--danger:hover,
+  .broadcast-playlist-material-action--danger:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, .18);
+  }
+
+  .broadcast-playlist-material-action:disabled {
+    opacity: .45;
+    cursor: wait;
+    transform: none;
+  }
+
+  .broadcast-playlist-option__actions {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
   }
 
   .broadcast-publish-upload-control {
@@ -5493,8 +6012,9 @@ body.theme-dark .broadcasts-panel--table {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     justify-content: stretch;
-    gap: 4px;
-    align-items: flex-end;
+    gap: 6px;
+    align-items: center;
+    justify-items: center;
     padding: 10px 0 0;
     overflow: visible;
     border: 0;
@@ -6208,7 +6728,7 @@ body.theme-dark .broadcasts-panel--table {
     opacity: .9;
     filter: saturate(.96) brightness(.9);
     transform: translateY(-50%) scale(.92);
-    box-shadow: 0 14px 30px rgba(2,6,23,.38);
+    box-shadow: 0 14px 30px rgb(2 6 23 / 10%);
     transition: opacity .25s ease, filter .25s ease, transform .3s ease;
     will-change: transform, opacity, filter;
     backface-visibility: hidden;
@@ -7803,6 +8323,19 @@ body.theme-dark .broadcasts-footer__release:hover {
   contain: layout paint style;
   content-visibility: auto;
   contain-intrinsic-size: 82px;
+  position: relative;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.broadcast-playlist-option:hover {
+  border-color: rgba(192, 132, 252, .35);
+  background: rgba(139, 47, 242, .08);
+}
+
+.broadcast-playlist-option:has(input:checked) {
+  border-color: #a855f7;
+  background: rgba(139, 47, 242, .15);
+  box-shadow: inset 0 0 0 1px rgba(192, 132, 252, .12);
 }
 
 .broadcast-playlist-option__thumbs {
@@ -8738,7 +9271,7 @@ body.theme-dark .broadcasts-footer__release:hover {
     width: 88px;
   }
 
-  .broadcast-playlist-option .broadcast-publish-link {
+  .broadcast-playlist-option .broadcast-playlist-option__actions {
     grid-column: 3;
     justify-self: start;
   }
@@ -8980,5 +9513,754 @@ body.theme-dark .broadcasts-footer__release:hover {
   font-size: 12px;
   margin-top: 4px;
 }
+
+/* Shared neutral controls for the playlist editor and publish dialog. */
+.broadcast-playlist-editor-modal .material-symbols-rounded {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-input-wrap > .material-symbols-rounded,
+.broadcast-playlist-editor-modal .broadcast-publish-section h3 > .material-symbols-rounded {
+  color: #d4d4d4;
+  font-size: 20px;
+}
+.broadcast-playlist-editor-modal .broadcast-transition-picker__option > .material-symbols-rounded {
+  visibility: hidden;
+}
+.broadcast-playlist-editor-modal .broadcast-transition-picker__option.is-selected > .material-symbols-rounded {
+  visibility: visible;
+}
+.broadcast-playlist-editor-modal.broadcast-publish-modal .broadcast-playlist-editor-modal__dialog {
+  background: linear-gradient(180deg, #151b31 0%, #101729 100%);
+  border: 1px solid rgba(169, 184, 220, .14);
+  border-radius: 12px;
+}
+.broadcast-playlist-editor-modal .broadcast-publish-modal__header,
+.broadcast-playlist-editor-modal .broadcast-publish-modal__footer {
+  background: rgba(16, 23, 41, .96);
+}
+.broadcast-playlist-editor-modal :is(.broadcast-playlist-icon-btn, .broadcast-playlist-selected-remove, .broadcast-playlist-clear-order) {
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.09);
+  color: #e5e7eb;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-playlist-icon-btn, .broadcast-playlist-selected-remove) {
+  width: 40px;
+  height: 40px;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-playlist-icon-btn, .broadcast-playlist-selected-remove, .broadcast-playlist-clear-order):hover {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-playlist-editor__mark, .broadcast-playlist-editor__pill, .broadcast-playlist-order__index, .broadcast-playlist-order__drag) {
+  background: rgba(255,255,255,.1);
+  color: #e5e7eb;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-publish-section h3 i, .broadcast-playlist-input-wrap i, .broadcast-playlist-order__empty i) {
+  color: #d4d4d4;
+  background: transparent;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__settings {
+  border-color: rgba(255,255,255,.12);
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-playlist-input-wrap, .broadcast-playlist-field select, .broadcast-playlist-sync-toggle, .broadcast-transition-picker__trigger) {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.16);
+  color: #f1f1f1;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-input-wrap input {
+  color: #f1f1f1;
+  background: transparent;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-field select option,
+.broadcast-playlist-editor-modal .broadcast-transition-picker__menu {
+  background: #202535;
+  color: #f1f1f1;
+  border-color: #555;
+}
+.broadcast-playlist-editor-modal .broadcast-transition-picker img {
+  filter: grayscale(1);
+}
+.broadcast-playlist-editor-modal :is(.broadcast-transition-picker__option:hover, .broadcast-transition-picker__option.is-selected) {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__tabs {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.12);
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__tab {
+  color: #d4d4d4;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__tab:hover {
+  background: rgba(255,255,255,.1);
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__tab.is-active,
+.broadcast-playlist-editor-modal .broadcast-playlist-sync-toggle input:checked + span {
+  background: #f1f1f1;
+  color: #171717;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-editor__tab.is-active small {
+  background: rgba(0,0,0,.1);
+}
+.broadcast-playlist-editor-modal input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #e5e5e5;
+  cursor: pointer;
+}
+.broadcast-playlist-editor-modal :is(.broadcast-publish-video:has(input:checked), .broadcast-playlist-order__item.is-dragging, .broadcast-playlist-order__item.is-drag-over) {
+  border-color: #a3a3a3;
+  background: rgba(255,255,255,.12);
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal :is(button, a, input, select):focus-visible {
+  outline: 2px solid #d4d4d4;
+  outline-offset: 3px;
+}
+.broadcast-playlist-editor-modal .broadcast-playlist-input-wrap:focus-within {
+  border-color: #d4d4d4;
+  box-shadow: none;
+}
+.broadcast-playlist-editor-modal .broadcast-publish-modal__body {
+  overscroll-behavior: contain;
+  scrollbar-color: #777 transparent;
+}
 </style>
 
+
+<style>
+.broadcasts-toolbar {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch) {
+  background: linear-gradient(180deg, #151b31, #101729);
+  border: 0;
+  box-shadow: none;
+}
+.broadcasts-view-switch__btn { gap: 8px; }
+.broadcasts-view-switch__btn .material-symbols-rounded { font-size: 20px; }
+.broadcasts-toolbar .broadcasts-toolbar__btn {
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.09);
+  color: #e5e7eb;
+  box-shadow: none;
+}
+.broadcasts-toolbar .broadcasts-toolbar__btn:hover {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  box-shadow: none;
+}
+.broadcasts-toolbar .broadcasts-toolbar__btn--primary {
+  background: #f1f1f1;
+  color: #171717;
+}
+.broadcasts-toolbar .broadcasts-toolbar__btn--primary:hover { background: #fff; color: #171717; }
+.broadcast-card-modern__top {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+.broadcast-card-modern__top > div:first-child {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.broadcast-card-modern__top > div:first-child :is(h2, p) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.broadcast-card-modern__top > .broadcast-card-modern__badges {
+  flex: 0 0 auto;
+  width: 100%;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.broadcast-card-modern__badges > * { flex-shrink: 0; }
+.broadcast-app-version { display:inline-flex; align-items:center; gap:6px; width:fit-content; max-width:100%; padding:5px 9px; border-radius:999px; font-size:11px; font-weight:700; line-height:1.2; white-space:nowrap; }
+.broadcast-app-version--current { color:#86efac; background:rgba(34,197,94,.13); }
+.broadcast-app-version--outdated { color:#fbbf24; background:rgba(245,158,11,.14); }
+.broadcast-app-version--unknown { color:#cbd5e1; background:rgba(148,163,184,.12); }
+.broadcast-card-modern__version { grid-column:span 2; }
+.broadcast-card-modern__top-actions { display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; }
+.broadcast-app-update-top-form { display:inline-flex; margin:0; padding-right:8px; border-right:1px solid color-mix(in srgb, var(--tv-card-text, #e2e8f0) 22%, transparent); }
+.broadcast-app-update-top { width:34px; height:34px; display:inline-grid; place-items:center; padding:0; border:0; border-radius:10px; background:var(--tv-card-control, rgba(148,163,184,.12)); color:#fbbf24; font-size:14px; cursor:pointer; transition:background .18s ease, color .18s ease, transform .18s ease; }
+.broadcast-app-update-top:hover { background:var(--tv-card-hover, rgba(148,163,184,.2)); transform:translateY(-1px); }
+.broadcast-app-update-top.is-current,
+.broadcast-app-update-top.is-current:disabled { color:#22c55e; opacity:1; cursor:default; }
+.broadcast-app-update-top.is-current:hover { background:var(--tv-card-control, rgba(148,163,184,.12)); transform:none; }
+html[data-theme="light"] .broadcast-app-version--current { color:#15803d; background:rgba(34,197,94,.12); }
+html[data-theme="light"] .broadcast-app-version--outdated { color:#b45309; background:rgba(245,158,11,.14); }
+html[data-theme="light"] .broadcast-app-version--unknown { color:#475569; background:rgba(100,116,139,.12); }
+html[data-theme="light"] .broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch) { background: #f5f5f5; border: 0; }
+html[data-theme="light"] .broadcasts-toolbar .broadcasts-toolbar__btn { background: #e5e5e5; color: #171717; }
+</style>
+
+<style>
+.broadcasts-panel.broadcasts-panel--table {
+  --table-surface: #151b31;
+  --table-surface-strong: #202535;
+  --table-text: #f1f1f1;
+  --table-muted: #a8b4ce;
+  --table-border: rgba(255,255,255,.12);
+  background: linear-gradient(180deg, #151b31 0%, #101729 100%);
+  border: 1px solid rgba(169,184,220,.14);
+  border-radius: 12px;
+  box-shadow: 0 28px 80px rgba(2,6,23,.3);
+}
+.broadcasts-panel--table .broadcasts-table thead { background: transparent; }
+.broadcasts-panel--table .broadcasts-table thead th {
+  background: rgba(255,255,255,.035);
+  color: #cbd5e1;
+}
+.broadcasts-panel--table .broadcasts-table tbody tr {
+  background: rgba(255,255,255,.035);
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-table tbody td { border-color: rgba(255,255,255,.06); }
+.broadcasts-panel--table .broadcasts-table tbody tr:hover {
+  background: rgba(255,255,255,.08);
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-table tbody tr:hover td,
+.broadcasts-panel--table .broadcasts-table tbody tr:hover td:first-child,
+.broadcasts-panel--table .broadcasts-table tbody tr:hover td:last-child {
+  border-color: rgba(255,255,255,.12);
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-table__avatar,
+.broadcasts-panel--table .broadcasts-table__pill {
+  background: rgba(255,255,255,.09);
+  color: #e5e7eb;
+  border: 0;
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-table__title small i { color: #d4d4d4; }
+.broadcasts-panel--table .broadcasts-action.icon {
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.09);
+  color: #e5e7eb;
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-action.icon:is(:hover, :focus-visible),
+.broadcasts-panel--table .broadcasts-action.icon:is(.play, .stop, .more):hover {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  box-shadow: none;
+  border: 0;
+}
+.broadcasts-panel--table .broadcasts-table-pagination button {
+  border: 0;
+  background: rgba(255,255,255,.09);
+  color: #e5e7eb;
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-table-pagination button.is-current {
+  background: #f1f1f1;
+  color: #171717;
+  box-shadow: none;
+}
+.broadcasts-panel--table .broadcasts-dropdown__menu { border-color: var(--table-border); }
+.broadcasts-panel--table .broadcasts-dropdown__menu :is(a,button):hover {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  box-shadow: none;
+}
+.broadcasts-panel--table :is(button,a):focus-visible { outline: 2px solid #d4d4d4; outline-offset: 2px; }
+</style>
+
+<style>
+.broadcasts-toolbar {
+  --toolbar-button-bg: #303442;
+  --toolbar-group-bg: linear-gradient(180deg, #151b31, #101729);
+  --toolbar-button-hover: #424755;
+  --toolbar-button-text: #f1f1f1;
+  --toolbar-active-bg: #f1f1f1;
+  --toolbar-active-text: #171717;
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) .broadcasts-toolbar {
+    --toolbar-group-bg: #f5f5f5;
+    --toolbar-button-bg: #e5e5e5;
+    --toolbar-button-hover: #d4d4d4;
+    --toolbar-button-text: #171717;
+    --toolbar-active-bg: #303030;
+    --toolbar-active-text: #fff;
+  }
+}
+html[data-theme="light"] .broadcasts-toolbar {
+  --toolbar-group-bg: #f5f5f5;
+  --toolbar-button-bg: #e5e5e5;
+  --toolbar-button-hover: #d4d4d4;
+  --toolbar-button-text: #171717;
+  --toolbar-active-bg: #303030;
+  --toolbar-active-text: #fff;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch) {
+  background: var(--toolbar-button-hover);
+  border: 0;
+  box-shadow: none;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn, .broadcasts-view-switch__btn) {
+  background: var(--toolbar-button-bg);
+  color: var(--toolbar-button-text);
+  border: 0;
+  box-shadow: none;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn, .broadcasts-view-switch__btn):hover {
+  background: var(--toolbar-button-hover);
+  color: var(--toolbar-button-text);
+  box-shadow: none;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn--primary, .broadcasts-view-switch__btn.is-active),
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn--primary, .broadcasts-view-switch__btn.is-active):hover {
+  background: var(--toolbar-active-bg);
+  color: var(--toolbar-active-text);
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn, .broadcasts-view-switch__btn) :is(i, .material-symbols-rounded) {
+  color: inherit;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn, .broadcasts-view-switch__btn):focus-visible {
+  outline: 2px solid var(--toolbar-active-bg);
+  outline-offset: 3px;
+}
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__btn, .broadcasts-view-switch__btn):disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Neutral TV cards, with explicit and system theme support. */
+.broadcasts-index {
+  --tv-card-bg: linear-gradient(180deg, #151b31, #101729);
+  --tv-card-text: #f1f1f1;
+  --tv-card-muted: #a8b4ce;
+  --tv-card-line: rgba(169,184,220,.16);
+  --tv-card-control: #303442;
+  --tv-card-hover: #424755;
+  --tv-card-shadow: 0 12px 32px rgba(2,6,23,.24);
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) .broadcasts-index {
+    --tv-card-bg: linear-gradient(180deg, #fff, #f3f6fb);
+    --tv-card-text: #172033;
+    --tv-card-muted: #64748b;
+    --tv-card-line: rgba(15,23,42,.12);
+    --tv-card-control: #e9ecf1;
+    --tv-card-hover: #dce1e9;
+    --tv-card-shadow: 0 10px 28px rgba(15,23,42,.09);
+  }
+}
+html[data-theme="light"] .broadcasts-index {
+  --tv-card-bg: linear-gradient(180deg, #fff, #f3f6fb);
+  --tv-card-text: #172033;
+  --tv-card-muted: #64748b;
+  --tv-card-line: rgba(15,23,42,.12);
+  --tv-card-control: #e9ecf1;
+  --tv-card-hover: #dce1e9;
+  --tv-card-shadow: 0 10px 28px rgba(15,23,42,.09);
+}
+html .broadcasts-index .broadcast-card-modern:not(.broadcast-card-modern--desktop) {
+  background: var(--tv-card-bg);
+  color: var(--tv-card-text);
+  border: 1px solid var(--tv-card-line);
+  border-radius: 12px;
+  padding: 18px;
+  gap: 16px;
+  box-shadow: var(--tv-card-shadow);
+}
+html .broadcasts-index .broadcast-card-modern:not(.broadcast-card-modern--desktop):hover {
+  border-color: var(--tv-card-muted);
+  transform: translateY(-2px);
+}
+html .broadcasts-index .broadcast-card-modern:not(.broadcast-card-modern--desktop) .broadcast-card-modern__top {
+  padding-right: 0;
+  align-items: center;
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__top h2 {
+  color: var(--tv-card-text);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__top p {
+  color: var(--tv-card-muted);
+  margin-top: 5px;
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__video {
+  border: 1px solid var(--tv-card-line);
+  border-radius: 10px;
+  box-shadow: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card {
+  padding-top: 14px;
+  border-top: 1px solid var(--tv-card-line);
+  gap: 8px;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action,
+html .broadcasts-index .broadcast-card-modern .broadcast-presentation-toggle {
+  background: var(--tv-card-control);
+  color: var(--tv-card-text);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action:hover,
+html .broadcasts-index .broadcast-card-modern .broadcast-presentation-toggle:hover {
+  background: var(--tv-card-hover);
+  color: var(--tv-card-text);
+  box-shadow: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action i {
+  color: inherit;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 50%;
+  transition: background .18s ease, transform .18s ease;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action:hover,
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action:focus-visible {
+  background: color-mix(in srgb, var(--tv-card-text) 11%, transparent);
+  box-shadow: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-actions--card .broadcasts-action:active {
+  background: color-mix(in srgb, var(--tv-card-text) 16%, transparent);
+  transform: scale(.96);
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-presentation-toggle.is-active {
+  background: var(--tv-card-text);
+  color: var(--tv-card-control);
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__slide-dots span.is-active {
+  background: var(--tv-card-text);
+  box-shadow: none;
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__video-fallback {
+  background: var(--tv-card-control);
+  color: var(--tv-card-muted);
+}
+html .broadcasts-index .broadcast-card-modern .broadcast-card-modern__video-fallback::before {
+  border-color: var(--tv-card-muted);
+  color: var(--tv-card-text);
+}
+html .broadcasts-index .broadcast-card-modern .broadcasts-action:focus-visible {
+  outline: 2px solid var(--tv-card-text);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html .broadcasts-index .broadcast-card-modern:not(.broadcast-card-modern--desktop):hover { transform: none; }
+}
+
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch):has(.broadcasts-toolbar__help:hover),
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch):has(.broadcasts-toolbar__help:focus-visible),
+html .broadcasts-index .broadcasts-toolbar :is(.broadcasts-toolbar__actions, .broadcasts-view-switch):has(.broadcasts-toolbar__help[aria-pressed="true"]),
+html .broadcasts-index .broadcasts-toolbar [data-toolbar-help-panel].is-toolbar-help-active {
+  z-index: 11002;
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, .78), 0 0 34px rgba(168, 85, 247, .5);
+}
+
+.broadcast-power-schedule-modal {
+  --power-modal-bg: linear-gradient(180deg, #151b31, #101729);
+  --power-modal-surface: rgba(255, 255, 255, .055);
+  --power-modal-hover: rgba(255, 255, 255, .13);
+  --power-modal-border: rgba(169, 184, 220, .14);
+  --power-modal-text: #f1f1f1;
+  --power-modal-muted: #a8b4ce;
+  z-index: 1600;
+}
+.broadcast-power-schedule-modal__dialog {
+  width: min(620px, calc(100vw - 32px));
+  border: 1px solid var(--power-modal-border);
+  border-radius: 12px;
+  color: var(--power-modal-text);
+  background: var(--power-modal-bg);
+  box-shadow: 0 28px 80px rgba(2, 6, 23, .5);
+}
+.broadcast-power-schedule-modal__header,
+.broadcast-power-schedule-modal__footer {
+  padding: 18px 22px;
+  border-color: var(--power-modal-border);
+  background: rgba(16, 23, 41, .96);
+  backdrop-filter: blur(12px);
+}
+.broadcast-power-schedule-modal__header p,
+.broadcast-power-schedule-modal__field,
+.broadcast-power-schedule-modal__days legend {
+  color: var(--power-modal-muted);
+}
+.broadcast-power-schedule-modal__body {
+  padding: 22px;
+  gap: 20px;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.broadcast-power-schedule-modal__times {
+  width: 100%;
+  min-width: 0;
+}
+.broadcast-power-schedule-modal__field {
+  min-width: 0;
+}
+.broadcast-power-schedule-modal__field input {
+  box-sizing: border-box;
+  min-height: 46px;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--power-modal-border);
+  border-radius: 10px;
+  color: var(--power-modal-text);
+  background: var(--power-modal-surface);
+  box-shadow: none;
+  color-scheme: dark;
+}
+.broadcast-power-schedule-modal__field input:focus {
+  border-color: var(--power-modal-muted);
+  outline: 2px solid color-mix(in srgb, var(--power-modal-text) 24%, transparent);
+  outline-offset: 1px;
+}
+.broadcast-power-schedule-modal__days {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--power-modal-border);
+  border-radius: 12px;
+  background: var(--power-modal-surface);
+}
+.broadcast-power-schedule-modal__day {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--power-modal-muted);
+  background: transparent;
+  box-shadow: none;
+}
+.broadcast-power-schedule-modal__day:hover {
+  border: 0;
+  color: var(--power-modal-text);
+  background: var(--power-modal-hover);
+  transform: none;
+}
+.broadcast-power-schedule-modal__day input {
+  accent-color: #737373;
+}
+.broadcast-power-schedule-modal__day:has(input:checked) {
+  border: 0;
+  color: var(--power-modal-text);
+  background: var(--power-modal-hover);
+}
+.broadcast-power-schedule-modal__close {
+  background: transparent;
+}
+.broadcast-power-schedule-modal__footer {
+  justify-content: flex-end;
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) .broadcast-power-schedule-modal {
+    --power-modal-bg: linear-gradient(180deg, #fff, #f3f6fb);
+    --power-modal-surface: rgba(15, 23, 42, .055);
+    --power-modal-hover: rgba(15, 23, 42, .1);
+    --power-modal-border: rgba(15, 23, 42, .12);
+    --power-modal-text: #172033;
+    --power-modal-muted: #64748b;
+  }
+  html:not([data-theme="dark"]) .broadcast-power-schedule-modal :is(.broadcast-power-schedule-modal__header, .broadcast-power-schedule-modal__footer) { background: rgba(255,255,255,.94); }
+  html:not([data-theme="dark"]) .broadcast-power-schedule-modal__field input { color-scheme: light; }
+}
+html[data-theme="light"] .broadcast-power-schedule-modal {
+  --power-modal-bg: linear-gradient(180deg, #fff, #f3f6fb);
+  --power-modal-surface: rgba(15, 23, 42, .055);
+  --power-modal-hover: rgba(15, 23, 42, .1);
+  --power-modal-border: rgba(15, 23, 42, .12);
+  --power-modal-text: #172033;
+  --power-modal-muted: #64748b;
+}
+html[data-theme="light"] .broadcast-power-schedule-modal :is(.broadcast-power-schedule-modal__header, .broadcast-power-schedule-modal__footer) { background: rgba(255,255,255,.94); }
+html[data-theme="light"] .broadcast-power-schedule-modal__field input { color-scheme: light; }
+@media (max-width: 680px) {
+  .broadcast-power-schedule-modal { padding: 12px; }
+  .broadcast-power-schedule-modal__dialog { width: 100%; max-height: calc(100vh - 24px); }
+  .broadcast-power-schedule-modal__times { grid-template-columns: 1fr; }
+  .broadcast-power-schedule-modal__days { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .broadcast-power-schedule-modal__day { padding-inline: 6px; }
+  .broadcast-power-schedule-modal__header,
+  .broadcast-power-schedule-modal__body,
+  .broadcast-power-schedule-modal__footer { padding: 16px; }
+}
+
+.broadcast-power-schedule-modal__current {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.broadcast-power-schedule-modal__current[hidden] { display: none; }
+.broadcast-power-schedule-modal__current-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--power-modal-text);
+}
+.broadcast-power-schedule-modal__current-heading > .material-symbols-rounded {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, .14);
+}
+.broadcast-power-schedule-modal__current-heading div { display: grid; gap: 2px; }
+.broadcast-power-schedule-modal__current-heading small { color: var(--power-modal-muted); }
+.broadcast-power-schedule-modal__current-list {
+  display: grid;
+  gap: 8px;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.broadcast-power-schedule-modal__current-item {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--power-modal-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--power-modal-surface) 76%, transparent);
+}
+.broadcast-power-schedule-modal__current-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.broadcast-power-schedule-modal__current-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.broadcast-power-schedule-modal__current-name .material-symbols-rounded { font-size: 19px; color: #93c5fd; }
+.broadcast-power-schedule-modal__current-values { display: flex; flex-wrap: wrap; gap: 7px; }
+.broadcast-power-schedule-modal__current-values > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px 9px;
+  border-radius: 8px;
+  color: var(--power-modal-muted);
+  background: color-mix(in srgb, var(--power-modal-text) 7%, transparent);
+  font-size: 12px;
+}
+.broadcast-power-schedule-modal__current-values .material-symbols-rounded { font-size: 16px; }
+.broadcast-power-schedule-modal__current-values strong { color: var(--power-modal-text); }
+.broadcast-power-schedule-modal__current-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px dashed var(--power-modal-border);
+  border-radius: 11px;
+  color: var(--power-modal-muted);
+}
+
+.broadcast-playlist-editor-modal__dialog { position: relative; }
+.broadcast-media-upload-loading {
+  position: absolute;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: inherit;
+  background: rgba(4, 8, 20, .72);
+  backdrop-filter: blur(7px);
+}
+.broadcast-media-upload-loading[hidden] { display: none; }
+.broadcast-media-upload-loading__panel {
+  width: min(360px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 26px;
+  box-sizing: border-box;
+  border: 1px solid rgba(147, 197, 253, .3);
+  border-radius: 16px;
+  color: #f8fafc;
+  background: linear-gradient(180deg, rgba(25, 34, 58, .98), rgba(13, 20, 38, .98));
+  box-shadow: 0 22px 60px rgba(2, 6, 23, .55);
+  text-align: center;
+}
+.broadcast-media-upload-loading__panel > span:not(.broadcast-media-upload-loading__spinner) {
+  max-width: 100%;
+  overflow: hidden;
+  color: #aeb9d6;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.broadcast-media-upload-loading__spinner {
+  width: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  border: 3px solid rgba(147, 197, 253, .2);
+  border-top-color: #93c5fd;
+  border-radius: 50%;
+  animation: broadcast-media-upload-spin .8s linear infinite;
+}
+.broadcast-media-upload-loading__track {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .18);
+}
+.broadcast-media-upload-loading__track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  transition: width .18s ease;
+}
+.broadcast-media-upload-loading__panel small { color: #dbeafe; font-weight: 700; }
+@keyframes broadcast-media-upload-spin { to { transform: rotate(360deg); } }
+html[data-theme="light"] .broadcast-media-upload-loading { background: rgba(226, 232, 240, .72); }
+html[data-theme="light"] .broadcast-media-upload-loading__panel {
+  color: #172033;
+  background: linear-gradient(180deg, #fff, #f3f6fb);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, .22);
+}
+html[data-theme="light"] .broadcast-media-upload-loading__panel > span:not(.broadcast-media-upload-loading__spinner) { color: #64748b; }
+html[data-theme="light"] .broadcast-media-upload-loading__panel small { color: #1d4ed8; }
+@media (max-width: 680px) {
+  .broadcast-power-schedule-modal__current-values { display: grid; }
+  .broadcast-power-schedule-modal__current-values > span { width: 100%; box-sizing: border-box; }
+}
+</style>

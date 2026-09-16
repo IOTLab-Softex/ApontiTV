@@ -5,6 +5,8 @@ class ApplicationController < ActionController::Base
 
   before_action :set_locale
   before_action :authenticate_user!
+  before_action :require_andar360_access!
+  before_action :require_shared_password_change!
   before_action :check_license, unless: :skip_license_check?
   after_action :record_user_activity_log, if: :record_user_activity_log?
 
@@ -16,6 +18,24 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def require_shared_password_change!
+    return unless user_signed_in? && current_user.must_change_shared_password?
+    return if controller_name == "shared_passwords" || (devise_controller? && action_name == "destroy")
+    if request.format.json?
+      render json: { redirect_url: edit_shared_password_path }
+    else
+      redirect_to edit_shared_password_path
+    end
+  end
+
+  def require_andar360_access!
+    return unless user_signed_in?
+    return if current_user.active_for_authentication?
+
+    sign_out(current_user)
+    redirect_to new_user_session_path, alert: "Acesso ao Aponti TV não autorizado no Andar360."
+  end
 
   def set_locale
     locale = params[:locale].presence_in(I18n.available_locales.map(&:to_s)) || session[:locale] || I18n.default_locale

@@ -1,0 +1,1700 @@
+{
+  "uid": "aponti-tv-status",
+  "title": "Aponti TV — Status das TVs",
+  "tags": [
+    "Aponti TV",
+    "automatico"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "TVs cadastradas",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / Integracao"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: total de TVs"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Apps online",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / Integracao"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: apps online"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Reproduzindo",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / Integracao"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: apps reproduzindo"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Ultima coleta do cadastro",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / Integracao"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: coleta mais recente"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsLocal",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Status geral",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status geral"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Online",
+                  "color": "green",
+                  "index": 0
+                },
+                "2": {
+                  "text": "TV ligada / app fechado",
+                  "color": "orange",
+                  "index": 1
+                },
+                "3": {
+                  "text": "TV desligada",
+                  "color": "red",
+                  "index": 2
+                },
+                "4": {
+                  "text": "Erro no app",
+                  "color": "dark-red",
+                  "index": 3
+                },
+                "5": {
+                  "text": "Ligada sem conteúdo",
+                  "color": "yellow",
+                  "index": 4
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Status da TV",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status da TV"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Desligada",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Ligada",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Status do aplicativo",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status do aplicativo"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Fechado",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Aberto",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Conteúdo exibido",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: conteúdo exibido"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Sem exibição",
+                  "color": "gray",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Somente web",
+                  "color": "purple",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Reproduzindo",
+                  "color": "green",
+                  "index": 2
+                },
+                "3": {
+                  "text": "App aberto",
+                  "color": "blue",
+                  "index": 3
+                },
+                "4": {
+                  "text": "Erro",
+                  "color": "orange",
+                  "index": 4
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "state-timeline",
+      "title": "Histórico do status geral — últimas 6 horas",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status geral"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Online",
+                  "color": "green",
+                  "index": 0
+                },
+                "2": {
+                  "text": "TV ligada / app fechado",
+                  "color": "orange",
+                  "index": 1
+                },
+                "3": {
+                  "text": "TV desligada",
+                  "color": "red",
+                  "index": 2
+                },
+                "4": {
+                  "text": "Erro no app",
+                  "color": "dark-red",
+                  "index": 3
+                },
+                "5": {
+                  "text": "Ligada sem conteúdo",
+                  "color": "yellow",
+                  "index": 4
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "6h",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "state-timeline",
+      "title": "Histórico: TV ligada/desligada — últimas 6 horas",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status da TV"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Desligada",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Ligada",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "6h",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "state-timeline",
+      "title": "Histórico: app aberto/fechado — últimas 6 horas",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: status do aplicativo"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Fechado",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Aberto",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "6h",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Tempo desde o último contato do app",
+      "datasource": {
+        "type": "alexanderzobnin-zabbix-datasource",
+        "uid": "bdlokpjbz277kd"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "alexanderzobnin-zabbix-datasource",
+            "uid": "bdlokpjbz277kd"
+          },
+          "schema": 12,
+          "queryType": "0",
+          "group": {
+            "filter": "Aponti TV / TVs"
+          },
+          "host": {
+            "filter": "/.*/"
+          },
+          "item": {
+            "filter": "Aponti: segundos sem contato"
+          },
+          "application": {
+            "filter": ""
+          },
+          "itemTag": {
+            "filter": ""
+          },
+          "tags": {
+            "filter": ""
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "macro": {
+            "filter": ""
+          },
+          "functions": [
+            {
+              "def": {
+                "name": "setAlias",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "alias",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "$host"
+              ],
+              "text": "setAlias($host)"
+            }
+          ],
+          "options": {
+            "showDisabledItems": false,
+            "skipEmptyValues": true,
+            "useTrends": "false",
+            "disableDataAlignment": true,
+            "useZabbixValueMapping": false
+          },
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Sem coleta recente",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "-1": {
+                  "text": "Nunca conectou",
+                  "color": "gray",
+                  "index": 0
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "timeFrom": "2m",
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showValue": "auto",
+        "rowHeight": 0.85,
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "text",
+      "title": "Como este painel funciona",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 5
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Status geral:** 1 Online; 2 TV ligada com app fechado; 3 TV desligada; 4 Erro no app; 5 Ligada sem conteúdo identificado. Somente web e Reproduzindo resultam em Online quando a TV e o app estão ativos.\n\nDescoberta, coleta e atualização a cada 10 segundos. TVs removidas são excluídas automaticamente do Zabbix após 1 hora."
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "Abrir Aponti TV",
+      "url": "http://192.168.1.98:3000/broadcasts",
+      "targetBlank": true
+    }
+  ]
+}

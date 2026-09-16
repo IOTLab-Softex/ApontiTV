@@ -1,5 +1,31 @@
 class Broadcast < ApplicationRecord
   APP_PLAYER_PRESENCE_TTL = 45.seconds
+  OFFICIAL_APP_CURRENT_VERSION_NAME = ENV.fetch("APONTI_TV_APP_VERSION_NAME", "1.1.0")
+  OFFICIAL_APP_CURRENT_VERSION_CODE = ENV.fetch("APONTI_TV_APP_VERSION_CODE", "2").to_i
+
+  validates :official_app_login_username, presence: true, if: :official_app_login_enabled?
+  validate do
+    if official_app_login_enabled? && official_app_login_password.blank?
+      errors.add(:official_app_login_password, "deve ser informada para o login automático")
+    end
+  end
+
+  def official_app_login_password
+    ciphertext = official_app_login_password_ciphertext
+    web_login_encryptor.decrypt_and_verify(ciphertext) if ciphertext.present?
+  end
+
+  # An empty password on the edit form preserves the saved secret.
+  def official_app_login_password=(value)
+    return if value.blank?
+    self.official_app_login_password_ciphertext = web_login_encryptor.encrypt_and_sign(value)
+  end
+
+  def web_login_encryptor
+    key = Rails.application.key_generator.generate_key("broadcast-web-login-v1", 32)
+    ActiveSupport::MessageEncryptor.new(key, cipher: "aes-256-gcm")
+  end
+  private :web_login_encryptor
 
   WEEKDAY_OPTIONS = [
     ["Domingo", "0"],
@@ -125,6 +151,14 @@ class Broadcast < ApplicationRecord
     tv_device_type_android_tv? || tv_device_type_fire_tv?
   end
 
+  def official_app_version_known?
+    app_version_code.present?
+  end
+
+  def official_app_outdated?
+    official_app_version_known? && app_version_code < OFFICIAL_APP_CURRENT_VERSION_CODE
+  end
+
   def tv_device_type_label
     return "Android TV" if tv_device_type_android_tv?
     return "Fire Stick" if tv_device_type_fire_tv?
@@ -141,10 +175,21 @@ class Broadcast < ApplicationRecord
   end
 
   def tv_power_status
+    if app_screen_power_status.present?
+      return app_screen_power_status
+    end
     return :on if app_player_online?
     return :unavailable if adb_target_host.blank?
 
     tv_online? ? :on : :off
+  end
+
+  def app_screen_power_status
+    return nil unless has_attribute?(:app_screen_on)
+    return nil if app_screen_status_updated_at.blank?
+    return nil if app_screen_status_updated_at < APP_PLAYER_PRESENCE_TTL.ago
+
+    app_screen_on? ? :on : :off
   end
 
   def tv_power_status_label
@@ -201,7 +246,7 @@ class Broadcast < ApplicationRecord
     update_columns(updates)
   end
 
-  def update_mobile_presence!(presence_status:, seen_at: Time.zone.now, playlist_item_id: nil, position_ms: nil)
+  def update_mobile_presence!(presence_status:, seen_at: Time.zone.now, screen_on: nil, playlist_item_id: nil, position_ms: nil)
     normalized_status = presence_status.to_s.strip
     return false unless %w[online offline playing error].include?(normalized_status)
 
@@ -210,6 +255,10 @@ class Broadcast < ApplicationRecord
       app_player_presence_updated_at: seen_at,
       app_device_last_seen_at: seen_at
     }
+    unless screen_on.nil?
+      updates[:app_screen_on] = ActiveModel::Type::Boolean.new.cast(screen_on)
+      updates[:app_screen_status_updated_at] = seen_at
+    end
 
     if normalized_status == "playing" && playlist_item_id.present?
       item_id = playlist_items.where(id: playlist_item_id).pick(:id)
@@ -362,13 +411,17 @@ class Broadcast < ApplicationRecord
       "transicao #{official_app_transition_style.presence || 'blur'}, #{playback_summary}"
   end
 
-  def official_app_payload(streaming_configuration = nil)
+  def official_app_payload(streaming_configuration = nil, include_login: false)
     enabled = official_app_browser_rotation_enabled?
 
     {
       enabled: enabled,
       web_only: enabled && official_app_web_only?,
       page_url: enabled ? official_app_page_url : nil,
+      login: enabled && official_app_login_enabled? && include_login ? {
+        username: official_app_login_username,
+        password: official_app_login_password
+      } : nil,
       rotation_trigger: enabled ? (official_app_rotation_trigger.presence || "time_interval") : nil,
       switch_interval_unit: official_app_switch_interval_unit.presence || "minutes",
       switch_interval_seconds: official_app_switch_interval_seconds.presence || 300,

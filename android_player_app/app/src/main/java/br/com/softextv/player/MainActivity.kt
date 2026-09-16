@@ -945,6 +945,7 @@ class MainActivity : AppCompatActivity() {
             .putExtra(PlayerActivity.EXTRA_PLAYLIST_NOTIFICATION_URL, channel.playlistNotificationSound?.url)
             .putExtra(PlayerActivity.EXTRA_PLAYLIST_NOTIFICATION_VERSION, channel.playlistNotificationSound?.version)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_PAGE_URL, channel.officialAppBrowserRotation?.pageUrl)
+            .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_LOGIN, channel.officialAppBrowserRotation?.loginJson)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_ROTATION_ENABLED, channel.officialAppBrowserRotation?.enabled ?: false)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_WEB_ONLY, channel.officialAppBrowserRotation?.webOnly ?: false)
             .putExtra(PlayerActivity.EXTRA_OFFICIAL_APP_ROTATION_TRIGGER, channel.officialAppBrowserRotation?.rotationTrigger ?: "time_interval")

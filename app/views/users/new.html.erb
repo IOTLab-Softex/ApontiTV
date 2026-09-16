@@ -1,135 +1,107 @@
-<div class="banner">
-  <%= image_tag('logo.png', alt: 'Logo', class: 'logo') %>
-</div>
+<% content_for :page_title, "Novo usuário" %>
+<% content_for :page_subtitle, "Cadastre uma conta e defina o nível de acesso ao Aponti TV." %>
 
-<!-- Banner -->
-<div class="user-banner">
-  <h1><i class="fas fa-user-plus"></i> Novo Usuário</h1>
-  <p class="subtitle">Cadastre um novo usuário no sistema</p>
-</div>
-
-<div class="user-form-container">
-<%= form_with model: @user, url: users_path, local: true, class: 'user-form' do |form| %>
-
-    <% if @user.errors.any? %>
-      <div class="form-errors">
-        <h3><%= pluralize(@user.errors.count, "erro") %> impediram o cadastro:</h3>
-        <ul>
-          <% @user.errors.full_messages.each do |msg| %>
-            <li><%= msg %></li>
-          <% end %>
-        </ul>
+<main class="user-create-page">
+  <section class="user-create-card">
+    <header class="user-create-card__header">
+      <div class="user-create-card__title">
+        <span class="user-create-card__mark"><span class="material-symbols-rounded" aria-hidden="true">person_add</span></span>
+        <div>
+          <span class="user-create-card__eyebrow">Gerenciamento de acesso</span>
+          <h1>Novo usuário</h1>
+          <p>Preencha os dados para criar uma nova conta no sistema.</p>
+        </div>
       </div>
+      <%= link_to users_path(locale: I18n.locale), class: "user-create-icon-button", title: "Voltar para usuários", aria: { label: "Voltar para usuários" } do %>
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      <% end %>
+    </header>
+
+    <%= form_with model: @user, url: users_path(locale: I18n.locale), local: true, class: "user-create-form" do |form| %>
+      <div class="user-create-form__content">
+        <% if @user.errors.any? %>
+          <div class="user-create-errors" role="alert">
+            <span class="material-symbols-rounded" aria-hidden="true">error</span>
+            <div>
+              <strong>Não foi possível cadastrar o usuário</strong>
+              <ul>
+                <% @user.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        <% end %>
+
+        <section class="user-create-section">
+          <div class="user-create-section__heading">
+            <span class="material-symbols-rounded" aria-hidden="true">badge</span>
+            <div><h2>Dados da conta</h2><p>Informações usadas para entrar no sistema.</p></div>
+          </div>
+
+          <label class="user-create-field">
+            <span class="user-create-field__label">E-mail</span>
+            <span class="user-create-field__control">
+              <span class="material-symbols-rounded" aria-hidden="true">mail</span>
+              <%= form.email_field :email, required: true, autofocus: true, autocomplete: "email", placeholder: "usuario@empresa.com" %>
+            </span>
+          </label>
+
+          <div class="user-create-form__password-grid">
+            <label class="user-create-field">
+              <span class="user-create-field__label">Senha</span>
+              <span class="user-create-field__control">
+                <span class="material-symbols-rounded" aria-hidden="true">lock</span>
+                <%= form.password_field :password, required: true, minlength: 6, autocomplete: "new-password", placeholder: "Mínimo de 6 caracteres", data: { user_password: true } %>
+                <button type="button" class="user-create-field__visibility" data-password-toggle aria-label="Mostrar senha" title="Mostrar senha"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></button>
+              </span>
+              <span class="user-create-password-strength" data-password-strength><i></i><i></i><i></i><small>Informe uma senha segura</small></span>
+            </label>
+
+            <label class="user-create-field">
+              <span class="user-create-field__label">Confirmar senha</span>
+              <span class="user-create-field__control">
+                <span class="material-symbols-rounded" aria-hidden="true">lock_reset</span>
+                <%= form.password_field :password_confirmation, required: true, minlength: 6, autocomplete: "new-password", placeholder: "Digite a senha novamente", data: { user_password_confirmation: true } %>
+                <span class="material-symbols-rounded user-create-field__match" data-password-match aria-hidden="true">check_circle</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section class="user-create-section">
+          <div class="user-create-section__heading">
+            <span class="material-symbols-rounded" aria-hidden="true">admin_panel_settings</span>
+            <div><h2>Perfil de acesso</h2><p>Escolha as permissões disponíveis para esta conta.</p></div>
+          </div>
+          <label class="user-create-field">
+            <span class="user-create-field__label">Tipo de usuário</span>
+            <span class="user-create-field__control user-create-field__control--select">
+              <span class="material-symbols-rounded" aria-hidden="true">manage_accounts</span>
+              <%= form.select :admin, [["Cliente — acesso operacional", false], ["Administrador — acesso completo", true]], {}, aria: { describedby: "user-role-help" } %>
+              <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </span>
+            <small id="user-role-help">Administradores podem gerenciar usuários e configurações globais.</small>
+          </label>
+        </section>
+      </div>
+
+      <footer class="user-create-form__footer">
+        <%= link_to users_path(locale: I18n.locale), class: "user-create-button" do %><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span><span>Cancelar</span><% end %>
+        <%= form.button type: :submit, class: "user-create-button user-create-button--primary" do %><span class="material-symbols-rounded" aria-hidden="true">person_add</span><span>Cadastrar usuário</span><% end %>
+      </footer>
     <% end %>
-
-    <div class="form-field">
-      <%= form.label :email %>
-      <%= form.email_field :email, class: "input-field" %>
-    </div>
-
-    <div class="form-field">
-      <%= form.label :password %>
-      <%= form.password_field :password, class: "input-field" %>
-    </div>
-
-    <div class="form-field">
-      <%= form.label :password_confirmation, "Confirmação de Senha" %>
-      <%= form.password_field :password_confirmation, class: "input-field" %>
-    </div>
-
-    <div class="form-field">
-      <%= form.label :admin, "Tipo de Usuário" %><br>
-      <%= form.select :admin, [["Cliente", false], ["Admin", true]], {}, class: "input-field" %>
-    </div>
-
-    <div class="form-actions">
-      <%= form.submit "Cadastrar", class: "submit-btn" %>
-    </div>
-  <% end %>
-</div>
-
-<div class="back-to-list">
-  <%= link_to "← Voltar para lista", users_path, class: "btn btn-secondary" %>
-</div>
+  </section>
+</main>
 
 <style>
-  .user-banner {
-    background: linear-gradient(135deg, #1f1c2c, #928dab);
-    color: white;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 30px;
-    position: relative;
-    top: 61px;
-    height: 57px;
-    margin-bottom: 8%;
-  }
-
-  .user-banner h1 {
-    margin: 0;
-    font-size: 32px;
-  }
-
-  .user-banner .subtitle {
-    margin-top: 8px;
-    font-size: 16px;
-    color: #e0e0e0;
-  }
-
-  .user-form-container {
-    background: white;
-    padding: 25px;
-    border-radius: 8px;
-    max-width: 500px;
-    margin: auto;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  }
-
-  .user-form .form-field {
-    margin-bottom: 20px;
-  }
-
-  .user-form .input-field {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-  }
-
-  .form-actions {
-    text-align: center;
-  }
-
-  .submit-btn {
-    background-color: #28a745;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-
-  .submit-btn:hover {
-    background-color: #218838;
-  }
-
-  .back-to-list {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .btn-secondary {
-    background-color: #6c757d;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 5px;
-    text-decoration: none;
-  }
-
-  .btn-secondary:hover {
-    background-color: #5a6268;
-  }
+.user-create-page{--uc-bg:linear-gradient(180deg,#151b31,#101729);--uc-surface:rgba(255,255,255,.045);--uc-border:rgba(169,184,220,.16);--uc-text:#f4f7ff;--uc-muted:#a8b4ce;--uc-primary:#8b35ee;width:min(100%,980px);margin:0 auto;padding:30px 18px 56px;color:var(--uc-text);box-sizing:border-box}.user-create-card{overflow:hidden;border:1px solid var(--uc-border);border-radius:14px;background:var(--uc-bg);box-shadow:0 28px 70px rgba(2,6,23,.34)}.user-create-card__header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:24px 26px;border-bottom:1px solid var(--uc-border);background:rgba(16,23,41,.72)}.user-create-card__title{display:flex;align-items:center;gap:16px;min-width:0}.user-create-card__mark{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:14px;color:#fff;background:linear-gradient(145deg,#a855f7,#6d28d9);box-shadow:0 12px 26px rgba(124,45,226,.3)}.user-create-card__mark .material-symbols-rounded{font-size:27px}.user-create-card__eyebrow{display:block;margin-bottom:3px;color:#c4a7ff;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.user-create-card h1{margin:0;font-size:25px;line-height:1.2}.user-create-card__header p,.user-create-section__heading p{margin:5px 0 0;color:var(--uc-muted);font-size:13px}.user-create-icon-button{flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;color:var(--uc-muted);text-decoration:none;transition:.18s}.user-create-icon-button:hover{color:var(--uc-text);background:rgba(148,163,184,.12)}.user-create-form__content{display:grid;gap:16px;padding:22px 26px}.user-create-section{display:grid;gap:18px;padding:20px;border:1px solid var(--uc-border);border-radius:13px;background:var(--uc-surface)}.user-create-section__heading{display:flex;align-items:center;gap:11px}.user-create-section__heading>.material-symbols-rounded{color:#b88cff}.user-create-section__heading h2{margin:0;font-size:16px}.user-create-form__password-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.user-create-field{display:grid;gap:8px;min-width:0}.user-create-field__label{color:var(--uc-muted);font-size:12px;font-weight:750}.user-create-field__control{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 13px;box-sizing:border-box;border:1px solid rgba(148,163,184,.28);border-radius:10px;background:rgba(7,12,25,.46);transition:.18s}.user-create-field__control:focus-within{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.13)}.user-create-field__control>.material-symbols-rounded{flex:none;color:#8997b5;font-size:20px}.user-create-field__control input,.user-create-field__control select{width:100%;min-width:0;height:46px;padding:0;border:0;outline:0;color:var(--uc-text);background:transparent;font:inherit}.user-create-field__control input::placeholder{color:#71809e}.user-create-field__control select{appearance:none;cursor:pointer;color-scheme:dark}.user-create-field__control select option{background:#151b31;color:#f4f7ff}.user-create-field__visibility{flex:none;width:34px;height:34px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;color:var(--uc-muted);background:transparent;cursor:pointer}.user-create-field__visibility:hover{color:var(--uc-text);background:rgba(148,163,184,.12)}.user-create-field__match{opacity:0;transition:.18s}.user-create-field__match.is-match{opacity:1;color:#4ade80}.user-create-field>small{color:var(--uc-muted);font-size:11px}.user-create-password-strength{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-items:center}.user-create-password-strength i{height:3px;border-radius:99px;background:rgba(148,163,184,.18)}.user-create-password-strength small{grid-column:1/-1;color:var(--uc-muted);font-size:11px}.user-create-password-strength[data-level="1"] i:nth-child(1){background:#f87171}.user-create-password-strength[data-level="2"] i:nth-child(-n+2){background:#fbbf24}.user-create-password-strength[data-level="3"] i{background:#4ade80}.user-create-errors{display:flex;gap:12px;padding:15px;border:1px solid rgba(248,113,113,.32);border-radius:11px;color:#fecaca;background:rgba(127,29,29,.2)}.user-create-errors ul{margin:6px 0 0;padding-left:18px}.user-create-form__footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:18px 26px;border-top:1px solid var(--uc-border);background:rgba(16,23,41,.72)}.user-create-button{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border:0;border-radius:10px;color:var(--uc-text);background:rgba(148,163,184,.13);font:inherit;font-weight:750;text-decoration:none;cursor:pointer;transition:.18s}.user-create-button:hover{transform:translateY(-1px);background:rgba(148,163,184,.2)}.user-create-button--primary{color:#fff;background:linear-gradient(135deg,#a855f7,#7c2de2);box-shadow:0 12px 24px rgba(124,45,226,.24)}.user-create-button .material-symbols-rounded{font-size:19px}
+html[data-theme="light"] .user-create-page{--uc-bg:linear-gradient(180deg,#fff,#f5f7fb);--uc-surface:rgba(15,23,42,.025);--uc-border:rgba(15,23,42,.12);--uc-text:#172033;--uc-muted:#64748b}.user-create-page:is(html[data-theme="light"] *) .user-create-card__header,.user-create-page:is(html[data-theme="light"] *) .user-create-form__footer{background:rgba(255,255,255,.74)}html[data-theme="light"] .user-create-field__control{background:#fff}html[data-theme="light"] .user-create-field__control select{color-scheme:light}html[data-theme="light"] .user-create-field__control select option{background:#fff;color:#172033}
+@media(prefers-color-scheme:light){html:not([data-theme="dark"]) .user-create-page{--uc-bg:linear-gradient(180deg,#fff,#f5f7fb);--uc-surface:rgba(15,23,42,.025);--uc-border:rgba(15,23,42,.12);--uc-text:#172033;--uc-muted:#64748b}html:not([data-theme="dark"]) .user-create-card__header,html:not([data-theme="dark"]) .user-create-form__footer{background:rgba(255,255,255,.74)}html:not([data-theme="dark"]) .user-create-field__control{background:#fff}html:not([data-theme="dark"]) .user-create-field__control select{color-scheme:light}}
+@media(max-width:680px){.user-create-page{padding:16px 10px 34px}.user-create-card__header,.user-create-form__content,.user-create-form__footer{padding:17px}.user-create-card__mark{width:42px;height:42px;flex-basis:42px}.user-create-form__password-grid{grid-template-columns:1fr}.user-create-form__footer{align-items:stretch;flex-direction:column-reverse}.user-create-button{width:100%;box-sizing:border-box}}
 </style>
+
+<script>
+function setupNewUserForm(){const page=document.querySelector('.user-create-page');if(!page||page.dataset.bound==='true')return;page.dataset.bound='true';const password=page.querySelector('[data-user-password]'),confirmation=page.querySelector('[data-user-password-confirmation]'),strength=page.querySelector('[data-password-strength]'),match=page.querySelector('[data-password-match]');page.querySelector('[data-password-toggle]')?.addEventListener('click',function(){const visible=password.type==='text';password.type=visible?'password':'text';confirmation.type=visible?'password':'text';this.querySelector('.material-symbols-rounded').textContent=visible?'visibility':'visibility_off';this.setAttribute('aria-label',visible?'Mostrar senha':'Ocultar senha')});function update(){const value=password?.value||'';let level=0;if(value.length>=6)level=1;if(value.length>=8&&/[A-Za-z]/.test(value)&&/\d/.test(value))level=2;if(value.length>=10&&/[A-Z]/.test(value)&&/\d/.test(value)&&/[^A-Za-z0-9]/.test(value))level=3;if(strength){strength.dataset.level=level;strength.querySelector('small').textContent=['Informe uma senha segura','Senha fraca','Senha média','Senha forte'][level]}if(match)match.classList.toggle('is-match',confirmation.value.length>0&&confirmation.value===value)}password?.addEventListener('input',update);confirmation?.addEventListener('input',update);update()}
+document.addEventListener('turbo:load',setupNewUserForm);document.addEventListener('DOMContentLoaded',setupNewUserForm);if(document.readyState!=='loading')setupNewUserForm();
+</script>

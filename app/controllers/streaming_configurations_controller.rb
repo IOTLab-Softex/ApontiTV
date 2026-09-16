@@ -23,6 +23,10 @@ class StreamingConfigurationsController < ApplicationController
   ].freeze
 
   before_action :set_streaming_configuration, only: %i[show edit update destroy]
+  before_action :prepare_monitoring_integration, only: %i[edit update]
+
+  def edit
+  end
 
   def update
     previous_widgets_state = @streaming_configuration.widgets_for_ffmpeg?
@@ -54,6 +58,18 @@ class StreamingConfigurationsController < ApplicationController
   end
 
   private
+
+  def prepare_monitoring_integration
+    token_file = Rails.root.join("config", "monitoring.token")
+    @monitoring_integration_enabled = ENV["APONTI_MONITORING_TOKEN"].present? || token_file.file?
+    snapshot = TvMonitoringSnapshot.call
+    @monitoring_tv_count = snapshot[:tvs].size
+    @monitoring_online_count = snapshot[:tvs].count { |tv| tv[:app_online] == 1 }
+    @monitoring_status_guide = TvMonitoringSnapshot::STATUS_GUIDE
+    @monitoring_api_url = monitoring_tvs_url(locale: nil)
+    @monitoring_zabbix_url = ENV.fetch("APONTI_ZABBIX_URL", "http://192.168.1.109/zabbix/")
+    @monitoring_grafana_url = ENV.fetch("APONTI_GRAFANA_URL", "http://192.168.1.109:3000/d/aponti-tv-status/aponti-tv-status")
+  end
 
   def start_overlay_script
     command = "start /B /MIN node app/javascript/generate_overlay.js start"

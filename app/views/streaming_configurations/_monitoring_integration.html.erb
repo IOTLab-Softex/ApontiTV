@@ -1,0 +1,66 @@
+<section class="system-config-section system-config-monitoring" id="monitoring-integration">
+  <div class="system-config-section__title">
+    <i class="fas fa-chart-line" aria-hidden="true"></i>
+    <div>
+      <h2>Integração e monitoramento</h2>
+      <p>Status das TVs enviado ao Zabbix e exibido no Grafana.</p>
+    </div>
+  </div>
+
+  <div class="system-config-monitoring__summary">
+    <div><span>Integração</span><strong class="<%= @monitoring_integration_enabled ? 'is-online' : 'is-offline' %>"><%= @monitoring_integration_enabled ? "Ativa" : "Inativa" %></strong></div>
+    <div><span>Coleta</span><strong>10 segundos</strong></div>
+    <div><span>TVs cadastradas</span><strong><%= @monitoring_tv_count %></strong></div>
+    <div><span>Apps online agora</span><strong><%= @monitoring_online_count %></strong></div>
+  </div>
+
+  <div class="system-config-monitoring__actions">
+    <%= link_to @monitoring_grafana_url, target: "_blank", rel: "noopener", class: "system-config-btn system-config-btn--primary" do %>
+      <i class="fas fa-chart-area" aria-hidden="true"></i><span>Abrir painel no Grafana</span>
+    <% end %>
+    <%= link_to @monitoring_zabbix_url, target: "_blank", rel: "noopener", class: "system-config-btn system-config-btn--ghost" do %>
+      <i class="fas fa-heart-pulse" aria-hidden="true"></i><span>Abrir Zabbix</span>
+    <% end %>
+  </div>
+
+  <div class="system-config-note">
+    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+    <span>API protegida: <code><%= @monitoring_api_url %></code>. O token fica oculto e nunca é exibido nesta página.</span>
+  </div>
+
+  <details class="system-config-manual" open>
+    <summary><i class="fas fa-book-open" aria-hidden="true"></i> Manual dos status</summary>
+    <div class="system-config-manual__body">
+      <h3>Status geral</h3>
+      <p>Este é o item recomendado para alertas e para uma visão rápida.</p>
+      <div class="system-config-status-table-wrap">
+        <table class="system-config-status-table">
+          <thead><tr><th>Código</th><th>Status</th><th>Condição</th></tr></thead>
+          <tbody>
+            <% @monitoring_status_guide[:overall].each do |code, label, description| %>
+              <tr><td><code><%= code %></code></td><td><strong><%= label %></strong></td><td><%= description %></td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="system-config-manual__grids">
+        <% [[:tv, "Status da TV"], [:app, "Status do aplicativo"], [:content, "Conteúdo exibido"]].each do |key, title| %>
+          <div>
+            <h3><%= title %></h3>
+            <ul>
+              <% @monitoring_status_guide[key].each do |code, label| %>
+                <li><code><%= code %></code><span><%= label %></span></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="system-config-note">
+        <i class="fas fa-circle-info" aria-hidden="true"></i>
+        <span><strong>TV ligada/desligada</strong> usa o ping. Alguns aparelhos em espera continuam respondendo. <strong>App aberto/fechado</strong> usa o sinal do app; após 45 segundos sem contato ele fica Fechado.</span>
+      </div>
+    </div>
+  </details>
+</section>

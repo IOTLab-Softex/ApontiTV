@@ -19,6 +19,17 @@ class SavedBroadcastPlaylist < ApplicationRecord
     items.size
   end
 
+  def in_production?
+    return @in_production if defined?(@in_production)
+
+    assigned_broadcasts = Broadcast.where(saved_broadcast_playlist_id: id)
+    recently_playing = assigned_broadcasts
+      .where(app_player_presence_status: "playing")
+      .where("app_player_presence_updated_at >= ?", Broadcast::APP_PLAYER_PRESENCE_TTL.ago)
+
+    @in_production = assigned_broadcasts.where(status: "running").or(recently_playing).exists?
+  end
+
   def as_editor_json(view_context, preview_url_builder: nil)
     {
       id: id,
@@ -28,6 +39,8 @@ class SavedBroadcastPlaylist < ApplicationRecord
       transition_style: transition_style,
       transition_duration_ms: transition_duration_ms,
       sync_enabled: sync_enabled?,
+      in_production: in_production?,
+      deletable: !in_production?,
       item_count: item_count,
       updated_at_label: updated_at.strftime("%d/%m/%Y %H:%M"),
       items: items.includes(:media_blob).map { |item| item.as_editor_json(view_context, preview_url_builder: preview_url_builder) }

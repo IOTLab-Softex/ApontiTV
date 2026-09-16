@@ -12,6 +12,23 @@
         </div>
       <% end %>
 
+      <nav class="system-config-tabs" role="tablist" aria-label="Seções das configurações">
+        <button type="button" class="system-config-tab is-active" role="tab" aria-selected="true" aria-controls="config-tab-general" data-config-tab="general">
+          <i class="fas fa-server" aria-hidden="true"></i><span>Servidor</span>
+        </button>
+        <button type="button" class="system-config-tab" role="tab" aria-selected="false" aria-controls="config-tab-widgets" data-config-tab="widgets">
+          <i class="fas fa-puzzle-piece" aria-hidden="true"></i><span>Widgets</span>
+        </button>
+        <button type="button" class="system-config-tab" role="tab" aria-selected="false" aria-controls="config-tab-integrations" data-config-tab="integrations">
+          <i class="fas fa-chart-line" aria-hidden="true"></i><span>Integrações</span>
+        </button>
+        <button type="button" class="system-config-tab" role="tab" aria-selected="false" aria-controls="config-tab-access" data-config-tab="access">
+          <i class="fas fa-user-shield" aria-hidden="true"></i><span>Acesso</span>
+        </button>
+      </nav>
+
+      <div class="system-config-tab-panel is-active" id="config-tab-general" role="tabpanel" data-config-panel="general">
+
       <section class="system-config-section">
         <div class="system-config-section__title">
           <i class="fas fa-server" aria-hidden="true"></i>
@@ -47,7 +64,9 @@
           </label>
         </div>
       </section>
+      </div>
 
+      <div class="system-config-tab-panel" id="config-tab-widgets" role="tabpanel" data-config-panel="widgets" hidden>
       <section class="system-config-section">
         <div class="system-config-section__title">
           <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
@@ -311,7 +330,13 @@
           </div>
         </div>
       </section>
+      </div>
 
+      <div class="system-config-tab-panel" id="config-tab-integrations" role="tabpanel" data-config-panel="integrations" hidden>
+        <%= render "streaming_configurations/monitoring_integration" %>
+      </div>
+
+      <div class="system-config-tab-panel" id="config-tab-access" role="tabpanel" data-config-panel="access" hidden>
       <section class="system-config-section">
         <div class="system-config-section__title">
           <i class="fab fa-google" aria-hidden="true"></i>
@@ -353,6 +378,7 @@
           <span>URI de callback: <code><%= "#{request.protocol}#{request.host_with_port}/users/auth/google_oauth2/callback" %></code></span>
         </div>
       </section>
+      </div>
 
       <footer class="system-config-footer">
         <%= link_to broadcasts_path, class: "system-config-btn system-config-btn--ghost" do %>
@@ -383,6 +409,7 @@
 
   function initializeStreamingConfigurationForm() {
     const checkbox = document.querySelector("#streaming-checkbox");
+    bindConfigurationTabs();
     bindWidgetBarPresets();
     bindWeatherVideoConversionModal();
     if (!checkbox || checkbox.dataset.bound === "true") return;
@@ -408,6 +435,53 @@
         console.error("Erro na requisicao:", error);
       }
     });
+  }
+
+  function bindConfigurationTabs() {
+    const form = document.querySelector(".system-config-form");
+    if (!form || form.dataset.tabsBound === "true") return;
+
+    const tabs = Array.from(form.querySelectorAll("[data-config-tab]"));
+    const panels = Array.from(form.querySelectorAll("[data-config-panel]"));
+    if (!tabs.length || !panels.length) return;
+    form.dataset.tabsBound = "true";
+
+    const activate = (name, updateHash = true) => {
+      const selectedTab = tabs.find((tab) => tab.dataset.configTab === name) || tabs[0];
+      const selectedName = selectedTab.dataset.configTab;
+      tabs.forEach((tab) => {
+        const active = tab === selectedTab;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+        tab.tabIndex = active ? 0 : -1;
+      });
+      panels.forEach((panel) => {
+        const active = panel.dataset.configPanel === selectedName;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+      if (updateHash) history.replaceState(null, "", `#config-${selectedName}`);
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => activate(tab.dataset.configTab));
+      tab.addEventListener("keydown", (event) => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(index + direction + tabs.length) % tabs.length];
+        activate(next.dataset.configTab);
+        next.focus();
+      });
+    });
+
+    form.addEventListener("invalid", (event) => {
+      const panel = event.target.closest("[data-config-panel]");
+      if (panel) activate(panel.dataset.configPanel);
+    }, true);
+
+    const requestedTab = window.location.hash.replace("#config-", "");
+    activate(tabs.some((tab) => tab.dataset.configTab === requestedTab) ? requestedTab : "general", false);
   }
 
   function bindWidgetBarPresets() {
@@ -506,6 +580,60 @@
   .system-config-form {
     display: grid;
     gap: 16px;
+  }
+
+  .system-config-tabs {
+    position: sticky;
+    top: 12px;
+    z-index: 25;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--system-config-card) 94%, transparent);
+    box-shadow: var(--system-config-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .system-config-tab {
+    min-height: 46px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 12px;
+    color: var(--system-config-muted);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: color .2s ease, background .2s ease, border-color .2s ease;
+  }
+
+  .system-config-tab:hover {
+    color: var(--system-config-text);
+    background: var(--system-config-card-strong);
+  }
+
+  .system-config-tab.is-active {
+    border-color: rgba(168, 85, 247, .52);
+    color: #ffffff;
+    background: #8b2ff2;
+    box-shadow: 0 10px 24px rgba(139, 47, 242, .28);
+  }
+
+  .system-config-tab-panel {
+    display: grid;
+    gap: 16px;
+  }
+
+  .system-config-tab-panel[hidden] {
+    display: none;
   }
 
   .system-config-section {
@@ -1033,6 +1161,108 @@
     min-height: 52px;
   }
 
+  .system-config-monitoring__summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .system-config-monitoring__summary > div {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    background: var(--system-config-card-strong);
+  }
+
+  .system-config-monitoring__summary span {
+    color: var(--system-config-muted);
+    font-size: 12px;
+  }
+
+  .system-config-monitoring__summary strong { font-size: 17px; }
+  .system-config-monitoring__summary .is-online { color: #4ade80; }
+  .system-config-monitoring__summary .is-offline { color: #f87171; }
+
+  .system-config-monitoring__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .system-config-manual {
+    margin-top: 16px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--system-config-card-strong);
+  }
+
+  .system-config-manual > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 16px;
+    color: var(--system-config-text);
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .system-config-manual__body { padding: 0 16px 16px; }
+  .system-config-manual__body h3 { margin: 16px 0 7px; font-size: 15px; }
+  .system-config-status-table-wrap { overflow-x: auto; }
+
+  .system-config-status-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--system-config-text);
+    font-size: 13px;
+  }
+
+  .system-config-status-table th,
+  .system-config-status-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--system-config-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .system-config-status-table th { color: var(--system-config-muted); }
+
+  .system-config-manual code {
+    color: #d8b4fe;
+    font-weight: 900;
+  }
+
+  .system-config-manual__grids {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .system-config-manual__grids > div {
+    padding: 0 13px 10px;
+    border: 1px solid var(--system-config-border);
+    border-radius: 10px;
+  }
+
+  .system-config-manual__grids ul {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .system-config-manual__grids li {
+    display: grid;
+    grid-template-columns: 25px 1fr;
+    gap: 7px;
+  }
+
   .system-config-footer {
     position: sticky;
     bottom: 18px;
@@ -1143,11 +1373,27 @@
       align-items: stretch;
     }
 
+    .system-config-tabs {
+      top: 6px;
+      grid-template-columns: repeat(4, minmax(94px, 1fr));
+      overflow-x: auto;
+    }
+
+    .system-config-tab {
+      min-width: 94px;
+      padding: 0 9px;
+    }
+
     .system-config-grid {
       grid-template-columns: 1fr;
     }
 
     .system-config-weather-assets__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .system-config-monitoring__summary,
+    .system-config-manual__grids {
       grid-template-columns: 1fr;
     }
   }

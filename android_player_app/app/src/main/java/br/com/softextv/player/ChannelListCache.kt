@@ -11,8 +11,13 @@ class ChannelListCache(context: Context) {
     private val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun save(rawBody: String, savedAtMs: Long = System.currentTimeMillis()) {
+        // Keep website passwords out of the persistent channel-list cache.
+        val safeBody = org.json.JSONArray(rawBody)
+        for (index in 0 until safeBody.length()) {
+            safeBody.optJSONObject(index)?.optJSONObject("official_app_browser_rotation")?.remove("login")
+        }
         preferences.edit()
-            .putString(KEY_RAW_BODY, rawBody)
+            .putString(KEY_RAW_BODY, safeBody.toString())
             .putLong(KEY_SAVED_AT, savedAtMs)
             .apply()
     }

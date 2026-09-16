@@ -885,6 +885,9 @@
 <script>
   function initializeBroadcastPlaylistEditorModal() {
     const modal = document.querySelector("[data-playlist-editor-modal]");
+    // Turbo retains this listener after leaving the standalone editor page.
+    // The broadcasts index owns its editor and its draggable four-column rows.
+    if (modal?.dataset.playlistEditorOwner === "broadcast-index") return;
     const form = document.querySelector("[data-playlist-editor-form]");
     const library = document.querySelector("[data-playlist-library]");
     const upload = document.querySelector("[data-playlist-upload]");

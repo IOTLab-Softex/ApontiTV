@@ -44,8 +44,18 @@ class BroadcastPlaylistsController < ApplicationController
   end
 
   def destroy
-    @playlist.destroy
+    if @playlist.in_production?
+      render json: { error: I18n.t("PlaylistInProductionDeleteBlocked") }, status: :conflict
+      return
+    end
+
+    SavedBroadcastPlaylist.transaction do
+      Broadcast.where(saved_broadcast_playlist_id: @playlist.id).update_all(saved_broadcast_playlist_id: nil)
+      @playlist.destroy!
+    end
     head :no_content
+  rescue ActiveRecord::RecordNotDestroyed => e
+    render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
   end
 
   def upload_media

@@ -38,6 +38,7 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import android.webkit.WebChromeClient
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -85,6 +86,8 @@ class PlayerActivity : AppCompatActivity() {
     private val apiClient by lazy { TvApiClient(applicationContext, BuildConfig.API_BASE_URLS) }
     private val localPowerScheduleManager by lazy { LocalPowerScheduleManager(applicationContext) }
     private val directVideoCache by lazy { DirectVideoCache(applicationContext) }
+    private val playlistMediaCache by lazy { PlaylistMediaCache(applicationContext) }
+    private val playlistCacheExecutor = Executors.newSingleThreadExecutor()
     private var showingBrowser = false
     private var useVideoEndTrigger = false
     private var browserRotationEnabled = false
@@ -198,6 +201,7 @@ class PlayerActivity : AppCompatActivity() {
             playlistSyncStartedAtMs = intent.getLongExtra(EXTRA_PLAYLIST_SYNC_STARTED_AT_MS, 0L)
             updatePlaylistServerClockOffset(intent.getLongExtra(EXTRA_PLAYLIST_SYNC_SERVER_TIME_MS, 0L))
             playlistItems = parsePlaylistItems(currentPlaylistItemsJson)
+            synchronizePlaylistMediaCache(playlistItems)
             binding.closeButton.setOnClickListener { returnToSelection() }
             binding.playerHeader.visibility = View.GONE
             configureBrowserView()
@@ -526,6 +530,14 @@ class PlayerActivity : AppCompatActivity() {
             exoPlayer.addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
                     retryHandler.removeCallbacks(playbackReadyTimeoutRunnable)
+                    val cachedPlaylistItem = currentPlaylistItem()?.takeIf { playlistPlaybackActive && it.type == "video" }
+                    if (mediaUrl.startsWith("file:") && cachedPlaylistItem != null) {
+                        playlistMediaCache.delete(cachedPlaylistItem.url)
+                        synchronizePlaylistMediaCache(playlistItems)
+                        releasePlayer()
+                        startPlayer(cachedPlaylistItem.url, keepCurrentSurfaceUntilReady = true)
+                        return
+                    }
                     val directVideoUrl = intent.getStringExtra(EXTRA_DIRECT_VIDEO_URL).orEmpty()
                     if (mediaUrl.startsWith("file:") && directVideoUrl.isNotBlank() && !directLocalRetryAttempted) {
                         directLocalRetryAttempted = true
@@ -691,7 +703,7 @@ class PlayerActivity : AppCompatActivity() {
             bringPlayerOverlaysToFront()
             binding.playlistImageView.setImageDrawable(null)
             binding.playlistImageView.alpha = 0f
-            RemoteImageLoader.loadInto(binding.playlistImageView, item.url) {
+            RemoteImageLoader.loadInto(binding.playlistImageView, playlistMediaCache.localUri(item.url) ?: item.url) {
                 if (!playlistPlaybackActive || currentPlaylistItem()?.id != item.id || awaitingSelectionReturn) return@loadInto
                 binding.playlistImageView.visibility = View.VISIBLE
                 binding.playlistImageView.bringToFront()
@@ -711,10 +723,11 @@ class PlayerActivity : AppCompatActivity() {
 
         preparePlaylistSurfaceLayout(binding.playerView)
         binding.playerView.visibility = View.INVISIBLE
+        val playableItemUrl = playlistMediaCache.localUri(item.url) ?: item.url
         startPlayer(
-            item.url,
+            playableItemUrl,
             keepCurrentSurfaceUntilReady = true,
-            preparedPlayer = takePreloadedPlaylistPlayer(item.url),
+            preparedPlayer = takePreloadedPlaylistPlayer(playableItemUrl),
             startPositionMs = elapsedMs.coerceIn(0L, (itemDurationMs - 500L).coerceAtLeast(0L))
         )
         if (playlistItems.size > 1 && (playlistSyncEnabled || item.videoDurationMode != "video_end")) {
@@ -891,16 +904,17 @@ class PlayerActivity : AppCompatActivity() {
             releasePreloadedPlaylistPlayer()
             return
         }
-        if (preloadedPlaylistUrl == nextItem.url && preloadedPlaylistPlayer != null) return
+        val playableItemUrl = playlistMediaCache.localUri(nextItem.url) ?: nextItem.url
+        if (preloadedPlaylistUrl == playableItemUrl && preloadedPlaylistPlayer != null) return
 
         releasePreloadedPlaylistPlayer()
         runCatching {
             buildPlaylistExoPlayer().also { exoPlayer ->
-                exoPlayer.setMediaItem(MediaItem.fromUri(nextItem.url))
+                exoPlayer.setMediaItem(MediaItem.fromUri(playableItemUrl))
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = false
                 preloadedPlaylistPlayer = exoPlayer
-                preloadedPlaylistUrl = nextItem.url
+                preloadedPlaylistUrl = playableItemUrl
             }
         }.onFailure {
             releasePreloadedPlaylistPlayer()
@@ -1130,6 +1144,7 @@ class PlayerActivity : AppCompatActivity() {
                         } ?: false
                         if (status.status == "running" && (!freshUrl.isNullOrBlank() || freshPlaylist.isNotEmpty() || hasWebOnly)) {
                             playlistItems = freshPlaylist
+                            synchronizePlaylistMediaCache(playlistItems)
                             stopOfficialAppRotation()
                             releasePlayer()
                             releasePreloadedPlaylistPlayer()
@@ -1168,9 +1183,17 @@ class PlayerActivity : AppCompatActivity() {
         player = null
     }
 
+    private val webPageLogin = WebPageLogin()
+
     private fun configureBrowserView() {
         binding.browserView.apply {
             webViewClient = object : WebViewClient() {
+                override fun onReceivedHttpAuthRequest(view: WebView, handler: android.webkit.HttpAuthHandler, host: String, realm: String) {
+                    webPageLogin.httpAuth(view, handler, host,
+                        intent.getStringExtra(EXTRA_OFFICIAL_APP_PAGE_URL).orEmpty(),
+                        intent.getStringExtra(EXTRA_OFFICIAL_APP_LOGIN))
+                }
+
                 override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     browserPageLoaded = false
@@ -1179,6 +1202,9 @@ class PlayerActivity : AppCompatActivity() {
 
                 override fun onPageFinished(view: WebView, url: String) {
                     super.onPageFinished(view, url)
+                    webPageLogin.pageFinished(view, url,
+                        intent.getStringExtra(EXTRA_OFFICIAL_APP_PAGE_URL).orEmpty(),
+                        intent.getStringExtra(EXTRA_OFFICIAL_APP_LOGIN))
                     val isPortraitBrowser = isPortraitOrientation()
                     val viewportContent = if (isPortraitBrowser) {
                         "width=390, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
@@ -1437,6 +1463,7 @@ class PlayerActivity : AppCompatActivity() {
                             (browser.enabled && (
                                 browser.webOnly != intent.getBooleanExtra(EXTRA_OFFICIAL_APP_WEB_ONLY, false) ||
                                     browser.pageUrl.orEmpty() != intent.getStringExtra(EXTRA_OFFICIAL_APP_PAGE_URL).orEmpty() ||
+                                    browser.loginJson.orEmpty() != intent.getStringExtra(EXTRA_OFFICIAL_APP_LOGIN).orEmpty() ||
                                     (browser.rotationTrigger ?: "time_interval") != intent.getStringExtra(EXTRA_OFFICIAL_APP_ROTATION_TRIGGER).orEmpty().ifBlank { "time_interval" } ||
                                     browser.switchIntervalSeconds != intent.getIntExtra(EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS, 300) ||
                                     browser.pageDurationSeconds != intent.getIntExtra(EXTRA_OFFICIAL_APP_PAGE_DURATION_SECONDS, 15)
@@ -1579,8 +1606,9 @@ class PlayerActivity : AppCompatActivity() {
         if (restartPlaybackPending) return
 
         restartPlaybackPending = true
-        if (freshPlaylist.isNotEmpty()) {
+        if (freshPlaylistJson.isNotBlank()) {
             playlistItems = freshPlaylist
+            synchronizePlaylistMediaCache(playlistItems)
             currentPlaylistIndex = 0
             currentPlaylistItemsJson = freshPlaylistJson.ifBlank { playlistItemsToJson(freshPlaylist) }
             intent.putExtra(EXTRA_PLAYLIST_ITEMS_JSON, currentPlaylistItemsJson)
@@ -1864,6 +1892,9 @@ class PlayerActivity : AppCompatActivity() {
         if (config == null) return
 
         intent.putExtra(EXTRA_OFFICIAL_APP_PAGE_URL, config.pageUrl)
+        val loginChanged = intent.getStringExtra(EXTRA_OFFICIAL_APP_LOGIN) != config.loginJson
+        intent.putExtra(EXTRA_OFFICIAL_APP_LOGIN, config.loginJson)
+        if (loginChanged) binding.browserView.reload()
         intent.putExtra(EXTRA_OFFICIAL_APP_ROTATION_ENABLED, config.enabled)
         intent.putExtra(EXTRA_OFFICIAL_APP_WEB_ONLY, config.webOnly)
         intent.putExtra(EXTRA_OFFICIAL_APP_ROTATION_TRIGGER, config.rotationTrigger ?: "time_interval")
@@ -3565,6 +3596,11 @@ class PlayerActivity : AppCompatActivity() {
         }.getOrDefault(emptyList())
     }
 
+    private fun synchronizePlaylistMediaCache(items: List<PlaylistItem>) {
+        val urls = items.map { it.url }
+        playlistCacheExecutor.execute { playlistMediaCache.synchronize(urls) }
+    }
+
     private fun playlistItemsToJson(items: List<PlaylistItem>): String {
         val jsonArray = JSONArray()
         items.forEach { item ->
@@ -3596,6 +3632,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_OFFICIAL_APP_ROTATION_ENABLED = "official_app_rotation_enabled"
         const val EXTRA_OFFICIAL_APP_WEB_ONLY = "official_app_web_only"
         const val EXTRA_OFFICIAL_APP_PAGE_URL = "official_app_page_url"
+        const val EXTRA_OFFICIAL_APP_LOGIN = "official_app_login"
         const val EXTRA_OFFICIAL_APP_ROTATION_TRIGGER = "official_app_rotation_trigger"
         const val EXTRA_OFFICIAL_APP_SWITCH_INTERVAL_SECONDS = "official_app_switch_interval_seconds"
         const val EXTRA_OFFICIAL_APP_PAGE_DURATION_SECONDS = "official_app_page_duration_seconds"

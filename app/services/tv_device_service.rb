@@ -1,5 +1,6 @@
 require "socket"
 require "open3"
+require "timeout"
 
 class TvDeviceService
   Result = Struct.new(:success?, :message, keyword_init: true)
@@ -305,6 +306,33 @@ class TvDeviceService
     end
   end
 
+  def install_official_app(apk_path)
+    return Result.new(success?: false, message: "Atualizacao disponivel apenas para TV Android/Fire Stick via ADB.") unless adb_device?
+    return Result.new(success?: false, message: "Informe o IP da TV ou o IP ADB/VPN.") if target_host.blank?
+    return Result.new(success?: false, message: "APK do Aponti TV nao encontrado. Gere a build antes de atualizar.") unless File.file?(apk_path)
+
+    connect_result = connect_adb
+    return connect_result unless connect_result.success?
+
+    install_result = run_adb_with_timeout(180, "-s", adb_device_id, "install", "-r", apk_path.to_s)
+    unless install_result[:success] && install_result[:message].to_s.match?(/Success/i)
+      return Result.new(success?: false, message: "Nao foi possivel atualizar o Aponti TV: #{install_result[:message]}")
+    end
+
+    run_adb("-s", adb_device_id, "shell", "am", "force-stop", OFFICIAL_APP_PACKAGE)
+    open_result = run_adb(
+      "-s", adb_device_id, "shell", "am", "start",
+      "-n", "#{OFFICIAL_APP_PACKAGE}/#{OFFICIAL_APP_MAIN_ACTIVITY}",
+      "--ez", "force_selection_mode", "false",
+      "--el", "broadcast_id", @broadcast.id.to_s
+    )
+    return Result.new(success?: false, message: "APK instalado, mas o app nao abriu: #{open_result[:message]}") unless open_result[:success]
+
+    Result.new(success?: true, message: "Aponti TV atualizado para a versao #{Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME} em #{@broadcast.name}.")
+  rescue StandardError => e
+    Result.new(success?: false, message: e.message)
+  end
+
   def control_mode_label
     if adb_device?
       "ADB via #{target_host.presence || 'IP da TV'}:#{adb_port} para ligar e desligar"
@@ -574,10 +602,14 @@ class TvDeviceService
   end
 
   def run_adb(*args)
+    run_adb_with_timeout(3, *args)
+  end
+
+  def run_adb_with_timeout(timeout_seconds, *args)
     executable = adb_executable
     return { success: false, message: "ADB nao encontrado no Windows. Instale o platform-tools ou ajuste o PATH." } if executable.blank?
 
-    output, status = Open3.capture2e(executable, *args)
+    output, status = Timeout.timeout(timeout_seconds) { Open3.capture2e(executable, *args) }
     output_text = output.to_s.strip
 
     success = status.success? || output_text.match?(/already connected|connected to/i)
@@ -590,6 +622,8 @@ class TvDeviceService
     { success: success, message: message }
   rescue Errno::ENOENT
     { success: false, message: "ADB nao encontrado no Windows. Instale o platform-tools ou ajuste o PATH." }
+  rescue Timeout::Error
+    { success: false, message: "ADB nao respondeu em #{timeout_seconds} segundos." }
   rescue StandardError => e
     { success: false, message: e.message }
   end

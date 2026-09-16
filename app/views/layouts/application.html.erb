@@ -12,6 +12,7 @@
     <%= javascript_importmap_tags %>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet">
     <script>
       (function() {
         if (window.location.pathname.match(/\/users\/sign_in\/?$/)) {
@@ -139,7 +140,12 @@
                     aria-label="<%= I18n.t("UserMenu") %>"
                     aria-expanded="false"
                     data-sidebar-profile-avatar-button>
-              <%= current_user.email.to_s.first&.upcase || "U" %>
+              <% if !current_user.local_root? && current_user.andar360_identity&.fetch("has_photo", false) %>
+                <%= image_tag profile_photo_path, alt: "Foto de perfil", style: "width:100%;height:100%;object-fit:cover;border-radius:inherit;", onerror: "this.hidden=true;this.nextElementSibling.hidden=false;" %>
+                <span hidden><%= current_user.email.to_s.first&.upcase || "U" %></span>
+              <% else %>
+                <%= current_user.email.to_s.first&.upcase || "U" %>
+              <% end %>
             </button>
             <div class="app-sidebar__profile-copy">
               <strong><%= current_user.email %></strong>
@@ -215,7 +221,14 @@
               <i class="fas fa-globe" aria-hidden="true"></i>
               <%= form_with(url: "/change_locale", method: :get, local: true) do %>
                 <%= hidden_field_tag :return_to, request.fullpath %>
-                <%= select_tag :locale, options_for_select([['English', 'en'], ['Português', 'pt']], I18n.locale), data: { locale_select: true }, onchange: 'localStorage.setItem("aponti-locale", this.value); this.form.submit();' %>
+                <details class="app-language-menu">
+                  <summary aria-label="<%= I18n.t("language") %>"><span><%= I18n.locale.to_s == "pt" ? "Português" : "English" %></span><i class="fas fa-chevron-down" aria-hidden="true"></i></summary>
+                  <div class="app-language-menu__options">
+                    <% [["English", "en"], ["Português", "pt"]].each do |label, code| %>
+                      <button type="submit" name="locale" value="<%= code %>" class="<%= "is-selected" if I18n.locale.to_s == code %>" onclick="localStorage.setItem('aponti-locale', this.value)"><%= label %><% if I18n.locale.to_s == code %><i class="fas fa-check" aria-hidden="true"></i><% end %></button>
+                    <% end %>
+                  </div>
+                </details>
               <% end %>
             </div>
           <% end %>
@@ -301,6 +314,7 @@
         var menuButton = document.querySelector("[data-sidebar-profile-menu-button]");
         var avatarMenuButton = document.querySelector("[data-sidebar-profile-avatar-button]");
         var menu = document.querySelector("[data-sidebar-profile-menu]");
+        var profile = document.querySelector(".app-sidebar__profile");
         var sidebar = document.querySelector(".app-sidebar");
         var root = document.documentElement;
 
@@ -379,8 +393,8 @@
 
         initializeAppNotifications();
 
-        if (!menu || (menuButton && menuButton.dataset.profileMenuBound === "true")) return;
-        if (menuButton) menuButton.dataset.profileMenuBound = "true";
+        if (!menu || !profile || profile.dataset.profileMenuBound === "true") return;
+        profile.dataset.profileMenuBound = "true";
 
         function toggleProfileMenu(event) {
           event.stopPropagation();
@@ -391,11 +405,10 @@
           applyTheme(currentTheme(), false);
         }
 
-        if (menuButton) menuButton.addEventListener("click", toggleProfileMenu);
-        if (avatarMenuButton && avatarMenuButton.dataset.profileAvatarMenuBound !== "true") {
-          avatarMenuButton.dataset.profileAvatarMenuBound = "true";
-          avatarMenuButton.addEventListener("click", toggleProfileMenu);
-        }
+        profile.addEventListener("click", function(event) {
+          if (event.target.closest("[data-sidebar-profile-menu]")) return;
+          toggleProfileMenu(event);
+        });
 
         menu.addEventListener("click", function(event) {
           event.stopPropagation();
@@ -875,6 +888,7 @@
     position: absolute;
     left: 22px;
     right: 22px;
+    cursor: pointer;
 }
 
   .app-sidebar__avatar {
@@ -4312,4 +4326,180 @@
       display: none;
     }
   }
+</style>
+
+<style>
+body { padding-bottom: 0; }
+.app-banner__language { overflow: visible; }
+.app-banner__language form { display:flex; align-items:center; margin:0; }
+.app-language-menu { position: relative; min-width: 112px; color: var(--app-banner-control-text); }
+.app-language-menu summary { min-height:30px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; list-style:none; font-size:13px; font-weight:700; line-height:1; white-space:nowrap; }
+.app-language-menu summary > span { display:block; min-width:0; color:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.app-language-menu summary > i { flex:0 0 auto; font-size:11px; transition:transform .18s ease; }
+.app-language-menu[open] summary > i { transform:rotate(180deg); }
+.app-language-menu summary::-webkit-details-marker { display:none; }
+.app-language-menu__options { position:absolute; z-index:2000; right:-12px; top:calc(100% + 18px); min-width:160px; padding:5px; border-radius:10px; background:var(--app-banner-bg-solid, #151b31); border:1px solid var(--app-banner-border); box-shadow:0 12px 30px #0005; }
+.app-language-menu__options button { width:100%; min-height:38px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 10px; border:0; border-radius:6px; background:transparent; color:var(--app-banner-control-text); font-size:13px; font-weight:600; text-align:left; white-space:nowrap; cursor:pointer; }
+.app-language-menu__options button:hover, .app-language-menu__options button.is-selected { background:var(--app-banner-border); }
+.app-language-menu :focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+html[data-theme="light"] .app-language-menu__options { background:#fff; }
+</style>
+
+<script>
+if (!window.apontiLanguageMenuBound) {
+  window.apontiLanguageMenuBound = true;
+  document.addEventListener('click', function(event) {
+    document.querySelectorAll('.app-language-menu[open]').forEach(function(menu) {
+      if (!menu.closest('.app-banner__language').contains(event.target)) menu.open = false;
+    });
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.app-language-menu[open]').forEach(function(menu) {
+      menu.open = false;
+      menu.querySelector('summary').focus();
+    });
+  });
+}
+</script>
+
+<style>
+  .app-sidebar__context-menu {
+    --context-bg: linear-gradient(180deg, #151b31 0%, #101729 100%);
+    --context-border: rgba(169, 184, 220, .14);
+    --context-text: #f1f1f1;
+    --context-muted: #a8b4ce;
+    --context-control: rgba(255, 255, 255, .08);
+    --context-control-hover: rgba(255, 255, 255, .15);
+    padding: 14px;
+    border: 1px solid var(--context-border);
+    border-radius: 12px;
+    color: var(--context-text);
+    background: var(--context-bg);
+    box-shadow: 0 28px 80px rgba(2, 6, 23, .42), inset 0 1px rgba(255, 255, 255, .04);
+  }
+
+  .app-sidebar__context-title {
+    color: var(--context-muted);
+    text-transform: none;
+  }
+
+  .app-sidebar__theme-options {
+    border: 0;
+    border-radius: 10px;
+    background: var(--context-control);
+    box-shadow: none;
+  }
+
+  .app-sidebar__theme-options button {
+    border-radius: 8px;
+    color: var(--context-muted);
+  }
+
+  .app-sidebar__theme-options button:hover,
+  .app-sidebar__theme-options button.is-active {
+    color: var(--context-text);
+  }
+
+  .app-sidebar__theme-thumb {
+    border: 0;
+    border-radius: 8px;
+    background: var(--context-control-hover);
+    box-shadow: none;
+  }
+
+  .app-sidebar__context-item {
+    min-height: 46px;
+    margin-top: 4px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 10px;
+    color: var(--context-text);
+  }
+
+  .app-sidebar__context-item:hover {
+    background: var(--context-control-hover);
+    transform: none;
+  }
+
+  .app-sidebar__context-item i {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--context-text);
+    background: var(--context-control);
+  }
+
+  .app-sidebar__context-item::after {
+    color: var(--context-muted);
+  }
+
+  .app-sidebar__context-item--danger,
+  .app-sidebar__context-item--danger:hover,
+  .app-sidebar__context-item--danger i {
+    color: var(--context-text);
+  }
+
+  .app-sidebar__context-item--danger i {
+    background: var(--context-control);
+  }
+
+  .app-sidebar__context-item:focus-visible,
+  .app-sidebar__theme-options button:focus-visible {
+    outline: 2px solid var(--context-text);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    html:not([data-theme="dark"]) .app-sidebar__context-menu {
+      --context-bg: #f7f2fa;
+      --context-border: rgba(73, 69, 79, .14);
+      --context-text: #1d1b20;
+      --context-muted: #49454f;
+      --context-control: #e9e3ed;
+      --context-control-hover: #ded8e2;
+      color: var(--context-text);
+      background: var(--context-bg);
+      border-color: var(--context-border);
+      box-shadow: 0 8px 18px rgba(29, 27, 32, .14), 0 2px 5px rgba(29, 27, 32, .1);
+    }
+    html:not([data-theme="dark"]) .app-sidebar__context-title { color:var(--context-muted); }
+    html:not([data-theme="dark"]) .app-sidebar__theme-options { border:0; background:var(--context-control); box-shadow:none; }
+    html:not([data-theme="dark"]) .app-sidebar__theme-options button { border:0; color:var(--context-muted); background:transparent; }
+    html:not([data-theme="dark"]) .app-sidebar__theme-options button:is(:hover, .is-active) { color:var(--context-text); }
+    html:not([data-theme="dark"]) .app-sidebar__theme-thumb { border:0; background:var(--context-control-hover); box-shadow:none; }
+    html:not([data-theme="dark"]) .app-sidebar__context-item,
+    html:not([data-theme="dark"]) .app-sidebar__context-item--danger { border:0; color:var(--context-text); background:transparent; }
+    html:not([data-theme="dark"]) .app-sidebar__context-item:hover,
+    html:not([data-theme="dark"]) .app-sidebar__context-item--danger:hover { color:var(--context-text); background:var(--context-control-hover); transform:none; }
+    html:not([data-theme="dark"]) .app-sidebar__context-item i,
+    html:not([data-theme="dark"]) .app-sidebar__context-item--danger i { color:var(--context-text); background:var(--context-control); }
+    html:not([data-theme="dark"]) .app-sidebar__context-item::after { color:var(--context-muted); }
+  }
+
+  html[data-theme="light"] .app-sidebar__context-menu {
+    --context-bg: #f7f2fa;
+    --context-border: rgba(73, 69, 79, .14);
+    --context-text: #1d1b20;
+    --context-muted: #49454f;
+    --context-control: #e9e3ed;
+    --context-control-hover: #ded8e2;
+    color: var(--context-text);
+    background: var(--context-bg);
+    border-color: var(--context-border);
+    box-shadow: 0 8px 18px rgba(29, 27, 32, .14), 0 2px 5px rgba(29, 27, 32, .1);
+  }
+
+  html[data-theme="light"] .app-sidebar__context-title { color: var(--context-muted); }
+  html[data-theme="light"] .app-sidebar__theme-options { border:0; background:var(--context-control); box-shadow:none; }
+  html[data-theme="light"] .app-sidebar__theme-options button { border:0; color:var(--context-muted); background:transparent; }
+  html[data-theme="light"] .app-sidebar__theme-options button:is(:hover, .is-active) { color:var(--context-text); }
+  html[data-theme="light"] .app-sidebar__theme-thumb { border:0; background:var(--context-control-hover); box-shadow:none; }
+  html[data-theme="light"] .app-sidebar__context-item,
+  html[data-theme="light"] .app-sidebar__context-item--danger { border:0; color:var(--context-text); background:transparent; }
+  html[data-theme="light"] .app-sidebar__context-item:hover,
+  html[data-theme="light"] .app-sidebar__context-item--danger:hover { color:var(--context-text); background:var(--context-control-hover); transform:none; }
+  html[data-theme="light"] .app-sidebar__context-item i,
+  html[data-theme="light"] .app-sidebar__context-item--danger i { color:var(--context-text); background:var(--context-control); }
+  html[data-theme="light"] .app-sidebar__context-item::after { color:var(--context-muted); }
 </style>

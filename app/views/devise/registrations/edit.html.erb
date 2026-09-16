@@ -7,7 +7,7 @@
       <div class="profile-edit-card__header">
         <div>
           <h2>Credenciais</h2>
-          <p>Preencha somente a nova senha se deseja alterar sua senha atual.</p>
+          <p>Confirme sua senha atual e defina uma nova senha.</p>
         </div>
         <span class="profile-edit-card__badge">
           <i class="fas fa-lock" aria-hidden="true"></i>
@@ -22,7 +22,7 @@
           <span>E-mail</span>
           <div class="profile-edit-input-wrap">
             <i class="far fa-envelope" aria-hidden="true"></i>
-            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "profile-edit-input" %>
+            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "profile-edit-input", readonly: true %>
           </div>
         </label>
 
@@ -84,6 +84,7 @@
         <p>Use uma senha exclusiva para o Aponti TV e evite compartilhar esse acesso com outras pessoas.</p>
       </section>
 
+      <% if current_user.local_root? %>
       <section class="profile-edit-danger-zone">
         <div>
           <p class="profile-edit-danger-zone__kicker">Zona cr&iacute;tica</p>
@@ -99,6 +100,7 @@
           <span>Cancelar conta</span>
         <% end %>
       </section>
+      <% end %>
     </aside>
   </div>
 </div>

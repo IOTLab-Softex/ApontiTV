@@ -18,7 +18,7 @@ class BroadcastsController < ApplicationController
   before_action :authenticate_user!
   skip_before_action :verify_authenticity_token
   skip_before_action :authenticate_user!, only: [:mobile_index, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :presentation_command, :request_adb_authorization, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
-  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :toggle_presentation_mode, :presentation_command, :preview_stream, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
+  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :update_official_app, :toggle_presentation_mode, :presentation_command, :preview_stream, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
   before_action :require_admin_for_broadcast_edit, only: [:edit, :update]
   before_action :set_available_video_blobs, only: [:new, :edit, :create, :update]
   before_action :set_playlist_library, only: [:index, :new, :edit, :create, :update]
@@ -373,6 +373,7 @@ class BroadcastsController < ApplicationController
   end
 
   def mobile_index
+    response.headers["Cache-Control"] = "no-store"
     streaming_configuration = StreamingConfiguration.find_by(id: 1)
     mobile_device_context = resolve_mobile_device_context
     mark_mobile_app_presence!(mobile_device_context[:broadcast_id])
@@ -391,7 +392,7 @@ class BroadcastsController < ApplicationController
         playlist_sync: mobile_playlist_sync_payload(broadcast),
         presentation_control: presentation_control_payload(broadcast),
         playback_app_type: broadcast.playback_app_type,
-        official_app_browser_rotation: broadcast.playback_app_type_official_app? ? broadcast.official_app_payload(streaming_configuration) : nil,
+        official_app_browser_rotation: broadcast.playback_app_type_official_app? ? broadcast.official_app_payload(streaming_configuration, include_login: web_login_device_authorized?(broadcast)) : nil,
         official_app_widget_bar: mobile_widget_bar_payload_for(broadcast, streaming_configuration),
         thumbnail_url: mobile_thumbnail_url_for(broadcast, streaming_configuration),
         dashboard_preview: dashboard_preview_payload_for(broadcast),
@@ -413,6 +414,7 @@ class BroadcastsController < ApplicationController
   end
 
   def mobile_status
+    response.headers["Cache-Control"] = "no-store"
     streaming_configuration = StreamingConfiguration.find_by(id: 1)
     mobile_device_context = resolve_mobile_device_context
     if mobile_device_context[:broadcast_id] == @broadcast.id
@@ -429,7 +431,7 @@ class BroadcastsController < ApplicationController
       playlist_items: @broadcast.mobile_playlist_payload(streaming_configuration),
       playlist_sync: mobile_playlist_sync_payload(@broadcast),
       presentation_control: presentation_control_payload(@broadcast),
-      official_app_browser_rotation: @broadcast.playback_app_type_official_app? ? @broadcast.official_app_payload(streaming_configuration) : nil,
+      official_app_browser_rotation: @broadcast.playback_app_type_official_app? ? @broadcast.official_app_payload(streaming_configuration, include_login: web_login_device_authorized?(@broadcast)) : nil,
       official_app_widget_bar: mobile_widget_bar_payload_for(@broadcast, streaming_configuration),
       power_schedule: mobile_power_schedule_payload(@broadcast),
       keep_app_foreground_enabled: @broadcast.keep_app_foreground_enabled?,
@@ -461,6 +463,7 @@ class BroadcastsController < ApplicationController
     unless @broadcast.update_mobile_presence!(
       presence_status: presence_status,
       seen_at: Time.zone.now,
+      screen_on: params[:screen_on],
       playlist_item_id: params[:playlist_item_id],
       position_ms: params[:position_ms]
     )
@@ -529,11 +532,20 @@ class BroadcastsController < ApplicationController
     unless @broadcast.update_mobile_presence!(
       presence_status: player_status,
       seen_at: Time.zone.now,
+      screen_on: params[:screen_on],
       playlist_item_id: params[:playlist_item_id],
       position_ms: params[:position_ms]
     )
       render json: { ok: false, error: "invalid_player_status" }, status: :unprocessable_entity
       return
+    end
+    version_code = Integer(params[:app_version_code], exception: false)
+    if version_code&.positive?
+      @broadcast.update_columns(
+        app_version_name: params[:app_version_name].to_s.strip.first(40).presence,
+        app_version_code: version_code,
+        app_version_reported_at: Time.current
+      )
     end
     notify_mobile_player_status_change!(@broadcast.reload, previous_status, player_status, params[:message])
     analyze_playlist_sync_for!(@broadcast) if player_status == "playing"
@@ -585,10 +597,9 @@ class BroadcastsController < ApplicationController
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
 
-    send_file prepared_path,
-              filename: File.basename(prepared_path),
-              type: "video/mp4",
-              disposition: "inline"
+    return if send_mobile_file_range(prepared_path, filename: File.basename(prepared_path), content_type: "video/mp4")
+
+    send_file prepared_path, filename: File.basename(prepared_path), type: "video/mp4", disposition: "inline"
   end
 
   def mobile_playlist_item
@@ -596,10 +607,54 @@ class BroadcastsController < ApplicationController
     return head :not_found if item.blank? || !item.media.attached?
 
     media_path = ActiveStorage::Blob.service.path_for(item.media.blob.key)
-    send_file media_path,
-              filename: item.media.filename.to_s,
-              type: item.media.content_type,
-              disposition: "inline"
+    return if send_mobile_file_range(media_path, filename: item.media.filename.to_s, content_type: item.media.content_type)
+
+    send_file media_path, filename: item.media.filename.to_s, type: item.media.content_type, disposition: "inline"
+  end
+
+  def send_mobile_file_range(path, filename:, content_type:)
+    range_header = request.headers["Range"].presence || request.env["HTTP_RANGE"]
+    range_header = range_header.to_s
+    return false if range_header.blank?
+
+    file_size = File.size(path)
+    match = range_header.match(/\Abytes=(\d*)-(\d*)\z/)
+    return head(:range_not_satisfiable) || true unless match
+
+    start_byte = match[1].present? ? match[1].to_i : nil
+    end_byte = match[2].present? ? match[2].to_i : nil
+    if start_byte.nil?
+      suffix_length = [end_byte.to_i, file_size].min
+      start_byte = file_size - suffix_length
+      end_byte = file_size - 1
+    else
+      end_byte = [end_byte || (file_size - 1), file_size - 1].min
+    end
+    return head(:range_not_satisfiable) || true if start_byte.negative? || start_byte >= file_size || end_byte < start_byte
+
+    length = end_byte - start_byte + 1
+    response.status = :partial_content
+    response.headers["Accept-Ranges"] = "bytes"
+    response.headers["Content-Range"] = "bytes #{start_byte}-#{end_byte}/#{file_size}"
+    response.headers["Content-Length"] = length.to_s
+    response.headers["Content-Type"] = content_type.presence || "application/octet-stream"
+    response.headers["Content-Disposition"] = ActionDispatch::Http::ContentDisposition.format(
+      disposition: "inline", filename: filename
+    )
+    self.response_body = Enumerator.new do |output|
+      File.open(path, "rb") do |file|
+        file.seek(start_byte)
+        remaining = length
+        while remaining.positive?
+          chunk = file.read([remaining, 256.kilobytes].min)
+          break if chunk.blank?
+
+          output << chunk
+          remaining -= chunk.bytesize
+        end
+      end
+    end
+    true
   end
 
   def power_on_tv
@@ -784,6 +839,20 @@ class BroadcastsController < ApplicationController
     result = TvDeviceService.new(@broadcast).open_official_app
 
     redirect_back fallback_location: edit_broadcast_path(@broadcast),
+                  notice: (result.success? ? result.message : nil),
+                  alert: (result.success? ? nil : result.message)
+  end
+
+  def update_official_app
+    unless current_user&.admin?
+      redirect_back fallback_location: broadcasts_path, alert: "Apenas administradores podem atualizar o app da TV."
+      return
+    end
+
+    apk_path = Rails.root.join("android_player_app", "app", "build", "outputs", "apk", "debug", "app-debug.apk")
+    result = TvDeviceService.new(@broadcast).install_official_app(apk_path)
+
+    redirect_back fallback_location: broadcasts_path,
                   notice: (result.success? ? result.message : nil),
                   alert: (result.success? ? nil : result.message)
   end
@@ -1212,6 +1281,16 @@ class BroadcastsController < ApplicationController
     }
   end
 
+  # Credentials are delivered only to the bound TV from its configured address.
+  # Do not trust the client-supplied list of device IPs for secret delivery.
+  def web_login_device_authorized?(broadcast)
+    token = request.headers["X-TV-Device-Token"].to_s
+    expected = broadcast.reload.app_device_token.to_s
+    token.present? && expected.present? &&
+      ActiveSupport::SecurityUtils.secure_compare(token, expected) &&
+      request.remote_ip == broadcast.tv_ip.to_s.strip
+  end
+
   def mark_mobile_app_presence!(broadcast_id)
     return if broadcast_id.blank?
 
@@ -1629,6 +1708,9 @@ class BroadcastsController < ApplicationController
       :tv_mac_address,
       :adb_port,
       :official_app_page_url,
+      :official_app_login_enabled,
+      :official_app_login_username,
+      :official_app_login_password,
       :official_app_web_enabled,
       :official_app_web_only,
       :official_app_rotation_trigger,

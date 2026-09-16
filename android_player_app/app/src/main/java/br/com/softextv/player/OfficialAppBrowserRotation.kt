@@ -9,5 +9,6 @@ data class OfficialAppBrowserRotation(
     val pageDurationSeconds: Int,
     val transitionStyle: String?,
     val transitionDurationMs: Int,
-    val directVideoUrl: String?
+    val directVideoUrl: String?,
+    val loginJson: String? = null
 )

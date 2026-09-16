@@ -9,12 +9,14 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
 
     user = User.from_google_oauth(request.env["omniauth.auth"])
 
-    if user
+    if user&.active_for_authentication?
       sign_in_and_redirect user, event: :authentication
       set_flash_message(:notice, :success, kind: "Google") if is_navigational_format?
     else
-      redirect_to new_user_session_path(locale: I18n.locale), alert: "Este e-mail do Google nao esta cadastrado no sistema."
+      redirect_to new_user_session_path(locale: I18n.locale), alert: "Esta conta precisa estar cadastrada e autorizada para o Aponti TV no Andar360."
     end
+  rescue Andar360Identity::Unavailable
+    redirect_to new_user_session_path, alert: "O Andar360 está indisponível. Tente novamente em instantes."
   end
 
   def failure

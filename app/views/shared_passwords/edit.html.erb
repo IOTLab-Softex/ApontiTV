@@ -1,0 +1,39 @@
+<% content_for :page_title, "Escolha sua nova senha" %>
+<div class="login-container">
+  <div class="logo-mobile">
+    <%= image_tag "APONTI_MARCA.png", alt: "Aponti TV", class: "logo-mobile__image" %>
+  </div>
+  <div class="login-box">
+    <div class="login-header">
+      <%= image_tag "APONTI_MARCA.png", alt: "Aponti TV", class: "login-logo" %>
+      <h2 class="login-h2"><%= current_user.must_change_shared_password? ? "Escolha sua nova senha" : "Alterar senha" %></h2>
+      <p class="login-subtitle"><%= current_user.must_change_shared_password? ? "Substitua a senha temporária para liberar seu acesso ao Aponti TV." : "Confirme sua senha atual e escolha uma nova senha." %></p>
+    </div>
+    <% if flash[:alert].present? %>
+      <div class="login-alert" role="alert"><span><%= flash[:alert] %></span></div>
+    <% end %>
+    <%= form_with url: shared_password_path, method: :patch, local: true, class: "login-form", data: { turbo: false } do |form| %>
+      <% unless current_user.must_change_shared_password? %>
+        <div class="login-field">
+          <%= form.label :current_password, "Senha atual" %>
+          <%= form.password_field :current_password, required: true, autocomplete: "current-password", class: "login-input" %>
+        </div>
+      <% end %>
+      <div class="login-field">
+        <%= form.label :password, "Nova senha" %>
+        <%= form.password_field :password, required: true, minlength: 6, autocomplete: "new-password", class: "login-input", placeholder: "Pelo menos 6 caracteres", autofocus: true %>
+      </div>
+      <div class="login-field">
+        <%= form.label :password_confirmation, "Confirmar nova senha" %>
+        <%= form.password_field :password_confirmation, required: true, minlength: 6, autocomplete: "new-password", class: "login-input", placeholder: "Repita a nova senha" %>
+      </div>
+      <div class="login-actions">
+        <%= form.button class: "login-button" do %><i class="fas fa-lock" aria-hidden="true"></i><span>Salvar nova senha</span><% end %>
+      </div>
+    <% end %>
+    <p class="login-admin-note"><%= current_user.local_root? ? "A senha será alterada somente no Aponti TV." : "A nova senha também valerá no Andar360, caso você tenha acesso." %></p>
+    <%= button_to "Sair", destroy_user_session_path, method: :delete, class: "login-button", form: { data: { turbo: false } } %>
+  </div>
+  <footer class="login-footer"><span>&copy; <%= Time.current.year %> Aponti TV. Todos os direitos reservados.</span></footer>
+</div>
+<%= render "devise/shared/login_styles" %>

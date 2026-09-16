@@ -1,8 +1,12 @@
 Rails.application.routes.draw do
+  resource :shared_password, only: [:edit, :update]
+  get "/profile_photo", to: "profile_photos#show", as: :profile_photo
+  get "monitoring/tvs", to: "tv_monitoring#index"
  
  
   devise_for :users, skip: [:registrations], controllers: {
     sessions: "users/sessions",
+    passwords: "users/passwords",
     omniauth_callbacks: "users/omniauth_callbacks"
   }
   get '/licenca_invalida', to: 'pages#licenca_invalida', as: :licenca_invalida
@@ -11,8 +15,8 @@ Rails.application.routes.draw do
   post '/licenca', to: 'license#create'
   
   as :user do
-    get 'users/edit' => 'devise/registrations#edit', as: :edit_user_registration
-    put 'users' => 'devise/registrations#update', as: :user_registration
+    get 'users/edit' => 'users/registrations#edit', as: :edit_user_registration
+    put 'users' => 'users/registrations#update', as: :user_registration
   end
   resources :users
   resources :access_logs, only: [:index]
@@ -67,6 +71,7 @@ Rails.application.routes.draw do
       post 'set_android_launcher'
       post 'remove_android_launcher'
       post 'open_official_app'
+      post 'update_official_app'
       post 'toggle_presentation_mode'
       post 'presentation_command'
       post 'mobile_presence'

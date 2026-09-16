@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_09_03_150000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -118,6 +118,14 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_03_150000) do
     t.datetime "presentation_command_updated_at"
     t.boolean "presentation_paused", default: false, null: false
     t.boolean "official_app_web_only", default: false, null: false
+    t.boolean "official_app_login_enabled", default: false, null: false
+    t.string "official_app_login_username"
+    t.text "official_app_login_password_ciphertext"
+    t.boolean "app_screen_on"
+    t.datetime "app_screen_status_updated_at"
+    t.string "app_version_name"
+    t.integer "app_version_code"
+    t.datetime "app_version_reported_at"
     t.index ["app_device_token"], name: "index_broadcasts_on_app_device_token", unique: true
     t.index ["current_player_playlist_item_id"], name: "index_broadcasts_on_current_player_playlist_item_id"
     t.index ["saved_broadcast_playlist_id"], name: "index_broadcasts_on_saved_broadcast_playlist_id"
@@ -287,6 +295,13 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_03_150000) do
     t.datetime "last_accessed_at"
     t.datetime "last_signed_out_at"
     t.datetime "onboarding_seen_at"
+    t.bigint "andar360_user_id"
+    t.datetime "andar360_last_verified_at"
+    t.string "andar360_session_version"
+    t.boolean "andar360_force_password_change", default: false, null: false
+    t.string "andar360_login"
+    t.index ["andar360_login"], name: "index_users_on_andar360_login"
+    t.index ["andar360_user_id"], name: "index_users_on_andar360_user_id", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["last_accessed_at"], name: "index_users_on_last_accessed_at"
     t.index ["last_signed_out_at"], name: "index_users_on_last_signed_out_at"

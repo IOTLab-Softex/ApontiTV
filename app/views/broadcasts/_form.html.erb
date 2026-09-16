@@ -123,6 +123,19 @@
   </div>
 
   <div class="field">
+    <label class="broadcast-checkbox">
+      <%= form.check_box :official_app_login_enabled %>
+      <span>Fazer login automático na página</span>
+    </label>
+    <p class="helper-text">Para páginas com usuário e senha, como o Grafana. Use uma conta com acesso de visualização. Login por Google/Microsoft, CAPTCHA ou verificação em duas etapas exige acesso manual.</p>
+    <%= form.label :official_app_login_username, "Usuário ou e-mail da página" %>
+    <%= form.text_field :official_app_login_username, class: "input-field", autocomplete: "off" %>
+    <%= form.label :official_app_login_password, "Senha da página" %>
+    <%= form.password_field :official_app_login_password, value: nil, class: "input-field", autocomplete: "new-password", placeholder: (form.object.official_app_login_password_ciphertext.present? ? "Senha salva — deixe em branco para manter" : "Digite a senha") %>
+    <p class="helper-text">O login é feito pelo app oficial atualizado, na TV com o IP cadastrado neste card.</p>
+  </div>
+
+  <div class="field">
     <%= form.label :official_app_web_only, I18n.t("OfficialAppWebDisplayMode") %>
     <label class="broadcast-checkbox">
       <%= form.check_box :official_app_web_only, id: "broadcast_official_app_web_only" %>

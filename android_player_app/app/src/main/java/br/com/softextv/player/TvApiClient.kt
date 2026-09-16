@@ -2,6 +2,7 @@ package br.com.softextv.player
 
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -121,6 +122,8 @@ class TvApiClient(
         message: String? = null
     ) {
         var lastError: IOException? = null
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val screenOnParam = "&screen_on=${if (powerManager.isInteractive) 1 else 0}"
 
         for (candidateBaseUrl in orderedBaseUrls()) {
             val endpoint = URL("$candidateBaseUrl/broadcasts/${channelId}/mobile_player_status.json")
@@ -137,7 +140,9 @@ class TvApiClient(
                     val messageParam = message?.takeIf { it.isNotBlank() }?.let {
                         "&message=${URLEncoder.encode(it.take(500), Charsets.UTF_8.name())}"
                     }.orEmpty()
-                    writer.write("player_status=$encodedStatus$playlistItemParam$positionParam$messageParam")
+                    val versionName = URLEncoder.encode(BuildConfig.VERSION_NAME, Charsets.UTF_8.name())
+                    val versionParams = "&app_version_name=$versionName&app_version_code=${BuildConfig.VERSION_CODE}"
+                    writer.write("player_status=$encodedStatus$screenOnParam$playlistItemParam$positionParam$messageParam$versionParams")
                 }
 
                 val responseStream =
@@ -353,6 +358,7 @@ class TvApiClient(
                             enabled = config.optBoolean("enabled"),
                             webOnly = config.optBoolean("web_only"),
                             pageUrl = config.optCleanString("page_url"),
+                            loginJson = config.optJSONObject("login")?.toString(),
                             rotationTrigger = config.optCleanString("rotation_trigger"),
                             switchIntervalSeconds = config.optInt("switch_interval_seconds", 300),
                             pageDurationSeconds = config.optInt("page_duration_seconds", 15),
@@ -396,6 +402,7 @@ class TvApiClient(
                     enabled = config.optBoolean("enabled"),
                     webOnly = config.optBoolean("web_only"),
                     pageUrl = config.optCleanString("page_url"),
+                    loginJson = config.optJSONObject("login")?.toString(),
                     rotationTrigger = config.optCleanString("rotation_trigger"),
                     switchIntervalSeconds = config.optInt("switch_interval_seconds", 300),
                     pageDurationSeconds = config.optInt("page_duration_seconds", 15),
