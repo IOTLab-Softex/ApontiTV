@@ -270,6 +270,81 @@
           </label>
         </div>
 
+        <section class="system-config-forecast-card">
+          <div class="system-config-weather-assets__header">
+            <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+            <div>
+              <h3>Cards dos proximos dias</h3>
+              <p>Ative a previsao, escolha quantos dias aparecem e ajuste o movimento dos cards na TV.</p>
+            </div>
+          </div>
+
+          <div class="system-config-grid">
+            <label class="system-config-toggle system-config-toggle--inline">
+              <%= form.check_box :widget_forecast_enabled %>
+              <span class="system-config-toggle__track" aria-hidden="true"></span>
+              <span><strong>Exibir cards de previsao</strong><small>Controle geral para todas as TVs.</small></span>
+            </label>
+
+            <label class="system-config-field">
+              <span>Quantidade de dias</span>
+              <span class="system-config-input"><i class="fas fa-calendar-week" aria-hidden="true"></i><%= form.number_field :widget_forecast_days, min: 1, max: 7, step: 1 %></span>
+            </label>
+
+            <label class="system-config-toggle system-config-toggle--inline">
+              <%= form.check_box :widget_forecast_animation_enabled %>
+              <span class="system-config-toggle__track" aria-hidden="true"></span>
+              <span><strong>Deslizar os cards</strong><small>Exibe automaticamente os dias que nao cabem na tela.</small></span>
+            </label>
+
+            <label class="system-config-field">
+              <span>Tempo do movimento</span>
+              <span class="system-config-input"><i class="fas fa-exchange-alt" aria-hidden="true"></i><%= form.number_field :widget_forecast_travel_seconds, min: 4, max: 60, step: 1 %></span>
+              <small>Segundos para ir do inicio ao ultimo card.</small>
+            </label>
+
+            <label class="system-config-field">
+              <span>Pausa nas extremidades</span>
+              <span class="system-config-input"><i class="fas fa-pause" aria-hidden="true"></i><%= form.number_field :widget_forecast_pause_seconds, min: 0, max: 20, step: 1 %></span>
+              <small>Segundos parado no inicio e no fim.</small>
+            </label>
+
+            <label class="system-config-field">
+              <span>Animacao dos cards</span>
+              <span class="system-config-input system-config-input--select"><i class="fas fa-magic" aria-hidden="true"></i><%= form.select :widget_forecast_card_animation, [["Subir um por um", "stagger_up"], ["Sem animacao", "none"], ["Fade", "fade"], ["Deslizar", "slide"], ["Zoom suave", "zoom"], ["Aponti Smooth", "smooth"]] %></span>
+            </label>
+
+            <label class="system-config-field">
+              <span>Tempo de exibicao</span>
+              <span class="system-config-input system-config-input--select"><i class="fas fa-clock" aria-hidden="true"></i><%= form.select :widget_forecast_display_mode, [["Sempre", "always"], ["Por minutos", "minutes"]], {}, data: { forecast_display_mode: true } %></span>
+            </label>
+
+            <label class="system-config-field" data-forecast-minutes-field>
+              <span>Minutos de exibicao</span>
+              <span class="system-config-input"><i class="fas fa-hourglass-half" aria-hidden="true"></i><%= form.number_field :widget_forecast_display_minutes, min: 1, max: 180, step: 1 %></span>
+              <small>Usado quando o tempo de exibicao estiver em Por minutos.</small>
+            </label>
+
+            <label class="system-config-field">
+              <span>Latitude</span>
+              <span class="system-config-input"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><%= form.number_field :widget_forecast_latitude, min: -90, max: 90, step: 0.000001 %></span>
+            </label>
+
+            <label class="system-config-field">
+              <span>Longitude</span>
+              <span class="system-config-input"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><%= form.number_field :widget_forecast_longitude, min: -180, max: 180, step: 0.000001 %></span>
+            </label>
+
+            <% timezone_options = TZInfo::Timezone.all_identifiers.map { |identifier| offset = TZInfo::Timezone.get(identifier).current_period.utc_total_offset; sign = offset.negative? ? "-" : "+"; hours, remainder = offset.abs.divmod(3600); minutes = remainder / 60; [format("(UTC%s%02d:%02d) %s", sign, hours, minutes, identifier), identifier] }.sort_by(&:first) %>
+            <label class="system-config-field">
+              <span>Fuso horario</span>
+              <span class="system-config-input system-config-input--timezone"><i class="fas fa-globe-americas" aria-hidden="true"></i><%= form.text_field :widget_forecast_timezone, list: "forecast-timezones", autocomplete: "off", placeholder: "Digite para buscar um fuso" %></span>
+              <datalist id="forecast-timezones"><% timezone_options.each do |label, value| %><option value="<%= value %>"><%= label %></option><% end %></datalist>
+              <small>Digite uma cidade ou abra a lista para pesquisar entre todos os fusos.</small>
+            </label>
+          </div>
+        </section>
+
         <div class="system-config-weather-assets">
           <div class="system-config-weather-assets__header">
             <i class="fas fa-images" aria-hidden="true"></i>
@@ -411,6 +486,7 @@
     const checkbox = document.querySelector("#streaming-checkbox");
     bindConfigurationTabs();
     bindWidgetBarPresets();
+    bindForecastDisplayOptions();
     bindWeatherVideoConversionModal();
     if (!checkbox || checkbox.dataset.bound === "true") return;
 
@@ -435,6 +511,22 @@
         console.error("Erro na requisicao:", error);
       }
     });
+  }
+
+  function bindForecastDisplayOptions() {
+    const form = document.querySelector(".system-config-form");
+    if (!form || form.dataset.forecastDisplayBound === "true") return;
+    const mode = form.querySelector("[data-forecast-display-mode]");
+    const minutesField = form.querySelector("[data-forecast-minutes-field]");
+    if (!mode || !minutesField) return;
+    form.dataset.forecastDisplayBound = "true";
+    const update = () => {
+      const visible = mode.value === "minutes";
+      minutesField.hidden = !visible;
+      minutesField.querySelector("input")?.toggleAttribute("disabled", !visible);
+    };
+    mode.addEventListener("change", update);
+    update();
   }
 
   function bindConfigurationTabs() {
@@ -898,6 +990,51 @@
     font-weight: 850;
   }
 
+  .system-config-input--select {
+    position: relative;
+    grid-template-columns: 28px minmax(0, 1fr) 18px;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .system-config-input--select::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #c4b5fd;
+    border-bottom: 2px solid #c4b5fd;
+    transform: rotate(45deg) translateY(-3px);
+    pointer-events: none;
+  }
+
+  .system-config-input--select:focus-within,
+  .system-config-input--timezone:focus-within {
+    border-color: rgba(168, 85, 247, .85);
+    background: rgba(77, 41, 125, .2);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, .14), 0 10px 28px rgba(8, 12, 26, .22);
+  }
+
+  .system-config-input--select select {
+    height: 46px;
+    padding: 0 8px 0 0;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  .system-config-input--select select option {
+    color: #eef2ff;
+    background: #11172a;
+    padding: 10px;
+  }
+
+  .system-config-input--timezone input {
+    font-weight: 800;
+  }
+
+  .system-config-field[hidden] {
+    display: none;
+  }
+
   .system-config-input--split {
     grid-template-columns: 22px minmax(64px, .8fr) minmax(108px, 1fr);
   }
@@ -919,6 +1056,18 @@
     border: 1px solid var(--system-config-border);
     border-radius: 12px;
     background: var(--system-config-card-strong);
+  }
+
+  .system-config-forecast-card {
+    margin-top: 20px;
+    padding: 22px;
+    border: 1px solid rgba(156, 112, 255, 0.3);
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(86, 51, 139, 0.18), rgba(13, 19, 35, 0.5));
+  }
+
+  .system-config-forecast-card .system-config-grid {
+    margin-top: 18px;
   }
 
   .system-config-weather-assets__header {
@@ -1335,6 +1484,11 @@
     color: #94a3b8;
   }
 
+  html[data-theme="light"] .system-config-input--select select option {
+    color: #111827;
+    background: #ffffff;
+  }
+
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) .system-config-page {
       --system-config-card: rgba(255, 255, 255, .88);
@@ -1360,6 +1514,11 @@
 
     :root:not([data-theme="dark"]) .system-config-input input::placeholder {
       color: #94a3b8;
+    }
+
+    :root:not([data-theme="dark"]) .system-config-input--select select option {
+      color: #111827;
+      background: #ffffff;
     }
   }
 

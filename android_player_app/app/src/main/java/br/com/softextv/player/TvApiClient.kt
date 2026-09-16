@@ -255,6 +255,23 @@ class TvApiClient(
         return WeatherSnapshot("--", "", "", "clouds")
     }
 
+    fun fetchForecast(latitude: Double, longitude: Double, timezone: String, days: Int): List<WeatherForecastDay> {
+        val forecastDays = days.coerceIn(1, 7)
+        val encodedTimezone = URLEncoder.encode(timezone.ifBlank { "America/Sao_Paulo" }, "UTF-8")
+        val url = URL("https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=$encodedTimezone&forecast_days=${forecastDays + 1}")
+        val connection = buildConnection(url)
+        try {
+            val daily = JSONObject(connection.inputStream.bufferedReader().use(BufferedReader::readText)).optJSONObject("daily") ?: return emptyList()
+            val dates = daily.optJSONArray("time") ?: return emptyList()
+            val maxes = daily.optJSONArray("temperature_2m_max") ?: return emptyList()
+            val mins = daily.optJSONArray("temperature_2m_min") ?: return emptyList()
+            val codes = daily.optJSONArray("weather_code") ?: return emptyList()
+            return (1 until minOf(dates.length(), forecastDays + 1)).map { index ->
+                WeatherForecastDay(dates.optString(index), maxes.optDouble(index), mins.optDouble(index), codes.optInt(index))
+            }
+        } finally { connection.disconnect() }
+    }
+
     fun endpointLabel(): String = orderedBaseUrls().joinToString(" | ")
 
     private fun orderedBaseUrls(): List<String> {
@@ -490,6 +507,17 @@ class TvApiClient(
             weatherApiUrl = optCleanString("weather_api_url"),
             weatherTestCondition = optCleanString("weather_test_condition") ?: "real",
             contentMode = optCleanString("content_mode") ?: "time_weather",
+            forecastEnabled = optBoolean("forecast_enabled", true),
+            forecastDays = optInt("forecast_days", 5).coerceIn(1, 7),
+            forecastAnimationEnabled = optBoolean("forecast_animation_enabled", true),
+            forecastTravelSeconds = optInt("forecast_travel_seconds", 12).coerceIn(4, 60),
+            forecastPauseSeconds = optInt("forecast_pause_seconds", 3).coerceIn(0, 20),
+            forecastCardAnimation = optCleanString("forecast_card_animation") ?: "stagger_up",
+            forecastDisplayMode = optCleanString("forecast_display_mode") ?: "always",
+            forecastDisplayMinutes = optInt("forecast_display_minutes", 5).coerceIn(1, 180),
+            forecastLatitude = optDouble("forecast_latitude", -8.0476),
+            forecastLongitude = optDouble("forecast_longitude", -34.8770),
+            forecastTimezone = optCleanString("forecast_timezone") ?: "America/Sao_Paulo",
             weatherAssets = optJSONObject("weather_assets")?.toStringListMap().orEmpty()
         )
     }
@@ -571,3 +599,5 @@ data class WeatherSnapshot(
     val iconCode: Int? = null,
     val iconEmoji: String? = null
 )
+
+data class WeatherForecastDay(val date: String, val max: Double, val min: Double, val code: Int)

@@ -16,6 +16,15 @@ class StreamingConfiguration < ApplicationRecord
     # Validações
     validates :server_ip, presence: true, format: { with: Resolv::IPv4::Regex, message: "deve ser um IP válido" }
     validates :port, numericality: { only_integer: true, greater_than: 0, less_than: 65536 }
+    validates :widget_forecast_days, numericality: { only_integer: true, in: 1..7 }
+    validates :widget_forecast_travel_seconds, numericality: { only_integer: true, in: 4..60 }
+    validates :widget_forecast_pause_seconds, numericality: { only_integer: true, in: 0..20 }
+    validates :widget_forecast_card_animation, inclusion: { in: %w[none fade slide zoom smooth stagger_up] }
+    validates :widget_forecast_display_mode, inclusion: { in: %w[always minutes] }
+    validates :widget_forecast_display_minutes, numericality: { only_integer: true, in: 1..180 }
+    validates :widget_forecast_latitude, numericality: { greater_than_or_equal_to: -90, less_than_or_equal_to: 90 }
+    validates :widget_forecast_longitude, numericality: { greater_than_or_equal_to: -180, less_than_or_equal_to: 180 }
+    validates :widget_forecast_timezone, presence: true, inclusion: { in: ->(_record) { TZInfo::Timezone.all_identifiers } }
   
     # Métodos adicionais
     def connection_url
@@ -53,6 +62,17 @@ class StreamingConfiguration < ApplicationRecord
         weather_api_url: widget_bar_weather_api_url.presence || "https://labs.aponti.org.br/api/current_data?station=estacao_01",
         weather_test_condition: widget_bar_weather_test_condition.presence || "real",
         content_mode: widget_bar_content_mode.presence || "time_weather",
+        forecast_enabled: widget_forecast_enabled?,
+        forecast_days: widget_forecast_days.to_i.clamp(1, 7),
+        forecast_animation_enabled: widget_forecast_animation_enabled?,
+        forecast_travel_seconds: widget_forecast_travel_seconds.to_i.clamp(4, 60),
+        forecast_pause_seconds: widget_forecast_pause_seconds.to_i.clamp(0, 20),
+        forecast_card_animation: widget_forecast_card_animation.presence || "stagger_up",
+        forecast_display_mode: widget_forecast_display_mode.presence || "always",
+        forecast_display_minutes: widget_forecast_display_minutes.to_i.clamp(1, 180),
+        forecast_latitude: widget_forecast_latitude.to_f,
+        forecast_longitude: widget_forecast_longitude.to_f,
+        forecast_timezone: widget_forecast_timezone.presence || "America/Sao_Paulo",
         weather_assets: widget_weather_assets_payload(base_url)
       }
     end

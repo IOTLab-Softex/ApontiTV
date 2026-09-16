@@ -78,6 +78,17 @@ data class OfficialAppWidgetBar(
     val weatherApiUrl: String?,
     val weatherTestCondition: String,
     val contentMode: String,
+    val forecastEnabled: Boolean,
+    val forecastDays: Int,
+    val forecastAnimationEnabled: Boolean,
+    val forecastTravelSeconds: Int,
+    val forecastPauseSeconds: Int,
+    val forecastCardAnimation: String,
+    val forecastDisplayMode: String,
+    val forecastDisplayMinutes: Int,
+    val forecastLatitude: Double,
+    val forecastLongitude: Double,
+    val forecastTimezone: String,
     val weatherAssets: Map<String, List<String>>
 )
 

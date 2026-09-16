@@ -10,12 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_16_111000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
-    t.integer "record_id", null: false
-    t.integer "blob_id", null: false
+    t.bigint "record_id", null: false
+    t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
@@ -34,7 +34,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
   end
 
   create_table "active_storage_variant_records", force: :cascade do |t|
-    t.integer "blob_id", null: false
+    t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
@@ -126,6 +126,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
     t.string "app_version_name"
     t.integer "app_version_code"
     t.datetime "app_version_reported_at"
+    t.boolean "widget_forecast_enabled", default: true, null: false
     t.index ["app_device_token"], name: "index_broadcasts_on_app_device_token", unique: true
     t.index ["current_player_playlist_item_id"], name: "index_broadcasts_on_current_player_playlist_item_id"
     t.index ["saved_broadcast_playlist_id"], name: "index_broadcasts_on_saved_broadcast_playlist_id"
@@ -240,6 +241,18 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
     t.string "widget_bar_layout_mode", default: "overlay", null: false
     t.string "widget_bar_weather_test_condition", default: "real", null: false
     t.integer "widget_bar_edge_spacing", default: 0, null: false
+    t.boolean "card_controls_skin_enabled", default: false, null: false
+    t.boolean "widget_forecast_enabled", default: true, null: false
+    t.integer "widget_forecast_days", default: 5, null: false
+    t.decimal "widget_forecast_latitude", precision: 10, scale: 6, default: "-8.0476", null: false
+    t.decimal "widget_forecast_longitude", precision: 10, scale: 6, default: "-34.877", null: false
+    t.string "widget_forecast_timezone", default: "America/Sao_Paulo", null: false
+    t.boolean "widget_forecast_animation_enabled", default: true, null: false
+    t.integer "widget_forecast_travel_seconds", default: 12, null: false
+    t.integer "widget_forecast_pause_seconds", default: 3, null: false
+    t.string "widget_forecast_card_animation", default: "fade", null: false
+    t.string "widget_forecast_display_mode", default: "always", null: false
+    t.integer "widget_forecast_display_minutes", default: 5, null: false
   end
 
   create_table "system_notifications", force: :cascade do |t|
@@ -316,7 +329,6 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_14_170000) do
     t.integer "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_video_editor_projects_on_user_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

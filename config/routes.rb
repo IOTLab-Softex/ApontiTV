@@ -73,6 +73,7 @@ Rails.application.routes.draw do
       post 'open_official_app'
       post 'update_official_app'
       post 'toggle_presentation_mode'
+      post 'toggle_forecast_widget'
       post 'presentation_command'
       post 'mobile_presence'
       post 'mobile_player_status'

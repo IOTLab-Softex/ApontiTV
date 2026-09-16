@@ -1,7 +1,7 @@
 class Broadcast < ApplicationRecord
   APP_PLAYER_PRESENCE_TTL = 45.seconds
-  OFFICIAL_APP_CURRENT_VERSION_NAME = ENV.fetch("APONTI_TV_APP_VERSION_NAME", "1.1.0")
-  OFFICIAL_APP_CURRENT_VERSION_CODE = ENV.fetch("APONTI_TV_APP_VERSION_CODE", "2").to_i
+  OFFICIAL_APP_CURRENT_VERSION_NAME = ENV.fetch("APONTI_TV_APP_VERSION_NAME", "1.2.0")
+  OFFICIAL_APP_CURRENT_VERSION_CODE = ENV.fetch("APONTI_TV_APP_VERSION_CODE", "3").to_i
 
   validates :official_app_login_username, presence: true, if: :official_app_login_enabled?
   validate do
@@ -56,6 +56,7 @@ class Broadcast < ApplicationRecord
   attribute :official_app_web_enabled, :boolean, default: false
   attribute :official_app_web_only, :boolean, default: false
   attribute :widget_bar_edge_spacing_enabled, :boolean, default: true
+  attribute :widget_forecast_enabled, :boolean, default: true
   attribute :keep_app_foreground_enabled, :boolean, default: false
 
   serialize :tv_disabled_weekdays, coder: JSON

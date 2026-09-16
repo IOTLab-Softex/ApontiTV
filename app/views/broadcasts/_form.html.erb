@@ -6,6 +6,19 @@
 <% matched_playlist = @saved_playlists&.detect { |playlist| playlist.items.map(&:media_blob_id) == current_playlist_blob_ids } %>
 <% selected_playlist_id = params.dig(:broadcast, :selected_playlist_id).presence || matched_playlist&.id %>
 
+<nav class="broadcast-config-tabs" role="tablist" aria-label="Configuracoes da TV">
+  <button type="button" class="broadcast-config-tab is-active" data-broadcast-config-tab="general" role="tab"><i class="fas fa-info-circle"></i><span>Geral</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="content" role="tab"><i class="fas fa-photo-video"></i><span>Conteudo</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="playback" role="tab"><i class="fas fa-play-circle"></i><span>Reproducao</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="device" role="tab"><i class="fas fa-tv"></i><span>Dispositivo</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="display" role="tab"><i class="fas fa-sliders-h"></i><span>Tela e aparencia</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="power" role="tab"><i class="fas fa-power-off"></i><span>Energia</span></button>
+  <button type="button" class="broadcast-config-tab" data-broadcast-config-tab="controls" role="tab"><i class="fas fa-tools"></i><span>Controles e atualizacao</span></button>
+</nav>
+
+<div class="broadcast-config-panels">
+<div class="broadcast-config-panel is-active" data-broadcast-config-panel="general" role="tabpanel">
+
 <section class="broadcast-settings-card broadcast-settings-card--identity">
   <div class="broadcast-settings-card__header">
     <span><i class="fas fa-tv" aria-hidden="true"></i></span>
@@ -16,6 +29,9 @@
     <%= form.text_field :name, class: "input-field", placeholder: "Ex.: TV Recepção" %>
   </div>
 </section>
+
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="content" role="tabpanel" hidden>
 
 <section class="broadcast-settings-card broadcast-settings-card--content">
   <div class="broadcast-settings-card__header">
@@ -87,6 +103,9 @@
   </div>
 </div>
 </section>
+
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="playback" role="tabpanel" hidden>
 
 <section class="broadcast-settings-card broadcast-settings-card--playback">
   <div class="broadcast-settings-card__header">
@@ -208,6 +227,9 @@
 </div>
 </section>
 
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="device" role="tabpanel" hidden>
+
 <section class="broadcast-settings-card broadcast-settings-card--device">
   <div class="broadcast-settings-card__header">
     <span><i class="fas fa-network-wired" aria-hidden="true"></i></span>
@@ -262,6 +284,9 @@
 </div>
 </section>
 
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="display" role="tabpanel" hidden>
+
 <section class="broadcast-settings-card broadcast-settings-card--display">
   <div class="broadcast-settings-card__header">
     <span><i class="fas fa-sliders-h" aria-hidden="true"></i></span>
@@ -285,6 +310,15 @@
 </div>
 
 <div class="field">
+  <label>Previsao do tempo</label>
+  <label class="broadcast-checkbox">
+    <%= form.check_box :widget_forecast_enabled %>
+    <span>Exibir os cards dos proximos dias nesta TV</span>
+  </label>
+  <p class="helper-text">A configuracao geral da previsao tambem precisa estar ativa.</p>
+</div>
+
+<div class="field">
   <%= form.label :orientation, I18n.t("ScreenOrientation") %>
   <%= form.select :orientation,
                   options_for_select([[I18n.t("Portrait"), "portrait"], [I18n.t("PortraitInverted"), "portrait_inverted"], [I18n.t("Landscape"), "landscape"]], form.object.orientation),
@@ -292,6 +326,9 @@
                   class: "input-field" %>
 </div>
 </section>
+
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="power" role="tabpanel" hidden>
 
 <div class="broadcast-power-card broadcast-settings-card broadcast-settings-card--schedule">
   <div class="broadcast-power-card__header">
@@ -329,8 +366,43 @@
   </div>
 </div>
 
+</div>
+<div class="broadcast-config-panel" data-broadcast-config-panel="controls" role="tabpanel" hidden>
+  <section class="broadcast-settings-card broadcast-settings-card--controls">
+    <div class="broadcast-settings-card__header">
+      <span><i class="fas fa-tools" aria-hidden="true"></i></span>
+      <div><h3>Controles e atualizacao</h3><p>Abra o aplicativo, configure o launcher e instale a versao mais recente nesta TV.</p></div>
+    </div>
+
+    <% if form.object.persisted? && current_user&.admin? %>
+      <div class="broadcast-app-update-status <%= form.object.official_app_outdated? ? 'is-outdated' : 'is-current' %>">
+        <span><i class="fas <%= form.object.official_app_outdated? ? 'fa-exclamation-circle' : 'fa-check-circle' %>"></i></span>
+        <div>
+          <strong>Aplicativo Aponti TV</strong>
+          <p>Instalada: <%= form.object.app_version_name.present? ? "v#{form.object.app_version_name}" : "versao nao informada" %></p>
+          <p>Disponivel: v<%= Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME %></p>
+        </div>
+      </div>
+
+      <div class="broadcast-control-actions">
+        <button type="submit" form="broadcast-open-app-form" class="broadcast-control-action" data-turbo-confirm="<%= I18n.t('ConfirmOpenApontiApp') %>"><i class="fas fa-external-link-alt"></i><span><%= I18n.t('OpenApontiApp') %></span></button>
+        <button type="submit" form="broadcast-update-app-form" class="broadcast-control-action broadcast-control-action--update" data-turbo-confirm="Atualizar o Aponti TV nesta tela?"><i class="fas fa-cloud-download-alt"></i><span>Atualizar para v<%= Broadcast::OFFICIAL_APP_CURRENT_VERSION_NAME %></span></button>
+        <% root_email = ENV.fetch("ROOT_USER_EMAIL", "root@apontitv.local") %>
+        <% if current_user.email.to_s == root_email %>
+          <button type="submit" form="broadcast-set-launcher-form" class="broadcast-control-action" data-turbo-confirm="<%= I18n.t('ConfirmSetApontiLauncher') %>"><i class="fas fa-home"></i><span><%= I18n.t('SetApontiLauncher') %></span></button>
+          <button type="submit" form="broadcast-remove-launcher-form" class="broadcast-control-action broadcast-control-action--danger" data-turbo-confirm="<%= I18n.t('ConfirmRemoveApontiLauncher') %>"><i class="fas fa-undo"></i><span><%= I18n.t('RemoveApontiLauncher') %></span></button>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="helper-text">Os controles ficam disponiveis para administradores depois que a TV for salva.</p>
+    <% end %>
+  </section>
+</div>
+</div>
+
 <script>
   function initializeBroadcastForm() {
+    initializeBroadcastConfigTabs();
     const broadcastForm = document.querySelector(".broadcast-edit-form");
     if (broadcastForm && broadcastForm.dataset.broadcastFormBound === "true") return;
     if (broadcastForm) broadcastForm.dataset.broadcastFormBound = "true";
@@ -527,6 +599,52 @@
     if (broadcastForm) {
       broadcastForm.addEventListener("submit", syncBrowserRotationHiddenFields);
     }
+  }
+
+  function initializeBroadcastConfigTabs() {
+    const form = document.querySelector(".broadcast-edit-form");
+    if (!form || form.dataset.configTabsBound === "true") return;
+    const tabs = Array.from(form.querySelectorAll("[data-broadcast-config-tab]"));
+    const panels = Array.from(form.querySelectorAll("[data-broadcast-config-panel]"));
+    if (!tabs.length || !panels.length) return;
+    form.dataset.configTabsBound = "true";
+
+    const activate = (name, updateHash = true) => {
+      const selected = tabs.find((tab) => tab.dataset.broadcastConfigTab === name) || tabs[0];
+      const selectedName = selected.dataset.broadcastConfigTab;
+      tabs.forEach((tab) => {
+        const active = tab === selected;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+        tab.tabIndex = active ? 0 : -1;
+      });
+      panels.forEach((panel) => {
+        const active = selectedName === "general" || panel.dataset.broadcastConfigPanel === selectedName;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+      if (updateHash) history.replaceState(null, "", `#tv-${selectedName}`);
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => activate(tab.dataset.broadcastConfigTab));
+      tab.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        const direction = event.key === "ArrowRight" ? 1 : -1;
+        const next = tabs[(index + direction + tabs.length) % tabs.length];
+        activate(next.dataset.broadcastConfigTab);
+        next.focus();
+      });
+    });
+
+    form.addEventListener("invalid", (event) => {
+      const panel = event.target.closest("[data-broadcast-config-panel]");
+      if (panel) activate(panel.dataset.broadcastConfigPanel);
+    }, true);
+
+    const requested = window.location.hash.replace("#tv-", "");
+    activate(tabs.some((tab) => tab.dataset.broadcastConfigTab === requested) ? requested : "general", false);
   }
 
   document.addEventListener("DOMContentLoaded", initializeBroadcastForm);

@@ -1,11 +1,4 @@
 <div class="broadcast-edit-page">
-  <header class="broadcast-edit-hero">
-    <div>
-      <p class="broadcast-edit-hero__eyebrow">Configuração da TV</p>
-      <h1><%= broadcast.name.presence || "Nova TV" %></h1>
-      <p>Gerencie conteúdo, reprodução, conexão e automações em um só lugar.</p>
-    </div>
-  </header>
   <% if flash[:notice].present? || flash[:alert].present? %>
     <div class="broadcast-edit-flash <%= flash[:alert].present? ? "broadcast-edit-flash--alert" : "broadcast-edit-flash--notice" %>">
       <%= flash[:alert].presence || flash[:notice] %>
@@ -44,35 +37,22 @@
       <% end %>
     </section>
 
+    <% if broadcast.persisted? && current_user&.admin? %>
+      <div class="broadcast-control-forms" aria-hidden="true">
+        <%= form_with url: open_official_app_broadcast_path(broadcast), method: :post, id: "broadcast-open-app-form" do %><% end %>
+        <%= form_with url: update_official_app_broadcast_path(broadcast), method: :post, id: "broadcast-update-app-form" do %><% end %>
+        <% root_email = ENV.fetch("ROOT_USER_EMAIL", "root@apontitv.local") %>
+        <% if current_user.email.to_s == root_email %>
+          <%= form_with url: set_android_launcher_broadcast_path(broadcast), method: :post, id: "broadcast-set-launcher-form" do %><% end %>
+          <%= form_with url: remove_android_launcher_broadcast_path(broadcast), method: :post, id: "broadcast-remove-launcher-form" do %><% end %>
+        <% end %>
+      </div>
+    <% end %>
+
     <aside class="broadcast-edit-side">
       <div class="broadcast-edit-side__card">
         <p class="broadcast-edit-side__kicker">Resumo</p>
         <h3><%= broadcast.name.presence || "Broadcast sem nome" %></h3>
-        <% root_email = ENV.fetch("ROOT_USER_EMAIL", "root@apontitv.local") %>
-        <% if broadcast.persisted? && broadcast.playback_app_type_official_app? && broadcast.adb_device? && current_user&.admin? %>
-          <div class="broadcast-edit-side__actions">
-            <%= button_to open_official_app_broadcast_path(broadcast),
-                          method: :post,
-                          class: "broadcast-root-action-btn broadcast-root-action-btn--open",
-                          form: { data: { turbo_confirm: I18n.t("ConfirmOpenApontiApp") } } do %>
-              <%= I18n.t("OpenApontiApp") %>
-            <% end %>
-            <% if current_user.email.to_s == root_email %>
-            <%= button_to set_android_launcher_broadcast_path(broadcast),
-                          method: :post,
-                          class: "broadcast-root-action-btn",
-                          form: { data: { turbo_confirm: I18n.t("ConfirmSetApontiLauncher") } } do %>
-              <%= I18n.t("SetApontiLauncher") %>
-            <% end %>
-            <%= button_to remove_android_launcher_broadcast_path(broadcast),
-                          method: :post,
-                          class: "broadcast-root-action-btn broadcast-root-action-btn--restore",
-                          form: { data: { turbo_confirm: I18n.t("ConfirmRemoveApontiLauncher") } } do %>
-              <%= I18n.t("RemoveApontiLauncher") %>
-            <% end %>
-            <% end %>
-          </div>
-        <% end %>
         <ul class="broadcast-edit-side__list">
           <li><span><%= I18n.t("Orientation") %></span><strong><%= broadcast.orientation.presence || I18n.t("NotDefined") %></strong></li>
           <li><span>Widgets</span><strong><%= broadcast.show_widgets? ? I18n.t("Active") : I18n.t("Disabled") %></strong></li>

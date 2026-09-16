@@ -481,6 +481,11 @@
                   <%= button_to toggle_presentation_mode_broadcast_path(broadcast), method: :post, form: { class: "broadcast-presentation-toggle-form" }, class: "broadcast-presentation-toggle #{'is-active' if broadcast.presentation_mode_enabled?}", title: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação"), aria: { label: (broadcast.presentation_mode_enabled? ? "Desativar modo apresentação" : "Ativar modo apresentação") } do %>
                     <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                   <% end %>
+                  <% if broadcast.playback_app_type_official_app? %>
+                    <%= button_to toggle_forecast_widget_broadcast_path(broadcast), method: :post, form: { class: "broadcast-presentation-toggle-form" }, class: "broadcast-presentation-toggle #{'is-active' if broadcast.widget_forecast_enabled?}", title: (broadcast.widget_forecast_enabled? ? "Desativar previsão nesta TV" : "Ativar previsão nesta TV"), aria: { label: (broadcast.widget_forecast_enabled? ? "Desativar previsão nesta TV" : "Ativar previsão nesta TV") } do %>
+                      <i class="fas fa-cloud-sun" aria-hidden="true"></i>
+                    <% end %>
+                  <% end %>
                 </div>
               <% end %>
             </div>
@@ -551,6 +556,9 @@
             <div><dt>IP</dt><dd><%= broadcast.tv_ip.presence || "-" %></dd></div>
             <div><dt><%= I18n.t("Power") %></dt><dd><%= broadcast.control_method_summary %></dd></div>
             <div><dt><%= I18n.t("OfficialWeb") %></dt><dd><%= broadcast.official_app_browser_rotation_summary %></dd></div>
+            <% if broadcast.playback_app_type_official_app? %>
+              <div><dt>Previsão</dt><dd><%= broadcast.widget_forecast_enabled? ? "Ativada" : "Desativada" %></dd></div>
+            <% end %>
           </dl>
 
           <div class="broadcast-card-modern__stream">

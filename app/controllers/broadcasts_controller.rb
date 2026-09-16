@@ -18,8 +18,8 @@ class BroadcastsController < ApplicationController
   before_action :authenticate_user!
   skip_before_action :verify_authenticity_token
   skip_before_action :authenticate_user!, only: [:mobile_index, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :presentation_command, :request_adb_authorization, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
-  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :update_official_app, :toggle_presentation_mode, :presentation_command, :preview_stream, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
-  before_action :require_admin_for_broadcast_edit, only: [:edit, :update]
+  before_action :set_broadcast, only: [:show, :edit, :update, :destroy, :start, :stop, :power_on_tv, :power_off_tv, :volume_up_tv, :volume_down_tv, :set_volume_tv, :mute_tv, :update_power_schedule, :request_adb_authorization, :set_android_launcher, :remove_android_launcher, :open_official_app, :update_official_app, :toggle_presentation_mode, :toggle_forecast_widget, :presentation_command, :preview_stream, :mobile_status, :presentation_status, :mobile_presence, :mobile_player_status, :mobile_thumbnail, :mobile_video, :mobile_prepared_video, :mobile_playlist_item]
+  before_action :require_admin_for_broadcast_edit, only: [:edit, :update, :toggle_forecast_widget]
   before_action :set_available_video_blobs, only: [:new, :edit, :create, :update]
   before_action :set_playlist_library, only: [:index, :new, :edit, :create, :update]
 
@@ -496,6 +496,16 @@ class BroadcastsController < ApplicationController
     end
   end
 
+  def toggle_forecast_widget
+    enabled = !@broadcast.widget_forecast_enabled?
+    @broadcast.update!(widget_forecast_enabled: enabled)
+
+    respond_to do |format|
+      format.html { redirect_back fallback_location: broadcasts_path, notice: "Previsao #{enabled ? 'ativada' : 'desativada'} para #{@broadcast.name}." }
+      format.json { render json: { ok: true, enabled: enabled } }
+    end
+  end
+
   def presentation_command
     unless @broadcast.presentation_mode_enabled?
       render json: { ok: false, error: "presentation_mode_disabled" }, status: :unprocessable_entity
@@ -945,6 +955,7 @@ class BroadcastsController < ApplicationController
       normalized_mobile_orientation(broadcast),
       broadcast.show_widgets?,
       broadcast.widget_bar_edge_spacing_enabled?,
+      broadcast.widget_forecast_enabled?,
       broadcast.keep_app_foreground_enabled?,
       streaming_configuration&.updated_at&.iso8601
     ].compact.join("|")
@@ -954,6 +965,7 @@ class BroadcastsController < ApplicationController
     base_url = request.base_url if respond_to?(:request) && request.present?
     payload = streaming_configuration&.official_app_widget_bar_payload(base_url) || { enabled: false }
     payload = payload.merge(enabled: false) unless broadcast.show_widgets?
+    payload = payload.merge(forecast_enabled: false) unless broadcast.widget_forecast_enabled?
     return payload if broadcast.widget_bar_edge_spacing_enabled?
 
     payload.merge(edge_spacing: 0)
@@ -1721,6 +1733,7 @@ class BroadcastsController < ApplicationController
       :official_app_transition_style,
       :official_app_transition_duration_ms,
       :widget_bar_edge_spacing_enabled,
+      :widget_forecast_enabled,
       :keep_app_foreground_enabled,
       :playlist_sync_enabled,
       :tv_power_on_time,

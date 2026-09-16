@@ -35,6 +35,9 @@ import android.view.ViewTreeObserver
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import android.webkit.WebChromeClient
 import java.util.concurrent.CountDownLatch
@@ -78,6 +81,9 @@ class PlayerActivity : AppCompatActivity() {
     private var widgetBarBaseTranslationX = 0f
     private var widgetBarBaseTranslationY = 0f
     private var widgetBackdropDrawable: Drawable? = null
+    private var widgetForecastAnimator: ValueAnimator? = null
+    private var forecastHideRunnable: Runnable? = null
+    private var forecastShowRunnable: Runnable? = null
     private var playerSplashDismissed = false
     private var playerSplashPlayer: MediaPlayer? = null
     private var playerSplashSurface: Surface? = null
@@ -2033,6 +2039,17 @@ class PlayerActivity : AppCompatActivity() {
         intent.putExtra(EXTRA_WIDGET_BAR_WEATHER_API_URL, widgetBar.weatherApiUrl)
         intent.putExtra(EXTRA_WIDGET_BAR_WEATHER_TEST_CONDITION, widgetBar.weatherTestCondition)
         intent.putExtra(EXTRA_WIDGET_BAR_CONTENT_MODE, widgetBar.contentMode)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_ENABLED, widgetBar.forecastEnabled)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_DAYS, widgetBar.forecastDays)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_ANIMATION_ENABLED, widgetBar.forecastAnimationEnabled)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_TRAVEL_SECONDS, widgetBar.forecastTravelSeconds)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_PAUSE_SECONDS, widgetBar.forecastPauseSeconds)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_CARD_ANIMATION, widgetBar.forecastCardAnimation)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_DISPLAY_MODE, widgetBar.forecastDisplayMode)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_DISPLAY_MINUTES, widgetBar.forecastDisplayMinutes)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_LATITUDE, widgetBar.forecastLatitude)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_LONGITUDE, widgetBar.forecastLongitude)
+        intent.putExtra(EXTRA_WIDGET_FORECAST_TIMEZONE, widgetBar.forecastTimezone)
         intent.putExtra(EXTRA_WIDGET_BAR_WEATHER_ASSETS_JSON, JSONObject(widgetBar.weatherAssets).toString())
     }
 
@@ -2053,6 +2070,17 @@ class PlayerActivity : AppCompatActivity() {
             weatherApiUrl.orEmpty(),
             weatherTestCondition,
             contentMode,
+            forecastEnabled,
+            forecastDays,
+            forecastAnimationEnabled,
+            forecastTravelSeconds,
+            forecastPauseSeconds,
+            forecastCardAnimation,
+            forecastDisplayMode,
+            forecastDisplayMinutes,
+            forecastLatitude,
+            forecastLongitude,
+            forecastTimezone,
             weatherAssets.toSortedMap().entries.joinToString(",") { "${it.key}:${it.value}" }
         ).joinToString("|")
     }
@@ -2466,6 +2494,24 @@ class PlayerActivity : AppCompatActivity() {
         binding.widgetBar.background = null
         binding.widgetBarBackdrop.background = background
         binding.widgetBar.elevation = 0f
+        binding.widgetRainFade.visibility = View.GONE
+        binding.widgetRainFade.background = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(
+                Color.TRANSPARENT,
+                (color and 0x00FFFFFF) or (46 shl 24),
+                (color and 0x00FFFFFF) or (150 shl 24),
+                color
+            )
+        )
+        binding.widgetForecastFadeStart.background = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(color, (color and 0x00FFFFFF) or (90 shl 24), Color.TRANSPARENT)
+        )
+        binding.widgetForecastFadeEnd.background = GradientDrawable(
+            GradientDrawable.Orientation.RIGHT_LEFT,
+            intArrayOf(color, (color and 0x00FFFFFF) or (90 shl 24), Color.TRANSPARENT)
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             binding.widgetBarBackdrop.setRenderEffect(null)
@@ -2638,22 +2684,117 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyWidgetBarContentMode() {
+        forecastHideRunnable?.let { widgetHandler.removeCallbacks(it) }
+        forecastShowRunnable?.let { widgetHandler.removeCallbacks(it) }
+        val forecastEnabled = intent.getBooleanExtra(EXTRA_WIDGET_FORECAST_ENABLED, true)
         when (intent.getStringExtra(EXTRA_WIDGET_BAR_CONTENT_MODE).orEmpty().ifBlank { "time_weather" }) {
             "weather" -> {
                 binding.widgetWeatherGroup.visibility = View.VISIBLE
+                binding.widgetForecastViewport.visibility = if (forecastEnabled) View.VISIBLE else View.INVISIBLE
                 binding.widgetBarDivider.visibility = View.INVISIBLE
+                binding.widgetClockDivider.visibility = View.INVISIBLE
                 binding.widgetClockGroup.visibility = View.INVISIBLE
             }
             "time" -> {
                 binding.widgetWeatherGroup.visibility = View.INVISIBLE
+                binding.widgetForecastViewport.visibility = View.INVISIBLE
                 binding.widgetBarDivider.visibility = View.INVISIBLE
+                binding.widgetClockDivider.visibility = View.INVISIBLE
                 binding.widgetClockGroup.visibility = View.VISIBLE
             }
             else -> {
                 binding.widgetWeatherGroup.visibility = View.VISIBLE
+                binding.widgetForecastViewport.visibility = if (forecastEnabled) View.VISIBLE else View.INVISIBLE
                 binding.widgetBarDivider.visibility = View.VISIBLE
+                binding.widgetClockDivider.visibility = View.VISIBLE
                 binding.widgetClockGroup.visibility = View.VISIBLE
             }
+        }
+        if (forecastEnabled && binding.widgetForecastViewport.visibility == View.VISIBLE) {
+            animateForecastCardsIn()
+            if (intent.getStringExtra(EXTRA_WIDGET_FORECAST_DISPLAY_MODE).orEmpty() == "minutes") {
+                scheduleForecastTimedCycle()
+            }
+        }
+    }
+
+    private fun scheduleForecastTimedCycle() {
+        forecastHideRunnable?.let { widgetHandler.removeCallbacks(it) }
+        forecastShowRunnable?.let { widgetHandler.removeCallbacks(it) }
+        val minutes = intent.getIntExtra(EXTRA_WIDGET_FORECAST_DISPLAY_MINUTES, 5).coerceIn(1, 180)
+        forecastHideRunnable = Runnable {
+            animateForecastCardsOut()
+            val pauseMs = intent.getIntExtra(EXTRA_WIDGET_FORECAST_PAUSE_SECONDS, 3).coerceIn(0, 20).coerceAtLeast(2) * 1_000L
+            forecastShowRunnable = Runnable {
+                if (intent.getBooleanExtra(EXTRA_WIDGET_FORECAST_ENABLED, true)) {
+                    binding.widgetForecastViewport.visibility = View.VISIBLE
+                    animateForecastCardsIn()
+                    scheduleForecastTimedCycle()
+                }
+            }.also { widgetHandler.postDelayed(it, pauseMs + 900L) }
+        }.also { widgetHandler.postDelayed(it, minutes * 60_000L) }
+    }
+
+    private fun animateForecastCardsIn() {
+        val view = binding.widgetForecastViewport
+        view.animate().cancel()
+        val style = intent.getStringExtra(EXTRA_WIDGET_FORECAST_CARD_ANIMATION).orEmpty().ifBlank { "stagger_up" }
+        view.visibility = View.VISIBLE
+        if (style == "stagger_up") {
+            view.alpha = 1f
+            view.translationX = 0f
+            view.scaleX = 1f
+            view.scaleY = 1f
+            val group = binding.widgetForecastGroup
+            (0 until group.childCount).forEach { index ->
+                group.getChildAt(index).apply {
+                    animate().cancel()
+                    alpha = 0f
+                    translationY = dpToPx(52).toFloat()
+                    animate().alpha(1f).translationY(0f).setStartDelay(index * 120L).setDuration(520L)
+                        .setInterpolator(DecelerateInterpolator()).start()
+                }
+            }
+            return
+        }
+        view.alpha = if (style == "none") 1f else 0f
+        view.translationX = if (style == "slide" || style == "smooth") dpToPx(36).toFloat() else 0f
+        view.scaleX = if (style == "zoom" || style == "smooth") 0.94f else 1f
+        view.scaleY = view.scaleX
+        if (style != "none") view.animate().alpha(1f).translationX(0f).scaleX(1f).scaleY(1f).setDuration(if (style == "smooth") 900L else 550L).start()
+    }
+
+    private fun animateForecastCardsOut() {
+        val view = binding.widgetForecastViewport
+        val style = intent.getStringExtra(EXTRA_WIDGET_FORECAST_CARD_ANIMATION).orEmpty().ifBlank { "stagger_up" }
+        widgetForecastAnimator?.cancel()
+        if (style == "stagger_up") {
+            val group = binding.widgetForecastGroup
+            if (group.childCount == 0) {
+                view.visibility = View.INVISIBLE
+                return
+            }
+            (group.childCount - 1 downTo 0).forEachIndexed { sequence, index ->
+                group.getChildAt(index).apply {
+                    animate().cancel()
+                    animate().alpha(0f).translationY(dpToPx(52).toFloat()).setStartDelay(sequence * 120L).setDuration(420L)
+                        .setInterpolator(AccelerateInterpolator())
+                        .withEndAction { if (index == 0) view.visibility = View.INVISIBLE }
+                        .start()
+                }
+            }
+            return
+        }
+        if (style == "none") {
+            view.visibility = View.INVISIBLE
+        } else {
+            view.animate().cancel()
+            view.animate().alpha(0f).translationX(if (style == "slide" || style == "smooth") -dpToPx(36).toFloat() else 0f)
+                .scaleX(if (style == "zoom" || style == "smooth") 0.94f else 1f)
+                .scaleY(if (style == "zoom" || style == "smooth") 0.94f else 1f)
+                .setDuration(if (style == "smooth") 800L else 450L)
+                .withEndAction { view.visibility = View.INVISIBLE }
+                .start()
         }
     }
 
@@ -2675,6 +2816,20 @@ class PlayerActivity : AppCompatActivity() {
             } else {
                 forcedWeatherSnapshot(forcedCondition)
             }
+            val forecastEnabled = intent.getBooleanExtra(EXTRA_WIDGET_FORECAST_ENABLED, true)
+            val forecastDays = intent.getIntExtra(EXTRA_WIDGET_FORECAST_DAYS, 5).coerceIn(1, 7)
+            val forecast = if (forecastEnabled) {
+                runCatching {
+                    apiClient.fetchForecast(
+                        intent.getDoubleExtra(EXTRA_WIDGET_FORECAST_LATITUDE, -8.0476),
+                        intent.getDoubleExtra(EXTRA_WIDGET_FORECAST_LONGITUDE, -34.8770),
+                        intent.getStringExtra(EXTRA_WIDGET_FORECAST_TIMEZONE).orEmpty().ifBlank { "America/Sao_Paulo" },
+                        forecastDays
+                    )
+                }.getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
             runOnUiThread {
                 if (!isWidgetBarEnabled()) return@runOnUiThread
                 binding.widgetWeatherText.text = weather.temperatureLabel.trim().ifBlank { "--" }
@@ -2683,7 +2838,153 @@ class PlayerActivity : AppCompatActivity() {
                 binding.widgetWeatherUvGroup.visibility = if (weather.uvLabel.isBlank()) View.GONE else View.VISIBLE
                 binding.widgetWeatherIcon.setImageResource(weatherIconFor(weather.condition, weather.iconCode))
                 binding.widgetRainGif.setMovieUrl(weatherAssetUrlFor(weather.condition, weather.iconCode))
+                if (forecastEnabled) {
+                    renderWidgetForecast(forecast)
+                } else {
+                    widgetForecastAnimator?.cancel()
+                    binding.widgetForecastGroup.removeAllViews()
+                }
             }
+        }
+    }
+
+    private fun renderWidgetForecast(days: List<WeatherForecastDay>) {
+        binding.widgetForecastGroup.removeAllViews()
+        val configuredDays = intent.getIntExtra(EXTRA_WIDGET_FORECAST_DAYS, 5).coerceIn(1, 7)
+        val forecastDays = if (days.isNotEmpty()) days.take(configuredDays) else fallbackWidgetForecast().take(configuredDays)
+        forecastDays.forEach { day ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2))
+                elevation = 0f
+                background = null
+            }
+            val dayName = TextView(this).apply {
+                text = SimpleDateFormat("EEE", Locale("pt", "BR")).format(SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(day.date) ?: Date())
+                setTextColor(Color.rgb(222, 226, 240)); textSize = 10f; gravity = Gravity.CENTER
+                includeFontPadding = false
+            }
+            val icon = ImageView(this).apply {
+                setImageResource(forecastIconFor(day.code)); adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            val temperature = TextView(this).apply {
+                val maximum = if (day.max.isNaN()) "--\u00B0" else "${day.max.toInt()}\u00B0"
+                val minimum = if (day.min.isNaN()) "--\u00B0" else "${day.min.toInt()}\u00B0"
+                text = android.text.SpannableString("$maximum  $minimum").apply {
+                    setSpan(
+                        android.text.style.ForegroundColorSpan(Color.rgb(145, 153, 174)),
+                        maximum.length,
+                        length,
+                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+                setTextColor(Color.WHITE); textSize = 10.5f; gravity = Gravity.CENTER; setTypeface(typeface, android.graphics.Typeface.BOLD)
+                includeFontPadding = false
+            }
+            card.addView(dayName, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(13)))
+            card.addView(icon, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(25)))
+            card.addView(temperature, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(16)))
+            binding.widgetForecastGroup.addView(card, LinearLayout.LayoutParams(dpToPx(56), dpToPx(58)).apply { setMargins(dpToPx(3), 0, dpToPx(3), 0) })
+        }
+        startWidgetForecastAnimation()
+        if (binding.widgetForecastViewport.visibility == View.VISIBLE) animateForecastCardsIn()
+    }
+
+    private fun blendWidgetColor(base: Int, tint: Int, amount: Float): Int {
+        val ratio = amount.coerceIn(0f, 1f)
+        return Color.rgb(
+            (Color.red(base) + (Color.red(tint) - Color.red(base)) * ratio).toInt(),
+            (Color.green(base) + (Color.green(tint) - Color.green(base)) * ratio).toInt(),
+            (Color.blue(base) + (Color.blue(tint) - Color.blue(base)) * ratio).toInt()
+        )
+    }
+
+    private fun forecastGlassBackground(base: Int, selected: Boolean): Drawable {
+        // Blur only the glass surface; foreground text and weather icons stay crisp.
+        val texture = Bitmap.createBitmap(56, 58, Bitmap.Config.ARGB_8888)
+        val surfaceCanvas = Canvas(texture)
+        surfaceCanvas.drawColor(blendWidgetColor(base, Color.rgb(39, 45, 63), 0.70f))
+        val light = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        light.color = if (selected) Color.argb(135, 141, 115, 215) else Color.argb(65, 155, 170, 202)
+        surfaceCanvas.drawOval(-18f, -16f, 47f, 17f, light)
+        light.color = if (selected) Color.argb(95, 119, 91, 200) else Color.argb(36, 111, 125, 159)
+        surfaceCanvas.drawOval(12f, 39f, 70f, 71f, light)
+        val blurred = stackBlur(texture, 10)
+        val glass = android.graphics.drawable.ShapeDrawable(
+            android.graphics.drawable.shapes.RoundRectShape(FloatArray(8) { dpToPx(9).toFloat() }, null, null)
+        ).apply {
+            shaderFactory = object : android.graphics.drawable.ShapeDrawable.ShaderFactory() {
+                override fun resize(width: Int, height: Int): android.graphics.Shader {
+                    return android.graphics.BitmapShader(blurred, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP).apply {
+                        setLocalMatrix(Matrix().apply { setScale(width / 56f, height / 58f) })
+                    }
+                }
+            }
+            paint.alpha = 225
+        }
+        val outline = GradientDrawable().apply {
+            cornerRadius = dpToPx(9).toFloat()
+            setColor(Color.TRANSPARENT)
+            setStroke(dpToPx(1), if (selected) Color.argb(210, 165, 139, 255) else Color.argb(65, 155, 169, 198))
+        }
+        return LayerDrawable(arrayOf(glass, outline))
+    }
+
+    private fun startWidgetForecastAnimation() {
+        widgetForecastAnimator?.cancel()
+        binding.widgetForecastScroll.scrollTo(0, 0)
+        if (!intent.getBooleanExtra(EXTRA_WIDGET_FORECAST_ANIMATION_ENABLED, true)) return
+        binding.widgetForecastGroup.post {
+            val visibleWidth = binding.widgetForecastScroll.width
+            val contentWidth = (0 until binding.widgetForecastGroup.childCount).sumOf { index ->
+                val child = binding.widgetForecastGroup.getChildAt(index)
+                child.width + ((child.layoutParams as? LinearLayout.LayoutParams)?.let { it.leftMargin + it.rightMargin } ?: 0)
+            }
+            val overflow = (contentWidth - visibleWidth).coerceAtLeast(0)
+            if (overflow == 0 || visibleWidth == 0) return@post
+
+            val travelMs = intent.getIntExtra(EXTRA_WIDGET_FORECAST_TRAVEL_SECONDS, 12).coerceIn(4, 60) * 1_000L
+            val pauseMs = intent.getIntExtra(EXTRA_WIDGET_FORECAST_PAUSE_SECONDS, 3).coerceIn(0, 20) * 1_000L
+            val cycleMs = (travelMs * 2L) + (pauseMs * 2L)
+            widgetForecastAnimator = ValueAnimator.ofFloat(0f, cycleMs.toFloat()).apply {
+                duration = cycleMs
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = android.view.animation.LinearInterpolator()
+                addUpdateListener { animator ->
+                    val elapsed = animator.animatedValue as Float
+                    val rawProgress = when {
+                        elapsed < pauseMs -> 0f
+                        elapsed < pauseMs + travelMs -> (elapsed - pauseMs) / travelMs
+                        elapsed < (pauseMs * 2L) + travelMs -> 1f
+                        else -> 1f - ((elapsed - ((pauseMs * 2L) + travelMs)) / travelMs)
+                    }.coerceIn(0f, 1f)
+                    val smoothProgress = rawProgress * rawProgress * (3f - 2f * rawProgress)
+                    binding.widgetForecastScroll.scrollTo((overflow * smoothProgress).toInt(), 0)
+                }
+                start()
+            }
+        }
+    }
+
+    private fun forecastIconFor(code: Int): Int = when (code) {
+        0 -> R.drawable.google_weather_sunny
+        1 -> R.drawable.google_weather_mostly_sunny
+        2 -> R.drawable.google_weather_partly_cloudy
+        3, 45, 48 -> R.drawable.google_weather_cloudy
+        51, 53, 55, 56, 57, 61 -> R.drawable.google_weather_drizzle
+        63, 65, 66, 67, 80, 81, 82 -> R.drawable.google_weather_rain
+        71, 73, 75, 77, 85, 86 -> R.drawable.google_weather_flurries
+        95, 96, 99 -> R.drawable.google_weather_storm
+        else -> R.drawable.google_weather_cloudy
+    }
+
+    private fun fallbackWidgetForecast(): List<WeatherForecastDay> {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val calendar = java.util.Calendar.getInstance()
+        return (1..5).map { offset ->
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, if (offset == 1) 1 else 1)
+            WeatherForecastDay(formatter.format(calendar.time), Double.NaN, Double.NaN, 2)
         }
     }
 
@@ -3661,6 +3962,17 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_WIDGET_BAR_WEATHER_API_URL = "widget_bar_weather_api_url"
         const val EXTRA_WIDGET_BAR_WEATHER_TEST_CONDITION = "widget_bar_weather_test_condition"
         const val EXTRA_WIDGET_BAR_CONTENT_MODE = "widget_bar_content_mode"
+        const val EXTRA_WIDGET_FORECAST_ENABLED = "widget_forecast_enabled"
+        const val EXTRA_WIDGET_FORECAST_DAYS = "widget_forecast_days"
+        const val EXTRA_WIDGET_FORECAST_ANIMATION_ENABLED = "widget_forecast_animation_enabled"
+        const val EXTRA_WIDGET_FORECAST_TRAVEL_SECONDS = "widget_forecast_travel_seconds"
+        const val EXTRA_WIDGET_FORECAST_PAUSE_SECONDS = "widget_forecast_pause_seconds"
+        const val EXTRA_WIDGET_FORECAST_CARD_ANIMATION = "widget_forecast_card_animation"
+        const val EXTRA_WIDGET_FORECAST_DISPLAY_MODE = "widget_forecast_display_mode"
+        const val EXTRA_WIDGET_FORECAST_DISPLAY_MINUTES = "widget_forecast_display_minutes"
+        const val EXTRA_WIDGET_FORECAST_LATITUDE = "widget_forecast_latitude"
+        const val EXTRA_WIDGET_FORECAST_LONGITUDE = "widget_forecast_longitude"
+        const val EXTRA_WIDGET_FORECAST_TIMEZONE = "widget_forecast_timezone"
         const val EXTRA_WIDGET_BAR_WEATHER_ASSETS_JSON = "widget_bar_weather_assets_json"
         const val EXTRA_KEEP_APP_FOREGROUND_ENABLED = "keep_app_foreground_enabled"
         private const val STATUS_POLL_INTERVAL_MS = 2_000L
