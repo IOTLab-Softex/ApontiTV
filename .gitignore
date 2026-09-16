@@ -72,3 +72,13 @@
 
 # Ignore local SSL certificates used for HTTPS development.
 /config/ssl/*.pem
+
+# Build output and Visual Studio workspace files
+**/.vs/
+**/bin/
+**/obj/
+/bin/server_manager/*.exe
+/bin/server_manager/*.dll
+/bin/server_manager/*.pdb
+/bin/server_manager/*.deps.json
+/bin/server_manager/*.runtimeconfig.json

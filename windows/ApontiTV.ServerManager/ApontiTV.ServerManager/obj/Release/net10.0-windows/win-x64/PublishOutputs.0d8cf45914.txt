@@ -1,5 +1,0 @@
-C:\SoftexTV\softex_tv\bin\server_manager\ApontiTV.ServerManager.exe
-C:\SoftexTV\softex_tv\bin\server_manager\ApontiTV.ServerManager.dll
-C:\SoftexTV\softex_tv\bin\server_manager\ApontiTV.ServerManager.deps.json
-C:\SoftexTV\softex_tv\bin\server_manager\ApontiTV.ServerManager.runtimeconfig.json
-C:\SoftexTV\softex_tv\bin\server_manager\ApontiTV.ServerManager.pdb
