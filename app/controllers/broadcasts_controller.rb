@@ -347,13 +347,24 @@ class BroadcastsController < ApplicationController
       return
     end
 
-    m3u_content = broadcasts.map do |broadcast|
-      streaming_configuration = StreamingConfiguration.find_by(id: 1)
-      server_ip = streaming_configuration&.server_ip
-      updated_stream_url = broadcast.stream_url.gsub("localhost", server_ip.to_s)
+    streaming_configuration = StreamingConfiguration.find_by(id: 1)
+    server_host = streaming_configuration&.server_ip.presence || request.host
+
+    m3u_entries = broadcasts.filter_map do |broadcast|
+      stream_url = broadcast.stream_url.presence
+      next if stream_url.blank?
+
+      updated_stream_url = stream_url.gsub("localhost", server_host)
 
       "#EXTINF:-1,#{broadcast.name}\n#{updated_stream_url}"
-    end.join("\n")
+    end
+
+    if m3u_entries.empty?
+      redirect_to broadcasts_path, alert: "Nenhum broadcast possui stream configurado para exportar!"
+      return
+    end
+
+    m3u_content = m3u_entries.join("\n")
 
     send_data m3u_content, type: "audio/x-mpegurl", disposition: "attachment", filename: "broadcasts.m3u"
   end

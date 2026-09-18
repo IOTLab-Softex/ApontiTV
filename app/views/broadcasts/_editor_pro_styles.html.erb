@@ -334,4 +334,218 @@
     .broadcast-edit-actions > * { width: 100%; }
     .broadcast-primary-btn, .broadcast-secondary-btn { width: 100%; }
   }
+
+  /* Material 3 broadcast editor. */
+  .broadcast-edit-page {
+    --edit-accent: #6750a4;
+    --edit-accent-strong: #6750a4;
+    --edit-on-accent: #ffffff;
+    --edit-accent-container: #eaddff;
+    --edit-on-accent-container: #21005d;
+    --edit-surface: #fffbfe;
+    --edit-surface-soft: #f7f2fa;
+    --edit-surface-high: #f3edf7;
+    --edit-border: #cac4d0;
+    --edit-text: #1d1b20;
+    --edit-muted: #49454f;
+    color: var(--edit-text);
+  }
+
+  .broadcast-config-tabs {
+    padding: 6px;
+    border-color: var(--edit-border);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--edit-surface-high) 94%, transparent);
+    box-shadow: 0 2px 8px rgba(73, 69, 79, .1);
+    backdrop-filter: blur(18px);
+  }
+
+  .broadcast-config-tab {
+    min-height: 46px;
+    color: var(--edit-muted);
+    border-radius: 14px;
+    font-weight: 650;
+  }
+
+  .broadcast-config-tab:hover {
+    color: var(--edit-on-accent-container);
+    background: var(--edit-accent-container);
+  }
+
+  .broadcast-config-tab.is-active {
+    color: var(--edit-on-accent);
+    background: var(--edit-accent);
+    box-shadow: none;
+  }
+
+  .broadcast-settings-card,
+  .broadcast-edit-side__card,
+  .broadcast-power-card {
+    color: var(--edit-text);
+    background: var(--edit-surface) !important;
+    border: 1px solid var(--edit-border) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 1px 3px rgba(73, 69, 79, .12), 0 8px 22px rgba(73, 69, 79, .07) !important;
+  }
+
+  .broadcast-settings-card__header,
+  .broadcast-settings-card--schedule > .broadcast-power-card__header {
+    border-bottom-color: var(--edit-border);
+  }
+
+  .broadcast-settings-card__header > span,
+  .broadcast-settings-card--schedule > .broadcast-power-card__header > span {
+    color: var(--edit-on-accent-container);
+    background: var(--edit-accent-container);
+    box-shadow: none;
+  }
+
+  .broadcast-settings-card__header h3,
+  .broadcast-settings-card--schedule > .broadcast-power-card__header h3,
+  .broadcast-power-card__header h3,
+  .broadcast-edit-form label,
+  .broadcast-edit-side__card h3,
+  .broadcast-edit-side__list strong,
+  .broadcast-playlist-card__body strong {
+    color: var(--edit-text);
+  }
+
+  .broadcast-settings-card__header p,
+  .broadcast-settings-card--schedule > .broadcast-power-card__header p,
+  .broadcast-power-card__header p,
+  .broadcast-edit-side__list span,
+  .helper-text,
+  .broadcast-playlist-card__body span {
+    color: var(--edit-muted);
+  }
+
+  .broadcast-edit-form .input-field,
+  .broadcast-checkbox,
+  .broadcast-weekdays__item,
+  .broadcast-playlist-card {
+    color: var(--edit-text);
+    background: var(--edit-surface-soft);
+    border-color: var(--edit-border);
+    border-radius: 14px;
+  }
+
+  .broadcast-edit-form .input-field:hover,
+  .broadcast-checkbox:hover,
+  .broadcast-weekdays__item:hover,
+  .broadcast-playlist-card:hover {
+    border-color: var(--edit-accent);
+  }
+
+  .broadcast-edit-form .input-field:focus {
+    color: var(--edit-text);
+    background: var(--edit-surface);
+    border-color: var(--edit-accent);
+    box-shadow: 0 0 0 2px var(--edit-accent);
+  }
+
+  .broadcast-checkbox span,
+  .broadcast-weekdays__item span { color: var(--edit-text); }
+
+  .broadcast-playlist-card.is-selected {
+    color: var(--edit-on-accent-container);
+    background: var(--edit-accent-container);
+    border-color: var(--edit-accent);
+    box-shadow: inset 3px 0 0 var(--edit-accent), 0 4px 12px rgba(103, 80, 164, .12);
+  }
+
+  .broadcast-sync-panel {
+    color: var(--edit-text);
+    background: var(--edit-surface-high);
+    border-color: var(--edit-border);
+    border-radius: 18px;
+  }
+
+  .broadcast-edit-actions {
+    border-color: var(--edit-border);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--edit-surface-high) 94%, transparent);
+    box-shadow: 0 8px 24px rgba(73, 69, 79, .14);
+  }
+
+  .broadcast-primary-btn,
+  .broadcast-root-action-btn {
+    color: var(--edit-on-accent) !important;
+    background: var(--edit-accent) !important;
+    border-color: var(--edit-accent) !important;
+    border-radius: 999px;
+    box-shadow: none !important;
+  }
+
+  .broadcast-primary-btn:hover,
+  .broadcast-root-action-btn:hover {
+    background: #7965af !important;
+  }
+
+  .broadcast-secondary-btn,
+  .secondary-btn,
+  .broadcast-root-action-btn--restore {
+    color: var(--edit-on-accent-container) !important;
+    background: var(--edit-accent-container) !important;
+    border: 1px solid var(--edit-border) !important;
+    border-radius: 999px;
+    box-shadow: none !important;
+  }
+
+  .broadcast-control-action {
+    color: var(--edit-on-accent-container);
+    background: var(--edit-accent-container);
+    border-color: var(--edit-border);
+    border-radius: 16px;
+  }
+
+  .broadcast-control-action--update {
+    color: var(--edit-on-accent);
+    background: var(--edit-accent);
+    border-color: var(--edit-accent);
+  }
+
+  .broadcast-edit-side__list li { border-bottom-color: var(--edit-border); }
+
+  html[data-theme="dark"] .broadcast-edit-page,
+  body.theme-dark .broadcast-edit-page {
+    --edit-accent: #d0bcff;
+    --edit-accent-strong: #d0bcff;
+    --edit-on-accent: #381e72;
+    --edit-accent-container: #4f378b;
+    --edit-on-accent-container: #eaddff;
+    --edit-surface: #211f26;
+    --edit-surface-soft: #1d1b20;
+    --edit-surface-high: #2b2930;
+    --edit-border: #49454f;
+    --edit-text: #e6e1e5;
+    --edit-muted: #cac4d0;
+  }
+
+  html[data-theme="dark"] .broadcast-edit-actions,
+  body.theme-dark .broadcast-edit-actions {
+    background: color-mix(in srgb, #2b2930 94%, transparent);
+  }
+
+  html[data-theme="dark"] .broadcast-primary-btn:hover,
+  html[data-theme="dark"] .broadcast-root-action-btn:hover,
+  body.theme-dark .broadcast-primary-btn:hover,
+  body.theme-dark .broadcast-root-action-btn:hover {
+    background: #eaddff !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .broadcast-edit-page {
+      --edit-accent: #d0bcff;
+      --edit-accent-strong: #d0bcff;
+      --edit-on-accent: #381e72;
+      --edit-accent-container: #4f378b;
+      --edit-on-accent-container: #eaddff;
+      --edit-surface: #211f26;
+      --edit-surface-soft: #1d1b20;
+      --edit-surface-high: #2b2930;
+      --edit-border: #49454f;
+      --edit-text: #e6e1e5;
+      --edit-muted: #cac4d0;
+    }
+  }
 </style>

@@ -10,17 +10,17 @@
     </span>
     <div class="mlib-toolbar__actions">
       <%= form_with url: media_library_path, method: :post, multipart: true, local: true, class: "mlib-upload" do %>
-        <label class="mlib-tbtn mlib-tbtn--primary">
+        <label class="mlib-tbtn mlib-tbtn--primary" title="<%= I18n.t("UploadMedia") %>" aria-label="<%= I18n.t("UploadMedia") %>">
           <i class="fas fa-upload" aria-hidden="true"></i>
           <span><%= I18n.t("UploadMedia") %></span>
           <%= file_field_tag "media_files[]", multiple: true, accept: "video/*,image/*", data: { media_library_upload: true } %>
         </label>
-        <button type="submit" class="mlib-tbtn mlib-tbtn--save" data-media-library-submit hidden>
+        <button type="submit" class="mlib-tbtn mlib-tbtn--save" data-media-library-submit hidden title="<%= I18n.t("Save") %>" aria-label="<%= I18n.t("Save") %>">
           <i class="fas fa-check" aria-hidden="true"></i>
           <span data-media-library-submit-label><%= I18n.t("Save") %></span>
         </button>
       <% end %>
-      <%= link_to video_editor_path, class: "mlib-tbtn mlib-tbtn--ghost" do %>
+      <%= link_to video_editor_path, class: "mlib-tbtn mlib-tbtn--ghost", title: I18n.t("Projects"), aria: { label: I18n.t("Projects") } do %>
         <i class="fas fa-film" aria-hidden="true"></i>
         <span><%= I18n.t("Projects") %></span>
       <% end %>
@@ -177,6 +177,115 @@
   color: #991b1b;
   background: #fee2e2;
   border: 1px solid #fca5a5;
+}
+
+@media (max-width: 760px) {
+  .mlib-toolbar__actions {
+    position: fixed;
+    z-index: 1350;
+    inset: auto 14px 14px auto;
+    width: 58px;
+    max-width: 58px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    padding: 7px;
+    border: 1px solid rgba(202, 196, 208, .24);
+    border-radius: 18px;
+    background: rgba(33, 31, 38, .92);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, .38);
+    backdrop-filter: blur(16px);
+    box-sizing: border-box;
+  }
+
+  .mlib-toolbar__actions .mlib-upload {
+    width: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn {
+    position: relative;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: background-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn i {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn--primary {
+    color: #381e72;
+    background: #d0bcff;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn--ghost {
+    color: #eaddff;
+    background: rgba(79, 55, 139, .72);
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn--save {
+    color: #082113;
+    background: #8ed6a8;
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+    transform: translateY(-1px);
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn:active { transform: scale(.96); }
+  .mlib-toolbar__actions .mlib-tbtn:focus-visible {
+    outline: 3px solid #d0bcff;
+    outline-offset: 2px;
+  }
+
+  html[data-theme="light"] .mlib-toolbar__actions {
+    border-color: rgba(73, 69, 79, .16);
+    background: rgba(243, 237, 247, .94);
+    box-shadow: 0 8px 24px rgba(29, 27, 32, .2);
+  }
+
+  html[data-theme="light"] .mlib-toolbar__actions .mlib-tbtn--primary {
+    color: #fff;
+    background: #6750a4;
+  }
+
+  html[data-theme="light"] .mlib-toolbar__actions .mlib-tbtn--ghost {
+    color: #21005d;
+    background: #eaddff;
+  }
 }
 
 /* Grid */
