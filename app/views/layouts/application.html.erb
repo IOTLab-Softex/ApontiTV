@@ -55,12 +55,13 @@
       "desktop_agents" => "fas fa-desktop",
       "registrations" => "fas fa-key"
     }.fetch(controller_name, "fas fa-layer-group") %>
+    <% login_screen = controller_name == "sessions" %>
     <% show_back_navigation = !(controller_name == "license" && (action_name == "new" || action_name == "create")) &&
                               !((controller_name == "dashboards" && action_name == "index") ||
                                 (controller_name == "users" && (action_name == "new" || action_name == "edit")) ||
-                                (controller_name == "sessions" && action_name == "new")) %>
+                                login_screen) %>
     <% show_app_chrome = !(controller_name == "license" && (action_name == "new" || action_name == "create")) &&
-                         !(controller_name == "sessions" && action_name == "new") %>
+                         !login_screen %>
 
     <% if show_app_chrome %>
       <aside class="app-sidebar" aria-label="<%= I18n.t("MainMenu") %>" data-main-menu-help-panel>
@@ -193,8 +194,7 @@
       <%= render "shared/main_menu_help" %>
     <% end %>
 
-    <% unless (controller_name == "license" && (action_name == "new" || action_name == "create")) ||
-              (controller_name == "sessions" && action_name == "new") %>
+    <% unless (controller_name == "license" && (action_name == "new" || action_name == "create")) || login_screen %>
       <header class="app-banner">
         <div class="app-banner__brand">
 <% if show_back_navigation %>
@@ -213,7 +213,7 @@
         </div>
 
         <div class="app-banner__tools">
-          <% unless controller_name == "sessions" && action_name == "new" %>
+          <% unless login_screen %>
             <% if user_signed_in? %>
               <%= render "shared/general_help" %>
             <% end %>
@@ -278,7 +278,7 @@
       </header>
     <% end %>
 
-    <main class="app-shell <%= 'app-shell--plain' if (controller_name == 'license' && (action_name == 'new' || action_name == 'create')) || (controller_name == 'sessions' && action_name == 'new') %>">
+    <main class="app-shell <%= 'app-shell--plain' if (controller_name == 'license' && (action_name == 'new' || action_name == 'create')) || login_screen %>">
       <div class="container">
         <%= yield %>
       </div>

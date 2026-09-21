@@ -345,4 +345,177 @@
     :root:not([data-theme="dark"]) .users-icon-btn--danger { color:#e11d48; }
   }
 
+  /* Material 3 */
+  .users-page {
+    --users-surface: #211f26;
+    --users-surface-container: #2b2930;
+    --users-surface-container-high: #36343b;
+    --users-outline: #49454f;
+    --users-outline-variant: #49454f;
+    --users-text: #e6e1e5;
+    --users-muted: #cac4d0;
+    --users-primary: #d0bcff;
+    --users-on-primary: #381e72;
+    --users-primary-container: #4f378b;
+    --users-on-primary-container: #eaddff;
+    --users-error: #ffb4ab;
+    --users-error-container: #93000a;
+    color: var(--users-text);
+  }
+
+  .users-card {
+    border: 1px solid var(--users-outline-variant);
+    border-radius: 24px;
+    background: var(--users-surface);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  }
+
+  .users-toolbar__actions {
+    padding: 6px;
+    border: 1px solid var(--users-outline-variant);
+    border-radius: 18px;
+    background: var(--users-surface-container);
+  }
+
+  .users-action--primary {
+    border: 0;
+    border-radius: 14px;
+    color: var(--users-on-primary);
+    background: var(--users-primary);
+    box-shadow: none;
+  }
+
+  .users-action--primary:hover,
+  .users-action--primary:focus-visible {
+    color: var(--users-on-primary);
+    background: var(--users-primary);
+    box-shadow: inset 0 0 0 999px rgba(255, 255, 255, .08);
+    outline: none;
+  }
+
+  .users-table thead {
+    background: var(--users-surface-container-high);
+  }
+
+  .users-table tbody tr {
+    background: var(--users-surface);
+    transition: background .18s ease, box-shadow .18s ease;
+  }
+
+  .users-table tbody tr:hover {
+    background: color-mix(in srgb, var(--users-primary-container) 32%, var(--users-surface));
+    box-shadow: inset 3px 0 0 var(--users-primary);
+  }
+
+  .users-table th,
+  .users-table td {
+    border-bottom-color: var(--users-outline-variant);
+  }
+
+  .users-table th {
+    color: var(--users-muted);
+  }
+
+  .users-table td,
+  .users-table td strong {
+    color: var(--users-text);
+  }
+
+  .users-pill {
+    color: var(--users-on-primary-container);
+    background: var(--users-primary-container);
+  }
+
+  .users-pill.is-client {
+    color: var(--users-text);
+    background: var(--users-surface-container-high);
+  }
+
+  .users-icon-btn {
+    color: var(--users-muted);
+    background: transparent;
+  }
+
+  .users-icon-btn:hover,
+  .users-icon-btn:focus-visible {
+    color: var(--users-on-primary-container);
+    background: var(--users-primary-container);
+  }
+
+  .users-icon-btn--danger {
+    color: var(--users-error);
+  }
+
+  .users-icon-btn--danger:hover,
+  .users-icon-btn--danger:focus-visible {
+    color: var(--users-error);
+    background: var(--users-error-container);
+  }
+
+  html[data-theme="light"] .users-page {
+    --users-surface: #fffbfe;
+    --users-surface-container: #f3edf7;
+    --users-surface-container-high: #ece6f0;
+    --users-outline: #79747e;
+    --users-outline-variant: #cac4d0;
+    --users-text: #1d1b20;
+    --users-muted: #49454f;
+    --users-primary: #6750a4;
+    --users-on-primary: #ffffff;
+    --users-primary-container: #eaddff;
+    --users-on-primary-container: #21005d;
+    --users-error: #ba1a1a;
+    --users-error-container: #ffdad6;
+  }
+
+  html[data-theme="light"] .users-card,
+  html[data-theme="light"] .users-toolbar__actions,
+  html[data-theme="light"] .users-table thead,
+  html[data-theme="light"] .users-table tbody tr,
+  html[data-theme="light"] .users-icon-btn,
+  html[data-theme="light"] .users-action--primary {
+    color: inherit;
+    background-color: revert;
+  }
+
+  html[data-theme="light"] .users-card { background: var(--users-surface); }
+  html[data-theme="light"] .users-toolbar__actions { background: var(--users-surface-container); box-shadow: none; }
+  html[data-theme="light"] .users-table thead { background: var(--users-surface-container-high); }
+  html[data-theme="light"] .users-table tbody tr { background: var(--users-surface); }
+  html[data-theme="light"] .users-table tbody tr:hover { background: color-mix(in srgb, var(--users-primary-container) 54%, var(--users-surface)); }
+  html[data-theme="light"] .users-action--primary { color: var(--users-on-primary); background: var(--users-primary); }
+  html[data-theme="light"] .users-icon-btn { color: var(--users-muted); background: transparent; }
+  html[data-theme="light"] .users-icon-btn:hover { color: var(--users-on-primary-container); background: var(--users-primary-container); }
+  html[data-theme="light"] .users-icon-btn--danger { color: var(--users-error); }
+  html[data-theme="light"] .users-icon-btn--danger:hover { color: var(--users-error); background: var(--users-error-container); }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .users-page {
+      --users-surface: #fffbfe;
+      --users-surface-container: #f3edf7;
+      --users-surface-container-high: #ece6f0;
+      --users-outline: #79747e;
+      --users-outline-variant: #cac4d0;
+      --users-text: #1d1b20;
+      --users-muted: #49454f;
+      --users-primary: #6750a4;
+      --users-on-primary: #ffffff;
+      --users-primary-container: #eaddff;
+      --users-on-primary-container: #21005d;
+      --users-error: #ba1a1a;
+      --users-error-container: #ffdad6;
+    }
+
+    :root:not([data-theme="dark"]) .users-card { background: var(--users-surface); }
+    :root:not([data-theme="dark"]) .users-toolbar__actions { background: var(--users-surface-container); box-shadow: none; }
+    :root:not([data-theme="dark"]) .users-table thead { background: var(--users-surface-container-high); }
+    :root:not([data-theme="dark"]) .users-table tbody tr { background: var(--users-surface); }
+    :root:not([data-theme="dark"]) .users-table tbody tr:hover { background: color-mix(in srgb, var(--users-primary-container) 54%, var(--users-surface)); }
+    :root:not([data-theme="dark"]) .users-action--primary { color: var(--users-on-primary); background: var(--users-primary); }
+    :root:not([data-theme="dark"]) .users-icon-btn { color: var(--users-muted); background: transparent; }
+    :root:not([data-theme="dark"]) .users-icon-btn:hover { color: var(--users-on-primary-container); background: var(--users-primary-container); }
+    :root:not([data-theme="dark"]) .users-icon-btn--danger { color: var(--users-error); }
+    :root:not([data-theme="dark"]) .users-icon-btn--danger:hover { color: var(--users-error); background: var(--users-error-container); }
+  }
+
 </style>

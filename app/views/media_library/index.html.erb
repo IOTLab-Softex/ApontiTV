@@ -436,6 +436,202 @@ form + .mlib-act { border-left: 1px solid rgba(148,163,184,0.12); }
   background: #020617;
 }
 .mlib-modal__image[hidden] { display: none; }
+.mlib-modal__video[hidden] { display: none; }
+
+/* Material 3 */
+.mlib-wrap,
+.mlib-modal {
+  --mlib-surface: #211f26;
+  --mlib-surface-container: #2b2930;
+  --mlib-surface-high: #36343b;
+  --mlib-outline: #49454f;
+  --mlib-text: #e6e1e5;
+  --mlib-muted: #cac4d0;
+  --mlib-primary: #d0bcff;
+  --mlib-on-primary: #381e72;
+  --mlib-primary-container: #4f378b;
+  --mlib-on-primary-container: #eaddff;
+  --mlib-error: #ffb4ab;
+  --mlib-error-container: #93000a;
+  color: var(--mlib-text);
+}
+
+.mlib-toolbar__count {
+  color: var(--mlib-on-primary-container);
+  background: var(--mlib-primary-container);
+}
+
+.mlib-tbtn {
+  min-height: 44px;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.mlib-tbtn--primary {
+  color: var(--mlib-on-primary);
+  background: var(--mlib-primary);
+  border-color: var(--mlib-primary);
+}
+
+.mlib-tbtn--primary:hover {
+  color: var(--mlib-on-primary);
+  background: var(--mlib-primary);
+  box-shadow: inset 0 0 0 999px rgba(255, 255, 255, .08);
+}
+
+.mlib-tbtn--ghost {
+  color: var(--mlib-text);
+  background: var(--mlib-surface-container);
+  border-color: var(--mlib-outline);
+}
+
+.mlib-tbtn--ghost:hover {
+  color: var(--mlib-on-primary-container);
+  background: var(--mlib-primary-container);
+  border-color: var(--mlib-primary);
+}
+
+.mlib-card {
+  color: var(--mlib-text);
+  background: var(--mlib-surface);
+  border: 1px solid var(--mlib-outline);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+}
+
+.mlib-card:hover {
+  border-color: var(--mlib-primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28), inset 0 0 0 1px var(--mlib-primary);
+  transform: translateY(-2px);
+}
+
+.mlib-card__kind {
+  color: var(--mlib-on-primary-container);
+  background: color-mix(in srgb, var(--mlib-primary-container) 88%, transparent);
+  border-radius: 999px;
+}
+
+.mlib-card__size {
+  border-radius: 999px;
+}
+
+.mlib-card__name { color: var(--mlib-text); }
+.mlib-card__date { color: var(--mlib-muted); }
+
+.mlib-card__foot {
+  background: var(--mlib-surface-container);
+  border-top-color: var(--mlib-outline);
+}
+
+.mlib-act + .mlib-act,
+.mlib-act + form .mlib-act,
+form + .mlib-act { border-left-color: var(--mlib-outline); }
+
+.mlib-act--play,
+.mlib-act--dl { color: var(--mlib-primary); }
+
+.mlib-act--play:hover,
+.mlib-act--dl:hover {
+  color: var(--mlib-on-primary-container);
+  background: var(--mlib-primary-container);
+}
+
+.mlib-act--del { color: var(--mlib-error); }
+.mlib-act--del:hover { color: var(--mlib-error); background: var(--mlib-error-container); }
+
+.mlib-empty__icon {
+  color: var(--mlib-on-primary-container);
+  background: var(--mlib-primary-container);
+}
+
+.mlib-empty__title { color: var(--mlib-text); }
+.mlib-empty__sub { color: var(--mlib-muted); }
+
+.mlib-modal__bg {
+  background: rgba(20, 18, 24, .74);
+  backdrop-filter: blur(10px);
+}
+
+.mlib-modal__box {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(88vh, 820px);
+  color: var(--mlib-text);
+  background: var(--mlib-surface);
+  border: 1px solid var(--mlib-outline);
+  border-radius: 28px;
+  overflow: clip;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .46);
+}
+
+.mlib-modal__head {
+  min-height: 64px;
+  padding: 10px 14px 10px 20px;
+  background: var(--mlib-surface-container);
+  border-bottom: 1px solid var(--mlib-outline);
+}
+.mlib-modal__name { color: var(--mlib-text); }
+.mlib-modal__close { width: 40px; height: 40px; color: var(--mlib-muted); background: var(--mlib-surface-high); border-radius: 50%; }
+.mlib-modal__close:hover { color: var(--mlib-on-primary-container); background: var(--mlib-primary-container); }
+
+.mlib-modal__video,
+.mlib-modal__image {
+  width: 100%;
+  max-height: calc(min(88vh, 820px) - 65px);
+  background: #141218;
+}
+
+.mlib-modal__image {
+  min-height: min(58vh, 520px);
+  object-fit: contain;
+}
+
+.mlib-modal__video[hidden],
+.mlib-modal__image[hidden] {
+  display: none !important;
+}
+
+html[data-theme="light"] :is(.mlib-wrap, .mlib-modal) {
+  --mlib-surface: #fffbfe;
+  --mlib-surface-container: #f3edf7;
+  --mlib-surface-high: #e6e0e9;
+  --mlib-outline: #cac4d0;
+  --mlib-text: #1d1b20;
+  --mlib-muted: #49454f;
+  --mlib-primary: #6750a4;
+  --mlib-on-primary: #ffffff;
+  --mlib-primary-container: #eaddff;
+  --mlib-on-primary-container: #21005d;
+  --mlib-error: #ba1a1a;
+  --mlib-error-container: #ffdad6;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) :is(.mlib-wrap, .mlib-modal) {
+    --mlib-surface: #fffbfe;
+    --mlib-surface-container: #f3edf7;
+    --mlib-surface-high: #e6e0e9;
+    --mlib-outline: #cac4d0;
+    --mlib-text: #1d1b20;
+    --mlib-muted: #49454f;
+    --mlib-primary: #6750a4;
+    --mlib-on-primary: #ffffff;
+    --mlib-primary-container: #eaddff;
+    --mlib-on-primary-container: #21005d;
+    --mlib-error: #ba1a1a;
+    --mlib-error-container: #ffdad6;
+  }
+}
+
+@media (max-width: 760px) {
+  .mlib-toolbar__actions {
+    border-color: var(--mlib-outline);
+    background: color-mix(in srgb, var(--mlib-surface-container) 94%, transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  }
+
+  .mlib-toolbar__actions .mlib-tbtn--primary { color: var(--mlib-on-primary); background: var(--mlib-primary); }
+  .mlib-toolbar__actions .mlib-tbtn--ghost { color: var(--mlib-on-primary-container); background: var(--mlib-primary-container); }
+}
 </style>
 
 <script>
@@ -460,28 +656,32 @@ form + .mlib-act { border-left: 1px solid rgba(148,163,184,0.12); }
 
     function open(url, label, type) {
       name.textContent = label;
-      modal.hidden = false;
       if (type === "image") {
         video.pause();
         video.removeAttribute("src");
         video.load();
         video.hidden = true;
-        image.hidden = false;
         image.src = url;
         image.alt = label;
+        image.hidden = false;
       } else {
         image.hidden = true;
         image.removeAttribute("src");
+        image.alt = "";
         video.hidden = false;
         video.src = url;
         video.play().catch(function(){});
       }
+      modal.hidden = false;
     }
     function close() {
       modal.hidden = true;
       video.pause();
-      video.src = "";
-      image.src = "";
+      video.removeAttribute("src");
+      video.load();
+      video.hidden = true;
+      image.hidden = true;
+      image.removeAttribute("src");
       image.alt = "";
     }
 

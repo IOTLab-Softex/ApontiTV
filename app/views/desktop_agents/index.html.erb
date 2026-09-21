@@ -6,6 +6,24 @@
 <% online_count = approved_agents.count(&:online?) %>
 
 <div class="desktop-agents-page">
+  <nav class="desktop-agent-tabs" role="tablist" aria-label="Seções dos agentes Windows">
+    <button type="button" class="desktop-agent-tab is-active" role="tab" aria-selected="true" aria-controls="desktop-agent-panel-overview" data-desktop-agent-tab="overview">
+      <i class="fas fa-chart-pie" aria-hidden="true"></i><span>Visão geral</span>
+    </button>
+    <button type="button" class="desktop-agent-tab" role="tab" aria-selected="false" aria-controls="desktop-agent-panel-groups" data-desktop-agent-tab="groups">
+      <i class="fas fa-layer-group" aria-hidden="true"></i><span>Grupos</span><small><%= @desktop_groups.size %></small>
+    </button>
+    <% if pending_agents.any? %>
+      <button type="button" class="desktop-agent-tab" role="tab" aria-selected="false" aria-controls="desktop-agent-panel-pending" data-desktop-agent-tab="pending">
+        <i class="fas fa-user-clock" aria-hidden="true"></i><span>Pendentes</span><small><%= pending_agents.size %></small>
+      </button>
+    <% end %>
+    <button type="button" class="desktop-agent-tab" role="tab" aria-selected="false" aria-controls="desktop-agent-panel-computers" data-desktop-agent-tab="computers">
+      <i class="fas fa-desktop" aria-hidden="true"></i><span>Computadores</span><small><%= approved_agents.size %></small>
+    </button>
+  </nav>
+
+  <div class="desktop-agent-tab-panel is-active" id="desktop-agent-panel-overview" role="tabpanel" data-desktop-agent-panel="overview">
   <% if notice.present? && notice.include?("Token:") %>
     <% token = notice.split("Token:", 2).last.to_s.strip %>
     <section class="desktop-agent-token">
@@ -36,8 +54,15 @@
       <span>Pendentes</span>
       <strong><%= pending_agents.size %></strong>
     </article>
+    <article>
+      <i class="fas fa-layer-group" aria-hidden="true"></i>
+      <span>Grupos</span>
+      <strong><%= @desktop_groups.size %></strong>
+    </article>
   </section>
+  </div>
 
+  <div class="desktop-agent-tab-panel" id="desktop-agent-panel-groups" role="tabpanel" data-desktop-agent-panel="groups" hidden>
   <section class="desktop-agent-card">
     <div class="desktop-agent-card__head">
       <span><i class="fas fa-layer-group" aria-hidden="true"></i></span>
@@ -61,44 +86,10 @@
       </div>
     <% end %>
   </section>
-
-  <section class="desktop-agent-card">
-    <div class="desktop-agent-card__head">
-      <span><i class="fas fa-plus" aria-hidden="true"></i></span>
-      <div>
-        <h2>Novo computador</h2>
-        <p>Abra o instalador no computador. Ele aparece aqui para aprovacao e recebe o token sozinho.</p>
-      </div>
-    </div>
-
-    <% if @desktop_agent.errors.any? %>
-      <div class="desktop-agent-errors">
-        <strong><%= pluralize(@desktop_agent.errors.count, "erro") %> impediram criar o agente:</strong>
-        <ul>
-          <% @desktop_agent.errors.full_messages.each do |message| %>
-            <li><%= message %></li>
-          <% end %>
-        </ul>
-      </div>
-    <% end %>
-
-    <%= form_with model: @desktop_agent, local: true, class: "desktop-agent-form" do |form| %>
-      <label>
-        <span>Nome do computador</span>
-        <div class="desktop-agent-input">
-          <i class="fas fa-computer" aria-hidden="true"></i>
-          <%= form.text_field :name, placeholder: "Recepcao, Sala 01, Financeiro...", required: true %>
-        </div>
-      </label>
-
-      <%= button_tag type: "submit", class: "desktop-agent-action desktop-agent-action--primary", title: "Criar token" do %>
-        <i class="fas fa-plus" aria-hidden="true"></i>
-        <span>Criar token</span>
-      <% end %>
-    <% end %>
-  </section>
+  </div>
 
   <% if pending_agents.any? %>
+    <div class="desktop-agent-tab-panel" id="desktop-agent-panel-pending" role="tabpanel" data-desktop-agent-panel="pending" hidden>
     <section class="desktop-agent-card">
       <div class="desktop-agent-card__head">
         <span><i class="fas fa-user-check" aria-hidden="true"></i></span>
@@ -134,7 +125,34 @@
         <% end %>
       </div>
     </section>
+    </div>
   <% end %>
+
+  <div class="desktop-agent-tab-panel" id="desktop-agent-panel-computers" role="tabpanel" data-desktop-agent-panel="computers" hidden>
+  <section class="desktop-agent-card">
+    <div class="desktop-agent-card__head">
+      <span><i class="fas fa-plus" aria-hidden="true"></i></span>
+      <div>
+        <h2>Novo computador</h2>
+        <p>Abra o instalador no computador. Ele aparece aqui para aprovação e recebe o token automaticamente.</p>
+      </div>
+    </div>
+
+    <% if @desktop_agent.errors.any? %>
+      <div class="desktop-agent-errors">
+        <strong><%= pluralize(@desktop_agent.errors.count, "erro") %> impediram criar o agente:</strong>
+        <ul><% @desktop_agent.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+      </div>
+    <% end %>
+
+    <%= form_with model: @desktop_agent, local: true, class: "desktop-agent-form" do |form| %>
+      <label>
+        <span>Nome do computador</span>
+        <div class="desktop-agent-input"><i class="fas fa-computer" aria-hidden="true"></i><%= form.text_field :name, placeholder: "Recepção, Sala 01, Financeiro...", required: true %></div>
+      </label>
+      <%= button_tag type: "submit", class: "desktop-agent-action desktop-agent-action--primary", title: "Criar token" do %><i class="fas fa-plus" aria-hidden="true"></i><span>Criar token</span><% end %>
+    <% end %>
+  </section>
 
   <section class="desktop-agent-card">
     <div class="desktop-agent-card__head">
@@ -145,9 +163,32 @@
       </div>
     </div>
 
-    <div class="desktop-agent-list">
+    <div class="desktop-agent-filters" aria-label="Filtros dos computadores">
+      <label class="desktop-agent-filter desktop-agent-filter--search">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input type="search" placeholder="Buscar por nome, hostname ou IP" data-desktop-agent-search>
+      </label>
+      <label class="desktop-agent-filter">
+        <i class="fas fa-signal" aria-hidden="true"></i>
+        <select data-desktop-agent-status-filter>
+          <option value="all">Todos os status</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
+      </label>
+      <label class="desktop-agent-filter">
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        <select data-desktop-agent-group-filter>
+          <option value="all">Todos os grupos</option>
+          <option value="none">Sem grupo</option>
+          <% @desktop_groups.each do |group| %><option value="<%= group.id %>"><%= group.name %></option><% end %>
+        </select>
+      </label>
+    </div>
+
+    <div class="desktop-agent-list" data-desktop-agent-list>
       <% approved_agents.each do |agent| %>
-        <article class="desktop-agent-row">
+        <article class="desktop-agent-row" data-desktop-agent-row data-agent-name="<%= [agent.name, agent.hostname, agent.ip_address].compact.join(' ').downcase %>" data-agent-status="<%= agent.online? ? 'online' : 'offline' %>" data-agent-group="<%= agent.desktop_group_id || 'none' %>">
           <div class="desktop-agent-row__status <%= agent.online? ? "is-online" : "is-offline" %>" title="<%= agent.online? ? "Online" : "Offline" %>"></div>
           <div class="desktop-agent-row__main">
             <strong><%= agent.name %></strong>
@@ -173,6 +214,11 @@
         </article>
       <% end %>
 
+      <p class="desktop-agent-empty" data-desktop-agent-filter-empty hidden>
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <span>Nenhum computador corresponde aos filtros.</span>
+      </p>
+
       <% if approved_agents.blank? %>
         <p class="desktop-agent-empty">
           <i class="fas fa-desktop" aria-hidden="true"></i>
@@ -181,6 +227,7 @@
       <% end %>
     </div>
   </section>
+  </div>
 </div>
 
 <style>
@@ -191,4 +238,439 @@
   .desktop-group-chip button { border:0; background:transparent; color:#fb7185; cursor:pointer; padding:2px; }
   .desktop-agent-group-form select { min-width:150px; padding:10px 12px; border:1px solid rgba(148,163,184,.25); border-radius:10px; background:rgba(15,23,42,.72); color:#eef2ff; }
   @media (max-width: 760px) { .desktop-agent-group-form, .desktop-agent-group-form select { width:100%; } }
+
+  /* Material 3 redesign */
+  .desktop-agents-page {
+    --desktop-agent-card: #211f26;
+    --desktop-agent-card-strong: #2b2930;
+    --desktop-agent-border: #49454f;
+    --desktop-agent-text: #e6e1e5;
+    --desktop-agent-muted: #cac4d0;
+    --desktop-agent-input: #1d1b20;
+    --desktop-agent-input-border: #79747e;
+    --desktop-agent-accent: #d0bcff;
+    --desktop-agent-accent-soft: #4f378b;
+    --desktop-agent-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+    width: min(100%, 1240px);
+    gap: 20px;
+  }
+
+  .desktop-agent-setup-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .desktop-agent-overview { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .desktop-group-chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .desktop-group-chip {
+    width: 100%;
+    min-height: 52px;
+    justify-content: flex-start;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .desktop-group-chip small { margin-left: auto; }
+
+  .desktop-agent-filters {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) repeat(2, minmax(180px, .42fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .desktop-agent-filter {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 0 13px;
+    border: 1px solid var(--desktop-agent-input-border);
+    border-radius: 14px;
+    color: var(--desktop-agent-muted);
+    background: var(--desktop-agent-input);
+  }
+
+  .desktop-agent-filter:focus-within {
+    border-color: var(--desktop-agent-accent);
+    box-shadow: 0 0 0 1px var(--desktop-agent-accent);
+  }
+
+  .desktop-agent-filter :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    border: 0;
+    outline: 0;
+    color: var(--desktop-agent-text);
+    background: transparent;
+    font: inherit;
+  }
+
+  .desktop-agent-tabs {
+    position: sticky;
+    top: 12px;
+    z-index: 25;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid var(--desktop-agent-border);
+    border-radius: 22px;
+    background: var(--desktop-agent-card);
+    box-shadow: var(--desktop-agent-shadow);
+  }
+
+  .desktop-agent-tab {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 16px;
+    color: var(--desktop-agent-muted);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease;
+  }
+
+  .desktop-agent-tab:hover {
+    color: #eaddff;
+    background: color-mix(in srgb, #4f378b 58%, transparent);
+  }
+
+  .desktop-agent-tab.is-active {
+    color: #eaddff;
+    background: #4f378b;
+  }
+
+  .desktop-agent-tab small {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+    color: #381e72;
+    background: #d0bcff;
+    font-size: 11px;
+  }
+
+  .desktop-agent-tab-panel {
+    display: grid;
+    gap: 20px;
+  }
+
+  .desktop-agent-tab-panel[hidden] { display: none; }
+
+  .desktop-agent-card,
+  .desktop-agent-token,
+  .desktop-agent-overview article {
+    border: 1px solid var(--desktop-agent-border);
+    border-radius: 24px;
+    background: var(--desktop-agent-card);
+    box-shadow: var(--desktop-agent-shadow);
+    backdrop-filter: none;
+  }
+
+  .desktop-agent-card { padding: 24px; }
+
+  .desktop-agent-card__head > span,
+  .desktop-agent-token__icon {
+    color: #eaddff;
+    background: #4f378b;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+
+  .desktop-agent-overview article {
+    min-height: 112px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .desktop-agent-overview article::after {
+    content: "";
+    position: absolute;
+    right: -24px;
+    bottom: -36px;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: rgba(208, 188, 255, .08);
+  }
+
+  .desktop-agent-input {
+    border-color: var(--desktop-agent-input-border);
+    border-radius: 14px;
+    background: var(--desktop-agent-input);
+  }
+
+  .desktop-agent-input:focus-within {
+    border-color: var(--desktop-agent-accent);
+    box-shadow: 0 0 0 1px var(--desktop-agent-accent);
+    transform: none;
+  }
+
+  .desktop-agent-action {
+    min-height: 48px;
+    border-radius: 999px;
+  }
+
+  .desktop-agent-action--primary {
+    color: #381e72;
+    background: #d0bcff;
+    border-color: #d0bcff;
+    box-shadow: none;
+  }
+
+  .desktop-agent-row {
+    grid-template-columns: auto minmax(210px, 1.5fr) repeat(2, minmax(140px, 1fr)) minmax(160px, auto) auto;
+    gap: 16px;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid var(--desktop-agent-border);
+    border-radius: 18px;
+    background: var(--desktop-agent-card-strong);
+    transition: border-color .18s ease, background .18s ease;
+  }
+
+  .desktop-agent-row--pending {
+    grid-template-columns: auto minmax(210px, 1.5fr) repeat(2, minmax(140px, 1fr)) auto;
+  }
+
+  .desktop-agent-row:hover {
+    border-color: var(--desktop-agent-accent);
+    background: color-mix(in srgb, var(--desktop-agent-accent-soft) 30%, var(--desktop-agent-card-strong));
+  }
+
+  .desktop-agent-row__main {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .desktop-agent-row__main strong { font-size: 15px; }
+  .desktop-agent-row__main small { line-height: 1.45; }
+
+  .desktop-agent-row__meta {
+    min-width: 0;
+    padding-left: 14px;
+    border-left: 1px solid var(--desktop-agent-border);
+  }
+
+  .desktop-agent-row__meta span {
+    display: block;
+    color: var(--desktop-agent-muted);
+    letter-spacing: .06em;
+  }
+
+  .desktop-agent-row__status {
+    width: auto;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    border-radius: 999px;
+    color: #ffdad6;
+    background: #93000a;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .desktop-agent-row__status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .desktop-agent-row__status::after { content: "Offline"; }
+  .desktop-agent-row__status.is-online { color: #b8f5c9; background: #14532d; box-shadow: none; }
+  .desktop-agent-row__status.is-online::after { content: "Online"; }
+  .desktop-agent-row__status.is-pending { color: #ffdea6; background: #633b00; box-shadow: none; }
+  .desktop-agent-row__status.is-pending::after { content: "Pendente"; }
+
+  .desktop-agent-row form { margin: 0; }
+
+  .desktop-agent-group-form select {
+    min-height: 44px;
+    padding: 0 38px 0 13px;
+    color: var(--desktop-agent-text);
+    background: var(--desktop-agent-input);
+    border-color: var(--desktop-agent-input-border);
+    border-radius: 14px;
+  }
+
+  .desktop-group-chip {
+    color: #eaddff;
+    background: #4f378b;
+    border-color: #d0bcff;
+  }
+
+  .desktop-agent-icon-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: none;
+  }
+
+  .desktop-agent-icon-btn--approve { color: #b8f5c9; background: #14532d; }
+  .desktop-agent-icon-btn--approve:hover { color: #0f2918; background: #b8f5c9; }
+  .desktop-agent-icon-btn--delete { color: #ffb4ab; background: #5f1515; }
+  .desktop-agent-icon-btn--delete:hover { color: #410002; background: #ffb4ab; }
+
+  html[data-theme="light"] .desktop-agents-page {
+    --desktop-agent-card: #fffbfe;
+    --desktop-agent-card-strong: #f3edf7;
+    --desktop-agent-border: #cac4d0;
+    --desktop-agent-text: #1d1b20;
+    --desktop-agent-muted: #49454f;
+    --desktop-agent-input: #fffbfe;
+    --desktop-agent-input-border: #79747e;
+    --desktop-agent-accent: #6750a4;
+    --desktop-agent-accent-soft: #eaddff;
+    --desktop-agent-shadow: 0 2px 8px rgba(29, 27, 32, .1);
+  }
+
+  html[data-theme="light"] .desktop-agent-card__head > span,
+  html[data-theme="light"] .desktop-agent-token__icon { color: #21005d; background: #eaddff; }
+  html[data-theme="light"] .desktop-agent-action--primary { color: #fff; background: #6750a4; border-color: #6750a4; }
+  html[data-theme="light"] .desktop-group-chip { color: #21005d; background: #eaddff; border-color: #6750a4; }
+  html[data-theme="light"] .desktop-agent-group-form select option { color: #1d1b20; background: #fffbfe; }
+  html[data-theme="light"] .desktop-agent-tab:hover { color: #21005d; background: #eaddff; }
+  html[data-theme="light"] .desktop-agent-tab.is-active { color: #fff; background: #6750a4; }
+  html[data-theme="light"] .desktop-agent-tab.is-active small { color: #21005d; background: #eaddff; }
+  html[data-theme="light"] .desktop-agent-row__status { color: #ba1a1a; background: #ffdad6; }
+  html[data-theme="light"] .desktop-agent-row__status.is-online { color: #146c2e; background: #c5f8d1; }
+  html[data-theme="light"] .desktop-agent-row__status.is-pending { color: #7a4d00; background: #ffdea6; }
+  html[data-theme="light"] .desktop-agent-icon-btn--approve { color: #146c2e; background: #c5f8d1; }
+  html[data-theme="light"] .desktop-agent-icon-btn--delete { color: #ba1a1a; background: #ffdad6; }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .desktop-agents-page {
+      --desktop-agent-card: #fffbfe;
+      --desktop-agent-card-strong: #f3edf7;
+      --desktop-agent-border: #cac4d0;
+      --desktop-agent-text: #1d1b20;
+      --desktop-agent-muted: #49454f;
+      --desktop-agent-input: #fffbfe;
+      --desktop-agent-input-border: #79747e;
+      --desktop-agent-accent: #6750a4;
+      --desktop-agent-accent-soft: #eaddff;
+      --desktop-agent-shadow: 0 2px 8px rgba(29, 27, 32, .1);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .desktop-agent-setup-grid { grid-template-columns: 1fr; }
+    .desktop-agent-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .desktop-agent-filters { grid-template-columns: 1fr; }
+    .desktop-agent-row,
+    .desktop-agent-row--pending { grid-template-columns: 1fr; }
+    .desktop-agent-row__meta { padding: 10px 0 0; border-left: 0; border-top: 1px solid var(--desktop-agent-border); }
+    .desktop-agent-row__status { justify-self: start; }
+  }
+
+  @media (max-width: 760px) {
+    .desktop-agent-tabs {
+      top: 6px;
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .desktop-agent-tabs::-webkit-scrollbar { display: none; }
+    .desktop-agent-tab { flex: 0 0 auto; min-width: 128px; }
+  }
 </style>
+
+<script>
+  function initializeDesktopAgentTabs() {
+    var page = document.querySelector(".desktop-agents-page");
+    if (!page || page.dataset.tabsReady === "true") return;
+    page.dataset.tabsReady = "true";
+
+    var tabs = Array.from(page.querySelectorAll("[data-desktop-agent-tab]"));
+    var panels = Array.from(page.querySelectorAll("[data-desktop-agent-panel]"));
+
+    function activateTab(target) {
+        tabs.forEach(function(item) {
+          var active = item.dataset.desktopAgentTab === target;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panels.forEach(function(panel) {
+          var active = target === "overview" || panel.dataset.desktopAgentPanel === target;
+          panel.classList.toggle("is-active", active);
+          panel.hidden = !active;
+        });
+    }
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener("click", function() {
+        var target = tab.dataset.desktopAgentTab;
+        activateTab(target);
+        var url = new URL(window.location.href);
+        if (target === "overview") url.searchParams.delete("tab");
+        else url.searchParams.set("tab", target);
+        window.history.replaceState({}, "", url);
+      });
+    });
+
+    var requestedTab = new URLSearchParams(window.location.search).get("tab");
+    var initialTab = tabs.some(function(tab) { return tab.dataset.desktopAgentTab === requestedTab; }) ? requestedTab : "overview";
+    activateTab(initialTab);
+
+    var search = page.querySelector("[data-desktop-agent-search]");
+    var statusFilter = page.querySelector("[data-desktop-agent-status-filter]");
+    var groupFilter = page.querySelector("[data-desktop-agent-group-filter]");
+    var rows = Array.from(page.querySelectorAll("[data-desktop-agent-row]"));
+    var empty = page.querySelector("[data-desktop-agent-filter-empty]");
+
+    function applyComputerFilters() {
+      var term = (search?.value || "").trim().toLocaleLowerCase("pt-BR");
+      var status = statusFilter?.value || "all";
+      var group = groupFilter?.value || "all";
+      var visible = 0;
+
+      rows.forEach(function(row) {
+        var matchesSearch = !term || (row.dataset.agentName || "").includes(term);
+        var matchesStatus = status === "all" || row.dataset.agentStatus === status;
+        var matchesGroup = group === "all" || row.dataset.agentGroup === group;
+        var show = matchesSearch && matchesStatus && matchesGroup;
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+
+      if (empty) empty.hidden = visible > 0 || rows.length === 0;
+    }
+
+    search?.addEventListener("input", applyComputerFilters);
+    statusFilter?.addEventListener("change", applyComputerFilters);
+    groupFilter?.addEventListener("change", applyComputerFilters);
+  }
+
+  document.addEventListener("DOMContentLoaded", initializeDesktopAgentTabs);
+  document.addEventListener("turbo:load", initializeDesktopAgentTabs);
+  if (document.readyState !== "loading") initializeDesktopAgentTabs();
+</script>

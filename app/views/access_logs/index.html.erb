@@ -426,4 +426,73 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Material 3 */
+  .access-logs-page {
+    --logs-surface: #211f26;
+    --logs-container: #2b2930;
+    --logs-high: #36343b;
+    --logs-outline: #49454f;
+    --logs-text: #e6e1e5;
+    --logs-muted: #cac4d0;
+    --logs-primary: #d0bcff;
+    --logs-on-primary: #381e72;
+    --logs-primary-container: #4f378b;
+    --logs-on-primary-container: #eaddff;
+    color: var(--logs-text);
+  }
+
+  .access-logs-toolbar,
+  .access-logs-session-summary,
+  .access-logs-card {
+    color: var(--logs-text);
+    background: var(--logs-surface);
+    border: 1px solid var(--logs-outline);
+    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+    backdrop-filter: none;
+  }
+
+  .access-logs-search,
+  .access-logs-select {
+    color: var(--logs-text);
+    background: var(--logs-container);
+    border-color: #79747e;
+    border-radius: 14px;
+  }
+
+  .access-logs-search:focus-within,
+  .access-logs-select:focus-within { border-color: var(--logs-primary); box-shadow: 0 0 0 1px var(--logs-primary); }
+  .access-logs-search input,
+  .access-logs-select select { color: var(--logs-text); }
+  .access-logs-button { min-height: 48px; border-radius: 999px; color: var(--logs-on-primary); background: var(--logs-primary); border-color: var(--logs-primary); box-shadow: none; }
+  .access-logs-session-summary > div { background: var(--logs-container); border-color: var(--logs-outline); border-radius: 16px; }
+  .access-log-row { color: var(--logs-text); background: var(--logs-container); border-color: var(--logs-outline); border-radius: 18px; }
+  .access-log-row:hover { border-color: var(--logs-primary); background: color-mix(in srgb, var(--logs-primary-container) 32%, var(--logs-container)); }
+  .access-log-row__title strong { color: var(--logs-text); }
+  .access-log-row__main p, .access-log-row__meta, .access-logs-empty { color: var(--logs-muted); }
+
+  html[data-theme="light"] .access-logs-page {
+    --logs-surface: #fffbfe;
+    --logs-container: #f3edf7;
+    --logs-high: #e6e0e9;
+    --logs-outline: #cac4d0;
+    --logs-text: #1d1b20;
+    --logs-muted: #49454f;
+    --logs-primary: #6750a4;
+    --logs-on-primary: #ffffff;
+    --logs-primary-container: #eaddff;
+    --logs-on-primary-container: #21005d;
+  }
+
+  html[data-theme="light"] .access-logs-toolbar,
+  html[data-theme="light"] .access-logs-session-summary,
+  html[data-theme="light"] .access-logs-card { color: var(--logs-text); background: var(--logs-surface); border-color: var(--logs-outline); box-shadow: 0 2px 8px rgba(29,27,32,.1); }
+  html[data-theme="light"] .access-logs-search,
+  html[data-theme="light"] .access-logs-select,
+  html[data-theme="light"] .access-logs-session-summary > div,
+  html[data-theme="light"] .access-log-row { color: var(--logs-text); background: var(--logs-container); border-color: var(--logs-outline); }
+  html[data-theme="light"] .access-logs-search input,
+  html[data-theme="light"] .access-logs-select select { color: var(--logs-text); }
+  html[data-theme="light"] .access-logs-select select option { color: #1d1b20; background: #fffbfe; }
 </style>

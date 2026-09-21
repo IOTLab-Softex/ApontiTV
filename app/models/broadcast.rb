@@ -318,7 +318,11 @@ class Broadcast < ApplicationRecord
     return nil if current_player_playlist_item_updated_at.blank?
     return nil if current_player_playlist_item_updated_at < APP_PLAYER_PRESENCE_TTL.ago
 
-    playlist_items.includes(media_attachment: :blob).find_by(id: current_player_playlist_item_id)
+    if playlist_items.loaded?
+      playlist_items.detect { |item| item.id == current_player_playlist_item_id }
+    else
+      playlist_items.includes(media_attachment: :blob).find_by(id: current_player_playlist_item_id)
+    end
   end
 
   def ffmpeg_stream_url(streaming_configuration = nil)

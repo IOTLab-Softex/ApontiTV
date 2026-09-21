@@ -92,18 +92,6 @@
     var toggle = document.getElementById("toggle-login-password");
     var box = document.querySelector(".login-box");
 
-    if (box && box.dataset.enterBound !== "true") {
-      box.dataset.enterBound = "true";
-      box.addEventListener("animationend", function(event) {
-        if (event.animationName === "loginBoxEnter3d") {
-          box.classList.add("login-box--entered");
-        }
-      });
-      setTimeout(function() {
-        box.classList.add("login-box--entered");
-      }, 2200);
-    }
-
     if (input && toggle && toggle.dataset.bound !== "true") {
       toggle.dataset.bound = "true";
       toggle.addEventListener("click", function() {
@@ -292,6 +280,14 @@
     background: var(--login-m3-surface);
     box-shadow: 0 18px 46px rgba(0, 0, 0, .32);
     backdrop-filter: blur(22px) saturate(125%);
+    opacity: 1;
+    transform: none;
+    animation: none;
+    will-change: auto;
+  }
+
+  .login-box--m3.login-box--auth-error {
+    animation: loginBoxAuthError 980ms cubic-bezier(.22, .9, .28, 1);
   }
 
   .login-box--m3::before {

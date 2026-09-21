@@ -88,39 +88,14 @@
 
   @media (min-width: 701px) {
     .login-box {
-      opacity: 0;
+      opacity: 1;
       overflow: hidden;
-      backface-visibility: hidden;
-      transform-style: preserve-3d;
-      will-change: transform, opacity;
-      transform: translate3d(0, 38px, 0) scale(.86) rotateX(-18deg);
-      animation: loginBoxEnter3d 1.9s cubic-bezier(.18, .9, .22, 1) .08s forwards;
+      transform: none;
+      animation: none;
     }
 
     .login-box::after {
       display: none;
-    }
-  }
-
-  @keyframes loginBoxEnter3d {
-    0% {
-      opacity: 0;
-      transform: translate3d(0, 38px, 0) scale(.86) rotateX(-18deg);
-    }
-
-    34% {
-      opacity: .2;
-      transform: translate3d(0, 22px, 0) scale(.91) rotateX(-9deg);
-    }
-
-    68% {
-      opacity: .72;
-      transform: translate3d(0, 4px, 0) scale(.982) rotateX(-1.8deg);
-    }
-
-    100% {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1) rotateX(0deg);
     }
   }
 

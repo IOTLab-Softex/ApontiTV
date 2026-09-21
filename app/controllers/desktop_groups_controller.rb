@@ -5,15 +5,15 @@ class DesktopGroupsController < ApplicationController
   def create
     group = DesktopGroup.new(group_params)
     if group.save
-      redirect_back fallback_location: desktop_agents_path, notice: "Grupo criado com sucesso."
+      redirect_to desktop_agents_path(tab: "groups"), notice: "Grupo criado com sucesso."
     else
-      redirect_back fallback_location: desktop_agents_path, alert: group.errors.full_messages.to_sentence
+      redirect_to desktop_agents_path(tab: "groups"), alert: group.errors.full_messages.to_sentence
     end
   end
 
   def destroy
     @group.destroy!
-    redirect_back fallback_location: desktop_agents_path, notice: "Grupo removido. Os computadores ficaram sem grupo."
+    redirect_to desktop_agents_path(tab: "groups"), notice: "Grupo removido. Os computadores ficaram sem grupo."
   end
 
   private

@@ -35,7 +35,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
     user = User.from_andar360(identity)
     bypass_sign_in(user)
-    redirect_to root_path, notice: "Nova senha salva no Aponti TV e no Andar360."
+    redirect_to root_path, notice: "Nova senha salva."
   rescue Andar360Identity::InvalidPassword, Andar360Identity::Unavailable => error
     current_user.errors.add(:base, error.message)
     self.resource = current_user

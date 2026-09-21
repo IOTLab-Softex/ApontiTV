@@ -24,8 +24,14 @@ class BroadcastsController < ApplicationController
   before_action :set_playlist_library, only: [:index, :new, :edit, :create, :update]
 
   def index
-    @broadcasts = Broadcast.all
+    @broadcasts = Broadcast.includes(
+      video_attachment: :blob,
+      playlist_items: { media_attachment: :blob }
+    ).to_a
     @streaming_configuration = StreamingConfiguration.find_by(id: 1)
+    @desktop_groups = DesktopGroup.order(:name).to_a
+    @desktop_agent_counts_by_group = DesktopAgent.enabled.where(status: "approved").group(:desktop_group_id).count
+    @desktop_agent_total = @desktop_agent_counts_by_group.values.sum
   end
 
   def new
@@ -1365,7 +1371,9 @@ class BroadcastsController < ApplicationController
   end
 
   def set_playlist_library
-    @video_library_blobs = media_library_blobs
+    # The index contains a hidden playlist editor. Loading every media blob here
+    # made the main TVs page pay the full library cost before the editor opened.
+    @video_library_blobs = action_name == "index" ? [] : media_library_blobs
     @saved_playlists = SavedBroadcastPlaylist.order(updated_at: :desc).includes(items: :media_blob)
   end
 

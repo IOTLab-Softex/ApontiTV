@@ -1556,4 +1556,189 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Material 3 */
+  .system-config-page {
+    --system-config-card: #211f26;
+    --system-config-card-strong: #2b2930;
+    --system-config-border: #49454f;
+    --system-config-text: #e6e1e5;
+    --system-config-muted: #cac4d0;
+    --system-config-input: #1d1b20;
+    --system-config-input-border: #79747e;
+    --system-config-icon: #cac4d0;
+    --system-config-accent: #d0bcff;
+    --system-config-primary: #d0bcff;
+    --system-config-on-primary: #381e72;
+    --system-config-primary-container: #4f378b;
+    --system-config-on-primary-container: #eaddff;
+    --system-config-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  }
+
+  .system-config-section,
+  .system-config-footer,
+  .system-config-tabs {
+    border-color: var(--system-config-border);
+    background: var(--system-config-card);
+    box-shadow: var(--system-config-shadow);
+    backdrop-filter: none;
+  }
+
+  .system-config-tabs {
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+  .system-config-tab {
+    min-height: 48px;
+    border-radius: 16px;
+    color: var(--system-config-muted);
+  }
+
+  .system-config-tab:hover {
+    color: var(--system-config-on-primary-container);
+    background: color-mix(in srgb, var(--system-config-primary-container) 58%, transparent);
+  }
+
+  .system-config-tab.is-active {
+    border-color: transparent;
+    color: var(--system-config-on-primary-container);
+    background: var(--system-config-primary-container);
+    box-shadow: none;
+  }
+
+  .system-config-section {
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .system-config-section__title > i {
+    border-radius: 14px;
+    color: var(--system-config-on-primary-container);
+    background: var(--system-config-primary-container);
+  }
+
+  .system-config-kicker {
+    color: var(--system-config-primary);
+  }
+
+  .system-config-input {
+    min-height: 52px;
+    border-color: var(--system-config-input-border);
+    border-radius: 14px;
+    background: var(--system-config-input);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  .system-config-input:focus-within {
+    border-color: var(--system-config-primary);
+    box-shadow: 0 0 0 1px var(--system-config-primary);
+  }
+
+  .system-config-input--select:focus-within,
+  .system-config-input--timezone:focus-within {
+    border-color: var(--system-config-primary);
+    box-shadow: 0 0 0 1px var(--system-config-primary);
+  }
+
+  .system-config-toggle,
+  .system-config-monitoring__summary > div,
+  .system-config-manual,
+  .system-config-manual__grids > div {
+    border-color: var(--system-config-border);
+    border-radius: 16px;
+    background: var(--system-config-card-strong);
+  }
+
+  .system-config-toggle:hover {
+    border-color: var(--system-config-primary);
+  }
+
+  .system-config-toggle__track {
+    border-color: var(--system-config-input-border);
+    background: var(--system-config-input);
+  }
+
+  .system-config-toggle input:checked + .system-config-toggle__track {
+    border-color: var(--system-config-primary);
+    background: var(--system-config-primary);
+  }
+
+  .system-config-toggle input:checked + .system-config-toggle__track::after {
+    background: var(--system-config-on-primary);
+  }
+
+  .system-config-footer {
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--system-config-card) 94%, transparent);
+  }
+
+  .system-config-btn {
+    min-height: 48px;
+    border-radius: 999px;
+    padding-inline: 22px;
+    box-shadow: none;
+  }
+
+  .system-config-btn--primary {
+    border-color: var(--system-config-primary);
+    color: var(--system-config-on-primary);
+    background: var(--system-config-primary);
+    box-shadow: none;
+  }
+
+  .system-config-btn--primary:hover {
+    box-shadow: inset 0 0 0 999px rgba(255, 255, 255, .08);
+  }
+
+  .system-config-btn--ghost:hover {
+    border-color: var(--system-config-primary);
+    color: var(--system-config-on-primary-container);
+    background: var(--system-config-primary-container);
+  }
+
+  .system-config-manual code {
+    color: var(--system-config-primary);
+  }
+
+  html[data-theme="light"] .system-config-page {
+    --system-config-card: #fffbfe;
+    --system-config-card-strong: #f3edf7;
+    --system-config-border: #cac4d0;
+    --system-config-text: #1d1b20;
+    --system-config-muted: #49454f;
+    --system-config-input: #fffbfe;
+    --system-config-input-border: #79747e;
+    --system-config-icon: #49454f;
+    --system-config-accent: #6750a4;
+    --system-config-primary: #6750a4;
+    --system-config-on-primary: #ffffff;
+    --system-config-primary-container: #eaddff;
+    --system-config-on-primary-container: #21005d;
+    --system-config-shadow: 0 2px 8px rgba(29, 27, 32, .10);
+  }
+
+  html[data-theme="light"] .system-config-input--select select option {
+    color: #1d1b20;
+    background: #fffbfe;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .system-config-page {
+      --system-config-card: #fffbfe;
+      --system-config-card-strong: #f3edf7;
+      --system-config-border: #cac4d0;
+      --system-config-text: #1d1b20;
+      --system-config-muted: #49454f;
+      --system-config-input: #fffbfe;
+      --system-config-input-border: #79747e;
+      --system-config-icon: #49454f;
+      --system-config-accent: #6750a4;
+      --system-config-primary: #6750a4;
+      --system-config-on-primary: #ffffff;
+      --system-config-primary-container: #eaddff;
+      --system-config-on-primary-container: #21005d;
+      --system-config-shadow: 0 2px 8px rgba(29, 27, 32, .10);
+    }
+  }
 </style>

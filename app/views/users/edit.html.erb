@@ -513,4 +513,55 @@
       flex-direction: column;
     }
   }
+
+  /* Material 3 */
+  .user-edit-page {
+    --user-edit-bg: transparent;
+    --user-edit-card: #211f26;
+    --user-edit-card-strong: #2b2930;
+    --user-edit-border: #49454f;
+    --user-edit-text: #e6e1e5;
+    --user-edit-muted: #cac4d0;
+    --user-edit-field: #1d1b20;
+    --user-edit-field-border: #79747e;
+    --user-edit-accent: #d0bcff;
+    --user-edit-accent-soft: #4f378b;
+    --user-edit-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  }
+
+  .user-edit-summary,
+  .user-edit-card { border-radius: 24px; backdrop-filter: none; }
+  .user-edit-avatar { color: #381e72; background: #d0bcff; box-shadow: none; border-radius: 20px; }
+  .user-edit-status-grid > div { border-radius: 16px; }
+  .user-edit-role-pill { color: #eaddff; background: #4f378b; border-color: #d0bcff; }
+  .user-edit-role-pill.is-client { color: #eaddff; background: #4f378b; border-color: #d0bcff; }
+  .user-edit-kicker, .user-edit-status-grid i, .user-edit-password-note i { color: #d0bcff; }
+  .user-edit-input { border-radius: 14px; }
+  .user-edit-input:focus-within { transform: none; border-color: #d0bcff; box-shadow: 0 0 0 1px #d0bcff; }
+  .user-edit-password-note { color: #eaddff; background: #4f378b; border-color: #d0bcff; border-radius: 16px; }
+  .user-edit-button { min-height: 48px; border-radius: 999px; padding-inline: 22px; box-shadow: none; }
+  .user-edit-button:hover { color: #eaddff; background: #4f378b; border-color: #d0bcff; }
+  .user-edit-button--primary { color: #381e72; background: #d0bcff; border-color: #d0bcff; box-shadow: none; }
+
+  html[data-theme="light"] .user-edit-page {
+    --user-edit-bg: transparent;
+    --user-edit-card: #fffbfe;
+    --user-edit-card-strong: #f3edf7;
+    --user-edit-border: #cac4d0;
+    --user-edit-text: #1d1b20;
+    --user-edit-muted: #49454f;
+    --user-edit-field: #fffbfe;
+    --user-edit-field-border: #79747e;
+    --user-edit-accent: #6750a4;
+    --user-edit-accent-soft: #eaddff;
+    --user-edit-shadow: 0 2px 8px rgba(29, 27, 32, .1);
+  }
+  html[data-theme="light"] .user-edit-avatar { color: #fff; background: #6750a4; }
+  html[data-theme="light"] .user-edit-role-pill,
+  html[data-theme="light"] .user-edit-role-pill.is-client,
+  html[data-theme="light"] .user-edit-password-note { color: #21005d; background: #eaddff; border-color: #6750a4; }
+  html[data-theme="light"] .user-edit-kicker,
+  html[data-theme="light"] .user-edit-status-grid i,
+  html[data-theme="light"] .user-edit-password-note i { color: #6750a4; }
+  html[data-theme="light"] .user-edit-button--primary { color: #fff; background: #6750a4; border-color: #6750a4; }
 </style>
